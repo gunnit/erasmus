@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(chmod:*)",
+      "Bash(python3:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(/usr/bin/python3:*)",
+      "Bash(virtualenv:*)",
+      "Bash(npm install)",
+      "Bash(./start.sh:*)",
+      "Bash(dos2unix:*)",
+      "Read(/mnt/c/Dev/**)",
+      "Bash(curl:*)",
+      "Bash(PORT=3000 npm start)",
+      "Bash(netstat:*)",
+      "Bash(uvicorn:*)",
+      "Bash(BROWSER=none PORT=3000 npm start)",
+      "Bash(npm run build:*)",
+      "Bash(npx serve:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

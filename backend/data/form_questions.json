@@ -1,0 +1,289 @@
+{
+  "form_type": "KA220-ADU",
+  "form_name": "Cooperation partnerships in adult education",
+  "sections": {
+    "project_summary": {
+      "title": "Project Summary",
+      "questions": [
+        {
+          "id": "PS-1",
+          "field": "objectives",
+          "question": "Objectives: What do you want to achieve by implementing the project?",
+          "character_limit": 2000,
+          "required": true,
+          "evaluation_weight": 8,
+          "tips": ["Be specific and measurable", "Link to EU priorities", "Show clear outcomes"]
+        },
+        {
+          "id": "PS-2",
+          "field": "implementation",
+          "question": "Implementation: What activities are you going to implement?",
+          "character_limit": 2000,
+          "required": true,
+          "evaluation_weight": 6,
+          "tips": ["List concrete activities", "Show progression", "Include all partners"]
+        },
+        {
+          "id": "PS-3",
+          "field": "results",
+          "question": "Results: What project results and other outcomes do you expect your project to have?",
+          "character_limit": 2000,
+          "required": true,
+          "evaluation_weight": 8,
+          "tips": ["Define tangible outputs", "Include intellectual outputs", "Mention long-term impact"]
+        }
+      ]
+    },
+    "relevance": {
+      "title": "Relevance of the project",
+      "max_score": 30,
+      "questions": [
+        {
+          "id": "R-1",
+          "field": "priority_addressing",
+          "question": "How does the project address the selected priorities?",
+          "character_limit": 3000,
+          "required": true,
+          "evaluation_weight": 8,
+          "tips": ["Explicitly link to priorities", "Use specific examples", "Show deep understanding"]
+        },
+        {
+          "id": "R-2",
+          "field": "motivation",
+          "question": "Please describe the motivation for your project and explain why it should be funded.",
+          "character_limit": 3000,
+          "required": true,
+          "evaluation_weight": 6,
+          "tips": ["Show urgency", "Demonstrate need", "Explain funding justification"]
+        },
+        {
+          "id": "R-3",
+          "field": "objectives_results",
+          "question": "What are the objectives you would like to achieve and concrete results you would like to produce? How are these objectives linked to the priorities you have selected?",
+          "character_limit": 3000,
+          "required": true,
+          "evaluation_weight": 8,
+          "tips": ["SMART objectives", "Clear deliverables", "Priority alignment"]
+        },
+        {
+          "id": "R-4",
+          "field": "innovation",
+          "question": "What makes your proposal innovative?",
+          "character_limit": 2000,
+          "required": true,
+          "evaluation_weight": 6,
+          "tips": ["Highlight uniqueness", "Compare to existing solutions", "Show advancement"]
+        },
+        {
+          "id": "R-5",
+          "field": "complementarity",
+          "question": "How is this project complementary to other initiatives already carried out by the participating organisations?",
+          "character_limit": 2000,
+          "required": true,
+          "evaluation_weight": 4,
+          "tips": ["Avoid duplication", "Show synergies", "Build on experience"]
+        },
+        {
+          "id": "R-6",
+          "field": "european_value",
+          "question": "How does the proposal bring added value at European level through results that would not be attained by activities carried out in a single country?",
+          "character_limit": 2000,
+          "required": true,
+          "evaluation_weight": 8,
+          "tips": ["Transnational benefits", "Cross-border cooperation", "EU-wide impact"]
+        }
+      ]
+    },
+    "needs_analysis": {
+      "title": "Needs analysis",
+      "questions": [
+        {
+          "id": "NA-1",
+          "field": "needs_addressed",
+          "question": "What needs do you want to address by implementing your project?",
+          "character_limit": 3000,
+          "required": true,
+          "evaluation_weight": 8,
+          "tips": ["Evidence-based", "Specific challenges", "Target group needs"]
+        },
+        {
+          "id": "NA-2",
+          "field": "target_groups",
+          "question": "What are the target groups of the project? How do the participating organisations engage with the project target groups in their activities?",
+          "character_limit": 2000,
+          "required": true,
+          "evaluation_weight": 6,
+          "tips": ["Clear demographics", "Engagement strategies", "Inclusion measures"]
+        },
+        {
+          "id": "NA-3",
+          "field": "needs_identification",
+          "question": "How did you identify the needs of your partnership and those of your target groups?",
+          "character_limit": 2000,
+          "required": true,
+          "evaluation_weight": 4,
+          "tips": ["Research methods", "Consultation process", "Data sources"]
+        },
+        {
+          "id": "NA-4",
+          "field": "addressing_needs",
+          "question": "How will this project address these needs?",
+          "character_limit": 2000,
+          "required": true,
+          "evaluation_weight": 6,
+          "tips": ["Direct solutions", "Methodology", "Expected outcomes"]
+        }
+      ]
+    },
+    "partnership": {
+      "title": "Partnership and cooperation arrangements",
+      "max_score": 20,
+      "questions": [
+        {
+          "id": "P-1",
+          "field": "partnership_formation",
+          "question": "How did you form your partnership? How does the mix of participating organisations complement each other and what will be the added value of their collaboration in the framework of the project?",
+          "character_limit": 3000,
+          "required": true,
+          "evaluation_weight": 8,
+          "tips": ["Formation process", "Complementary expertise", "Synergies"]
+        },
+        {
+          "id": "P-2",
+          "field": "task_allocation",
+          "question": "What is the task allocation and how does it reflect the commitment and active contribution of all participating organisations?",
+          "character_limit": 3000,
+          "required": true,
+          "evaluation_weight": 8,
+          "tips": ["Clear responsibilities", "Balanced workload", "Partner expertise"]
+        },
+        {
+          "id": "P-3",
+          "field": "coordination",
+          "question": "Describe the mechanism for coordination and communication between the participating organisations",
+          "character_limit": 2000,
+          "required": true,
+          "evaluation_weight": 4,
+          "tips": ["Communication tools", "Meeting schedule", "Decision-making"]
+        }
+      ]
+    },
+    "impact": {
+      "title": "Impact",
+      "max_score": 25,
+      "questions": [
+        {
+          "id": "I-1",
+          "field": "assessment",
+          "question": "How are you going to assess if the project objectives have been achieved?",
+          "character_limit": 2000,
+          "required": true,
+          "evaluation_weight": 5,
+          "tips": ["KPIs", "Evaluation methods", "Success criteria"]
+        },
+        {
+          "id": "I-2",
+          "field": "sustainability",
+          "question": "Explain how you will ensure the sustainability of the project: How will the participation in this project contribute to the development of the involved organisations in the long-term? How do you plan to continue using the project results or implement some of the activities after the project's end?",
+          "character_limit": 3000,
+          "required": true,
+          "evaluation_weight": 8,
+          "tips": ["Long-term planning", "Resource allocation", "Continuation strategy"]
+        },
+        {
+          "id": "I-3",
+          "field": "organizational_impact",
+          "question": "Please describe the impact of the project on the participating organisations and their target groups. How the outcomes will be integrated in their regular work?",
+          "character_limit": 2500,
+          "required": true,
+          "evaluation_weight": 6,
+          "tips": ["Organizational change", "Integration plans", "Capacity building"]
+        },
+        {
+          "id": "I-4",
+          "field": "wider_impact",
+          "question": "Please describe the wider impact of the project on local, regional, national or European level relevant for the field of the application.",
+          "character_limit": 2500,
+          "required": true,
+          "evaluation_weight": 6,
+          "tips": ["Scalability", "Policy influence", "Sector impact"]
+        }
+      ]
+    },
+    "project_management": {
+      "title": "Project Management",
+      "max_score": 25,
+      "questions": [
+        {
+          "id": "PM-1",
+          "field": "monitoring",
+          "question": "How will the progress, quality and achievement of project activities be monitored? Please give information about the involved staff, as well as the timing and frequency of the monitoring activities.",
+          "character_limit": 2500,
+          "required": true,
+          "evaluation_weight": 5,
+          "tips": ["Monitoring tools", "Quality assurance", "Regular reviews"]
+        },
+        {
+          "id": "PM-2",
+          "field": "budget_time",
+          "question": "How will you ensure proper budget control and time management in your project?",
+          "character_limit": 2000,
+          "required": true,
+          "evaluation_weight": 5,
+          "tips": ["Financial controls", "Timeline management", "Reporting procedures"]
+        },
+        {
+          "id": "PM-3",
+          "field": "risk_management",
+          "question": "What are your plans for handling risks for project implementation (e.g. delays, budget, conflicts, etc.)?",
+          "character_limit": 2000,
+          "required": true,
+          "evaluation_weight": 5,
+          "tips": ["Risk identification", "Mitigation strategies", "Contingency plans"]
+        },
+        {
+          "id": "PM-4",
+          "field": "accessibility",
+          "question": "How will you ensure that the activities are designed in an accessible and inclusive way?",
+          "character_limit": 2000,
+          "required": true,
+          "evaluation_weight": 3,
+          "tips": ["Accessibility measures", "Inclusion strategies", "Barrier removal"]
+        },
+        {
+          "id": "PM-5",
+          "field": "digital_tools",
+          "question": "How does the project incorporate the use of digital tools and learning methods to complement the physical activities and to improve cooperation between partner organisations?",
+          "character_limit": 2000,
+          "required": true,
+          "evaluation_weight": 3,
+          "tips": ["Digital platforms", "Online collaboration", "Hybrid approaches"]
+        },
+        {
+          "id": "PM-6",
+          "field": "green_practices",
+          "question": "How does the project incorporate green practices in different project phases?",
+          "character_limit": 2000,
+          "required": true,
+          "evaluation_weight": 2,
+          "tips": ["Environmental measures", "Sustainable practices", "Carbon reduction"]
+        },
+        {
+          "id": "PM-7",
+          "field": "civic_engagement",
+          "question": "How does the project encourage participation and civic engagement in different project phases?",
+          "character_limit": 2000,
+          "required": true,
+          "evaluation_weight": 2,
+          "tips": ["Participation methods", "Community involvement", "Democratic values"]
+        }
+      ]
+    }
+  },
+  "evaluation_thresholds": {
+    "minimum_total_score": 60,
+    "minimum_relevance_score": 15,
+    "minimum_quality_score": 15,
+    "minimum_impact_score": 15
+  }
+}

@@ -1,0 +1,141 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.pyc
+
+# Virtual Environments
+venv/
+ENV/
+env/
+.venv
+.ENV
+.env.local
+.env.*.local
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# React/Frontend
+frontend/build/
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+.hypothesis/
+*.cover
+.coverage.*
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# Backup files
+*.bak
+*.backup
+*.tmp
+*.temp
+*.orig
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Project specific
+.deps_installed
+test_results_*.json
+*.pdf
+!sampleapplication/*.pdf
+data/cache/
+data/temp/
+uploads/
+downloads/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+*.ipynb
+
+# Documentation
+docs/_build/
+site/
+
+# Package files
+*.tar.gz
+*.zip
+*.rar
+
+# Secrets and credentials
+*.pem
+*.key
+*.cert
+*.crt
+credentials.json
+secrets.json
+config.secret.json
+
+# OpenAI
+.openai/
+openai_cache/
+
+# Local test outputs
+test_output/
+test_results/
+output/
