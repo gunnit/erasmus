@@ -19,7 +19,12 @@
       "Bash(uvicorn:*)",
       "Bash(BROWSER=none PORT=3000 npm start)",
       "Bash(npm run build:*)",
-      "Bash(npx serve:*)"
+      "Bash(npx serve:*)",
+      "Bash(pkill:*)",
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(npm start)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []
