@@ -27,7 +27,12 @@
       "Bash(npm install:*)",
       "mcp__render__get_selected_workspace",
       "mcp__render__create_postgres",
-      "mcp__render__create_web_service"
+      "mcp__render__create_web_service",
+      "mcp__render__create_static_site",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git config:*)"
     ],
     "deny": [],
     "ask": []
