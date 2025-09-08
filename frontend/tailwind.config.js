@@ -9,6 +9,7 @@ module.exports = {
       colors: {
         'eu-blue': '#003399',
         'eu-yellow': '#FFCC00',
+        border: '#e5e7eb',
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',
