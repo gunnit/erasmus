@@ -48,6 +48,9 @@ lerna-debug.log*
 # React/Frontend
 frontend/build/
 frontend/.env.local
+
+# Claude Code settings
+.claude/settings.local.json
 frontend/.env.development.local
 frontend/.env.test.local
 frontend/.env.production.local
