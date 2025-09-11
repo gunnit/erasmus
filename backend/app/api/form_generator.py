@@ -1,8 +1,18 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Response
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import Dict, List, Optional
 import json
+import os
+import tempfile
 from datetime import datetime
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
+import io
 
 from app.services.openai_service import OpenAIService
 from app.services.ai_autofill_service import AIAutoFillService
@@ -265,10 +275,123 @@ async def generate_pdf(
     application_id: str,
     sections: Dict,
     project_context: Dict
-):
+) -> str:
     """
     Generate PDF version of the completed form
     """
-    # PDF generation logic would go here
-    # Using reportlab or similar library
-    pass
+    # Create a temporary directory for PDFs if it doesn't exist
+    pdf_dir = os.path.join(tempfile.gettempdir(), 'erasmus_pdfs')
+    os.makedirs(pdf_dir, exist_ok=True)
+    
+    # Create PDF file path
+    pdf_path = os.path.join(pdf_dir, f"{application_id}.pdf")
+    
+    # Create the PDF document
+    doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+    story = []
+    
+    # Get styles
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#003399'),
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+    
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=16,
+        textColor=colors.HexColor('#003399'),
+        spaceAfter=12,
+        spaceBefore=12
+    )
+    
+    subheading_style = ParagraphStyle(
+        'CustomSubHeading',
+        parent=styles['Heading3'],
+        fontSize=12,
+        textColor=colors.HexColor('#666666'),
+        spaceAfter=6
+    )
+    
+    normal_style = ParagraphStyle(
+        'CustomNormal',
+        parent=styles['Normal'],
+        fontSize=10,
+        alignment=TA_JUSTIFY
+    )
+    
+    # Add title
+    story.append(Paragraph("Erasmus+ KA220-ADU Application", title_style))
+    story.append(Spacer(1, 0.2*inch))
+    
+    # Add project information
+    story.append(Paragraph("Project Information", heading_style))
+    
+    project_info = [
+        ['Title:', project_context.get('title', '')],
+        ['Duration:', project_context.get('duration', '')],
+        ['Budget:', f"€{project_context.get('budget', 0):,}"],
+        ['Field:', project_context.get('field', 'Adult Education')],
+        ['Application ID:', application_id],
+        ['Generated:', datetime.now().strftime('%Y-%m-%d %H:%M')]
+    ]
+    
+    t = Table(project_info, colWidths=[2*inch, 4*inch])
+    t.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+    ]))
+    story.append(t)
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Add each section
+    for section_name, answers in sections.items():
+        story.append(PageBreak())
+        story.append(Paragraph(section_name.replace('_', ' ').title(), heading_style))
+        story.append(Spacer(1, 0.1*inch))
+        
+        for answer in answers:
+            # Question
+            story.append(Paragraph(f"<b>{answer.field}</b>", subheading_style))
+            
+            # Character count info
+            char_info = f"Characters: {answer.character_count}/{answer.character_limit}"
+            story.append(Paragraph(f"<i>{char_info}</i>", styles['Normal']))
+            story.append(Spacer(1, 0.05*inch))
+            
+            # Answer
+            answer_text = answer.answer.replace('\n', '<br/>')
+            story.append(Paragraph(answer_text, normal_style))
+            story.append(Spacer(1, 0.2*inch))
+    
+    # Build the PDF
+    doc.build(story)
+    
+    return pdf_path
+
+@router.get("/pdf/{application_id}")
+async def download_pdf(application_id: str):
+    """
+    Download generated PDF for an application
+    """
+    pdf_dir = os.path.join(tempfile.gettempdir(), 'erasmus_pdfs')
+    pdf_path = os.path.join(pdf_dir, f"{application_id}.pdf")
+    
+    if not os.path.exists(pdf_path):
+        raise HTTPException(
+            status_code=404,
+            detail="PDF not found. Please regenerate the application with PDF option enabled."
+        )
+    
+    return FileResponse(
+        pdf_path,
+        media_type='application/pdf',
+        filename=f"erasmus_application_{application_id}.pdf"
+    )

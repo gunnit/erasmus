@@ -35,31 +35,43 @@ const Dashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [proposalsData, statsData] = await Promise.all([
-        api.getProposals(),
-        fetchStats()
+      const [proposalsResponse, statsResponse] = await Promise.all([
+        api.getProposals(0, 100),
+        api.getDashboardStats()
       ]);
-      setProposals(proposalsData);
-      setStats(statsData);
+      
+      // Handle proposals data
+      const proposalsData = proposalsResponse?.proposals || proposalsResponse || [];
+      setProposals(Array.isArray(proposalsData) ? proposalsData : []);
+      
+      // Handle stats data
+      setStats(statsResponse?.stats || {
+        totalProposals: 0,
+        approvedProposals: 0,
+        pendingProposals: 0,
+        rejectedProposals: 0,
+        totalBudget: 0,
+        successRate: 0,
+        averageDuration: 24,
+        totalPartners: 0
+      });
     } catch (error) {
+      console.error('Dashboard fetch error:', error);
       toast.error('Failed to load dashboard data');
+      setProposals([]);
+      setStats({
+        totalProposals: 0,
+        approvedProposals: 0,
+        pendingProposals: 0,
+        rejectedProposals: 0,
+        totalBudget: 0,
+        successRate: 0,
+        averageDuration: 24,
+        totalPartners: 0
+      });
     } finally {
       setLoading(false);
     }
-  };
-
-  const fetchStats = async () => {
-    // Simulated stats - in real app would come from API
-    return {
-      totalProposals: 12,
-      approvedProposals: 8,
-      pendingProposals: 3,
-      rejectedProposals: 1,
-      totalBudget: 2400000,
-      successRate: 75,
-      averageDuration: 24,
-      totalPartners: 45
-    };
   };
 
   const handleDelete = async (id) => {
@@ -116,11 +128,13 @@ const Dashboard = () => {
     { month: 'Jun', proposals: 4, approved: 3 }
   ];
 
-  const filteredProposals = proposals.filter(proposal => {
-    const matchesFilter = filter === 'all' || proposal.status === filter;
-    const matchesSearch = proposal.title.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+  const filteredProposals = Array.isArray(proposals) 
+    ? proposals.filter(proposal => {
+        const matchesFilter = filter === 'all' || proposal.status === filter;
+        const matchesSearch = proposal.title?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+        return matchesFilter && matchesSearch;
+      })
+    : [];
 
   if (loading) {
     return (

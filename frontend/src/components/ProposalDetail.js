@@ -31,7 +31,19 @@ const ProposalDetail = () => {
 
   const handleExportPDF = async () => {
     try {
-      toast.success('PDF export started');
+      toast.loading('Generating PDF...');
+      
+      // First, generate the PDF
+      const response = await api.generateAnswers({
+        ...proposal,
+        generate_pdf: true
+      });
+      
+      // Then download it
+      if (response.application_id) {
+        await api.exportToPDF(response.application_id);
+        toast.success('PDF downloaded successfully');
+      }
     } catch (error) {
       toast.error('Failed to export PDF');
     }

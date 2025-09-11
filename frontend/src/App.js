@@ -12,6 +12,10 @@ import ProposalEdit from './components/ProposalEdit';
 import ProjectInputForm from './components/ProjectInputForm.jsx';
 import AnswerReview from './components/AnswerReview.jsx';
 import { Layout } from './components/layout/Layout';
+import ProposalsList from './components/ProposalsList.jsx';
+import Analytics from './components/Analytics.jsx';
+import Settings from './components/Settings.jsx';
+import Profile from './components/Profile.jsx';
 import { Progress, CircularProgress } from './components/ui/Progress';
 import { Card, CardContent } from './components/ui/Card';
 import { Sparkles, CheckCircle, FileText, Rocket } from 'lucide-react';
@@ -43,26 +47,33 @@ function ProposalCreator() {
     }, 500);
 
     try {
+      console.log('Submitting project data:', data);
       const response = await api.generateAnswers(data);
       clearInterval(progressInterval);
       setProgress(100);
       setGeneratedAnswers(response);
+      console.log('Generated answers:', response);
       
       // Save proposal to database
-      await api.createProposal({
+      const proposalData = {
         title: data.title,
-        project_idea: data.idea,
-        priorities: data.priorities,
-        target_groups: data.targetGroups,
-        partners: data.partners,
-        duration_months: parseInt(data.duration),
-        budget: data.budget,
+        project_idea: data.project_idea,
+        priorities: data.selected_priorities,
+        target_groups: Array.isArray(data.target_groups) ? data.target_groups : [data.target_groups],
+        partners: data.partner_organizations,
+        duration_months: parseInt(data.duration_months),
+        budget: String(data.budget_eur),
         answers: response.answers
-      });
+      };
+      console.log('Creating proposal with data:', proposalData);
+      await api.createProposal(proposalData);
       
       setCurrentStep('review');
     } catch (error) {
       console.error('Error generating answers:', error);
+      console.error('Error details:', error.response?.data);
+      clearInterval(progressInterval);
+      setProgress(0);
       setCurrentStep('input');
     } finally {
       setIsLoading(false);
@@ -319,6 +330,14 @@ function App() {
               } 
             />
             <Route 
+              path="/proposals" 
+              element={
+                <ProtectedRoute>
+                  <ProposalsList />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/proposals/:id" 
               element={
                 <ProtectedRoute>
@@ -331,6 +350,30 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ProposalEdit />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/analytics" 
+              element={
+                <ProtectedRoute>
+                  <Analytics />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings" 
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               } 
             />

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
-  Menu, X, Home, FileText, BarChart3, Settings, LogOut, 
+  Menu, X, Home, FileText, BarChart3, Settings as SettingsIcon, LogOut, 
   Moon, Sun, Bell, Search, User, ChevronDown, PlusCircle,
   Layers, Sparkles, TrendingUp
 } from 'lucide-react';
@@ -13,7 +13,7 @@ const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Proposals', href: '/proposals', icon: FileText },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Settings', href: '/settings', icon: SettingsIcon },
 ];
 
 export const Layout = () => {

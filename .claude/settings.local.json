@@ -32,7 +32,16 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "mcp__render__list_services",
+      "mcp__render__list_deploys",
+      "Bash(find:*)",
+      "Bash(python:*)",
+      "Bash(npm audit:*)",
+      "Bash(node test_frontend_imports.js)",
+      "Bash(./check_frontend.sh)",
+      "Bash(bash:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

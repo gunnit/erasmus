@@ -49,12 +49,14 @@ const Login = () => {
         
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">
+            <label htmlFor="username" className="block text-gray-700 text-sm font-bold mb-2">
               Username
             </label>
             <input
               type="text"
               name="username"
+              id="username"
+              autoComplete="username"
               value={formData.username}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -63,12 +65,14 @@ const Login = () => {
           </div>
           
           <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-bold mb-2">
+            <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
               Password
             </label>
             <input
               type="password"
               name="password"
+              id="password"
+              autoComplete="current-password"
               value={formData.password}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"

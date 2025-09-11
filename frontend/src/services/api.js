@@ -162,7 +162,10 @@ const api = {
       return response.data;
     } catch (error) {
       console.error('Proposal Error:', error);
-      toast.error('Failed to save proposal');
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      const errorMessage = error.response?.data?.detail || 'Failed to save proposal';
+      toast.error(errorMessage);
       throw error;
     }
   },

@@ -24,6 +24,16 @@ export const extractErrorMessage = (error) => {
         if (typeof firstError === 'string') {
           return firstError;
         }
+        // If firstError is an object but doesn't have msg field
+        if (typeof firstError === 'object' && firstError !== null) {
+          // Try to extract meaningful error message from validation error object
+          if (firstError.type && firstError.loc) {
+            const field = firstError.loc[firstError.loc.length - 1] || 'field';
+            return `Validation error in ${field}: ${firstError.type}`;
+          }
+          // Fallback to JSON string representation if no msg field
+          return 'Validation error occurred';
+        }
       }
       
       // If detail is an object with a message
@@ -67,11 +77,29 @@ export const formatValidationErrors = (errors) => {
   
   return errors
     .map(err => {
-      if (err.loc && err.msg) {
-        const field = err.loc[err.loc.length - 1];
-        return `${field}: ${err.msg}`;
+      // Handle validation error objects
+      if (typeof err === 'object' && err !== null) {
+        if (err.loc && err.msg) {
+          const field = err.loc[err.loc.length - 1];
+          return `${field}: ${err.msg}`;
+        }
+        if (err.msg) {
+          return err.msg;
+        }
+        if (err.type && err.loc) {
+          const field = err.loc[err.loc.length - 1] || 'field';
+          return `${field}: ${err.type}`;
+        }
+        // Fallback for unknown object structure
+        return 'Validation error';
       }
-      return err.msg || err;
+      // Handle string errors
+      if (typeof err === 'string') {
+        return err;
+      }
+      // Default fallback
+      return 'Unknown error';
     })
+    .filter(msg => msg) // Remove any empty messages
     .join(', ');
 };
