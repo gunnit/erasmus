@@ -241,3 +241,4 @@ node test_frontend_imports.js   # Verify imports
 - Run migrations: `alembic upgrade head`
 - Enable SSL for database connections
 - Regular backups recommended
+- iam using open ai not antropic
