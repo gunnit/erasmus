@@ -4,14 +4,15 @@ set -e
 echo "Starting backend build process..."
 
 # Install Python dependencies
+echo "Installing Python dependencies..."
 cd backend
-pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 
 # Run database migrations if they exist
 if [ -f "alembic.ini" ]; then
     echo "Running database migrations..."
-    alembic upgrade head
+    python -m alembic upgrade head
 fi
 
 echo "Backend build completed successfully!"
