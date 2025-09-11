@@ -41,7 +41,16 @@
       "Bash(node test_frontend_imports.js)",
       "Bash(./check_frontend.sh)",
       "Bash(bash:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "mcp__render__list_workspaces",
+      "Bash(claude api list-servers)",
+      "Read(/home/g/.claude/plugins/**)",
+      "Read(/home/g/.claude/**)",
+      "Read(/home/g/.claude/**)",
+      "Read(/home/g/.config/**)",
+      "Read(/home/g/.claude/**)",
+      "Bash(claude mcp:*)",
+      "Bash(render:*)"
     ],
     "deny": [],
     "ask": []
