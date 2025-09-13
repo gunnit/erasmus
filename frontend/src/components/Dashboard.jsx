@@ -39,14 +39,17 @@ const Dashboard = () => {
         api.getProposals(0, 100),
         api.getDashboardStats()
       ]);
-      
+
+      console.log('Proposals response:', proposalsResponse);
+      console.log('Stats response:', statsResponse);
+
       // Handle proposals data
       const proposalsData = proposalsResponse?.proposals || proposalsResponse || [];
       setProposals(Array.isArray(proposalsData) ? proposalsData : []);
-      
+
       // Handle stats data
-      setStats(statsResponse?.stats || {
-        totalProposals: 0,
+      setStats(statsResponse?.stats || statsResponse || {
+        totalProposals: proposalsData.length,
         approvedProposals: 0,
         pendingProposals: 0,
         rejectedProposals: 0,
@@ -57,7 +60,14 @@ const Dashboard = () => {
       });
     } catch (error) {
       console.error('Dashboard fetch error:', error);
-      toast.error('Failed to load dashboard data');
+      console.error('Error details:', error.response?.data);
+
+      const errorMessage = error.response?.data?.detail ||
+                          error.response?.statusText ||
+                          'Failed to load dashboard data';
+      toast.error(errorMessage);
+
+      // Still set default values but show the actual error
       setProposals([]);
       setStats({
         totalProposals: 0,

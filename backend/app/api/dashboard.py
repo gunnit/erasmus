@@ -6,7 +6,7 @@ from app.db.models import User, Proposal
 from app.api.dependencies import get_current_user
 from datetime import datetime, timedelta
 
-router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
+router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 @router.get("/stats")
 async def get_dashboard_stats(

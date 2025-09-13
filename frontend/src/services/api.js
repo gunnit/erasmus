@@ -276,8 +276,10 @@ const api = {
       return response.data;
     } catch (error) {
       console.error('Proposals Error:', error);
-      // Return empty proposals list with correct structure
-      return { proposals: [], total: 0 };
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      // Don't silently fail - let the component handle the error
+      throw error;
     }
   },
   

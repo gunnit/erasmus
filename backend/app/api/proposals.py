@@ -7,7 +7,7 @@ from app.db.models import User, Proposal
 from app.schemas.proposal import ProposalCreate, ProposalUpdate, Proposal as ProposalSchema, ProposalList
 from app.api.dependencies import get_current_user
 
-router = APIRouter(prefix="/api/proposals", tags=["proposals"])
+router = APIRouter(prefix="/proposals", tags=["proposals"])
 
 @router.post("/", response_model=ProposalSchema)
 async def create_proposal(

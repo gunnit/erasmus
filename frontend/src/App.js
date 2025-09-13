@@ -75,7 +75,8 @@ function ProposalCreator() {
           answers: response.answers
         };
         console.log('Creating proposal with data:', proposalData);
-        await api.createProposal(proposalData);
+        const createResult = await api.createProposal(proposalData);
+        console.log('Proposal created successfully:', createResult);
         
         setCurrentStep('review');
       } catch (error) {
