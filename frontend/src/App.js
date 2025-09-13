@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -84,6 +84,18 @@ function ProposalCreator() {
         clearInterval(progressInterval);
         setProgress(0);
         setCurrentStep('input');
+
+        // Handle error display properly
+        let errorMessage = 'Failed to generate application';
+        if (error.response?.data?.detail) {
+          if (typeof error.response.data.detail === 'string') {
+            errorMessage = error.response.data.detail;
+          } else if (Array.isArray(error.response.data.detail)) {
+            // Handle validation errors
+            errorMessage = error.response.data.detail.map(err => err.msg || 'Validation error').join(', ');
+          }
+        }
+        toast.error(errorMessage);
       } finally {
         setIsLoading(false);
       }
