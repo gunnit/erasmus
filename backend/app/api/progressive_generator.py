@@ -228,7 +228,13 @@ async def stream_generation_progress(
     """
     async def generate():
         heartbeat_counter = 0
-        while True:
+        max_iterations = 300  # Max 5 minutes
+        iteration = 0
+
+        # Send initial connection message
+        yield f"data: {json.dumps({'message': 'Connected', 'session_id': session_id})}\n\n"
+
+        while iteration < max_iterations:
             try:
                 session = db.query(GenerationSession).filter(
                     GenerationSession.id == session_id,
@@ -242,9 +248,10 @@ async def stream_generation_progress(
                 data = {
                     "status": session.status.value,
                     "current_section": session.current_section,
-                    "completed_sections": session.completed_sections,
-                    "progress_percentage": session.progress_percentage,
-                    "error_message": session.error_message
+                    "completed_sections": session.completed_sections if session.completed_sections else [],
+                    "progress_percentage": session.progress_percentage or 0,
+                    "error_message": session.error_message,
+                    "iteration": iteration
                 }
 
                 yield f"data: {json.dumps(data)}\n\n"
@@ -252,17 +259,22 @@ async def stream_generation_progress(
                 # Send heartbeat every 10 iterations (10 seconds) to keep connection alive
                 heartbeat_counter += 1
                 if heartbeat_counter % 10 == 0:
-                    yield f": heartbeat\n\n"
+                    yield f": heartbeat {heartbeat_counter}\n\n"
 
                 if session.status in [GenerationStatus.COMPLETED, GenerationStatus.FAILED]:
+                    yield f"data: {json.dumps({'message': 'Generation finished', 'status': session.status.value})}\n\n"
                     break
 
                 await asyncio.sleep(1)  # Poll every second
                 db.refresh(session)  # Refresh session data
+                iteration += 1
             except Exception as e:
                 logger.error(f"SSE generation error: {str(e)}")
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
                 break
+
+        if iteration >= max_iterations:
+            yield f"data: {json.dumps({'error': 'Timeout after 5 minutes'})}\n\n"
     
     return StreamingResponse(
         generate(),

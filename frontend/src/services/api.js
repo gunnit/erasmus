@@ -89,6 +89,9 @@ const api = {
 
   streamProgress: (sessionId, onMessage, onError) => {
     const token = localStorage.getItem('access_token');
+    console.log('SSE Token:', token ? 'Present' : 'Missing');
+    console.log('SSE URL:', `${API_BASE_URL}/form/progressive/stream-progress/${sessionId}`);
+
     const eventSource = new EventSource(
       `${API_BASE_URL}/form/progressive/stream-progress/${sessionId}?token=${token}`,
       {
@@ -96,9 +99,14 @@ const api = {
       }
     );
 
+    eventSource.onopen = () => {
+      console.log('SSE connection opened successfully');
+    };
+
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        console.log('SSE Message received:', data);
         onMessage(data);
       } catch (error) {
         console.error('SSE Parse Error:', error);
@@ -107,6 +115,11 @@ const api = {
 
     eventSource.onerror = (error) => {
       console.error('SSE Error:', error);
+      console.error('SSE ReadyState:', eventSource.readyState);
+      // ReadyState: 0 = connecting, 1 = open, 2 = closed
+      if (eventSource.readyState === EventSource.CLOSED) {
+        console.log('SSE connection closed by server');
+      }
       onError(error);
       eventSource.close();
     };
