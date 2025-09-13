@@ -18,7 +18,11 @@
       "mcp__render__get_deploy",
       "Bash(curl:*)",
       "mcp__render__update_environment_variables",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(source:*)",
+      "Bash(./venv/bin/python3:*)",
+      "Bash(./venv/bin/pip list)",
+      "mcp__render__query_render_postgres"
     ],
     "deny": [],
     "ask": []

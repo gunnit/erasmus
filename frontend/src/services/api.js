@@ -263,8 +263,8 @@ const api = {
       return response.data;
     } catch (error) {
       console.error('Proposals Error:', error);
-      // Return empty array if no proposals
-      return [];
+      // Return empty proposals list with correct structure
+      return { proposals: [], total: 0 };
     }
   },
   
