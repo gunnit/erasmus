@@ -36,10 +36,20 @@ async def get_dashboard_stats(
         Proposal.status == "rejected"
     ).count()
     
-    # Calculate total budget
-    total_budget = db.query(func.sum(Proposal.budget)).filter(
-        Proposal.user_id == current_user.id
-    ).scalar() or 0
+    # Calculate total budget (handle string budget field)
+    proposals_with_budget = db.query(Proposal.budget).filter(
+        Proposal.user_id == current_user.id,
+        Proposal.budget.isnot(None)
+    ).all()
+    
+    total_budget = 0
+    for proposal in proposals_with_budget:
+        try:
+            # Try to convert string budget to float
+            budget_value = float(str(proposal.budget).replace(',', '').replace('€', ''))
+            total_budget += budget_value
+        except (ValueError, AttributeError):
+            pass
     
     # Calculate success rate
     completed = approved_proposals + rejected_proposals
