@@ -28,7 +28,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000", 
         "http://localhost:3001",
-        "https://*.onrender.com",  # Allow all Render subdomains
+        "https://erasmus-frontend.onrender.com",  # Production frontend
+        "https://erasmus-backend.onrender.com",   # Allow backend self-calls
         os.getenv("FRONTEND_URL", "")  # Allow custom frontend URL
     ],
     allow_credentials=True,
