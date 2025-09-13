@@ -3,7 +3,22 @@
     "allow": [
       "Read(//home/g/**)",
       "mcp__render__get_selected_workspace",
-      "mcp__render__list_workspaces"
+      "mcp__render__list_workspaces",
+      "mcp__render__list_services",
+      "mcp__render__list_deploys",
+      "mcp__render__list_logs",
+      "mcp__render__get_service",
+      "mcp__render__list_postgres_instances",
+      "Bash(cat:*)",
+      "Bash(git add:*)",
+      "Read(//mnt/c/Dev/**)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "Bash(git push:*)",
+      "mcp__render__get_deploy",
+      "Bash(curl:*)",
+      "mcp__render__update_environment_variables",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

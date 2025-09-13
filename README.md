@@ -1,6 +1,6 @@
-# Erasmus+ Form Completion System
+# Erasmus+ Grant Application Assistant
 
-An AI-powered system that helps organizations complete Erasmus+ KA220-ADU grant applications in 30 minutes instead of 40-60 hours.
+AI-powered system that automates Erasmus+ KA220-ADU grant application form completion, reducing the process from 40-60 hours to just 30 minutes.
 
 ## 🎯 Problem Solved
 
@@ -23,7 +23,7 @@ Organizations spend weeks filling out complex EU grant applications. This system
 
 - Python 3.11+
 - Node.js 18+
-- Anthropic API key (for Claude)
+- OpenAI API key (for GPT-4)
 - WSL/Linux environment (for Windows users)
 
 ## 🚀 Quick Start (WSL/Linux)
@@ -36,10 +36,9 @@ cd gyg4
 
 2. **Set up your API key:**
 ```bash
-# Create the .env file in the backend directory
-echo "ANTHROPIC_API_KEY=your_claude_api_key_here" > backend/.env
-echo "DATABASE_URL=sqlite:///./erasmus_forms.db" >> backend/.env
-echo "SECRET_KEY=your-secret-key-change-in-production" >> backend/.env
+# Create the .env file
+cp .env.example .env
+# Edit .env with your OpenAI API key and database URL
 ```
 
 3. **Run the application:**
@@ -80,10 +79,9 @@ pip install -r requirements.txt
 
 4. Create `.env` file:
 ```env
-ANTHROPIC_API_KEY=your_claude_api_key_here
-DATABASE_URL=sqlite:///./erasmus_forms.db
+OPENAI_API_KEY=your_openai_api_key_here
+DATABASE_URL=postgresql://...  # Or sqlite:///./erasmus_forms.db for local
 SECRET_KEY=your-secret-key-change-in-production
-STRIPE_SECRET_KEY=your_stripe_key_here  # Optional
 ```
 
 5. Run the backend:
@@ -111,14 +109,13 @@ npm start
 ## 🏗️ Architecture
 
 ```
-erasmus-form-system/
+gyg4/
 ├── backend/
 │   ├── app/
 │   │   ├── api/          # API endpoints
 │   │   ├── core/         # Configuration
-│   │   ├── models/       # Data models
-│   │   ├── services/     # Business logic
-│   │   └── prompts/      # AI prompts
+│   │   ├── db/           # Database models
+│   │   └── services/     # Business logic & AI integration
 │   └── data/
 │       └── form_questions.json  # Form structure
 ├── frontend/
@@ -127,7 +124,7 @@ erasmus-form-system/
 │   │   ├── services/     # API client
 │   │   └── App.js        # Main app
 │   └── public/
-└── docs/                  # Knowledge base
+└── render.yaml           # Render deployment config
 ```
 
 ## 📊 Form Sections
@@ -166,7 +163,7 @@ The system handles all KA220-ADU form sections:
 
 ## 🤖 AI Integration
 
-The system uses Claude 3.5 Sonnet for generating contextual, high-quality answers that:
+The system uses OpenAI GPT-4 for generating contextual, high-quality answers that:
 - Address specific evaluation criteria
 - Stay within character limits
 - Maintain consistency across sections
@@ -228,11 +225,11 @@ npm test
 
 ## 🚢 Deployment
 
-### Backend (using Railway/Render)
+### Backend (using Render)
 1. Push to GitHub
-2. Connect repository to Railway/Render
-3. Set environment variables
-4. Deploy
+2. Connect repository to Render
+3. Set environment variables in Render dashboard
+4. Deploy using render.yaml configuration
 
 ### Frontend (using Vercel/Netlify)
 1. Build production bundle: `npm run build`

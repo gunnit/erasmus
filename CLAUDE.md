@@ -1,77 +1,43 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Project guidance for Claude Code (claude.ai/code) when working with this repository.
 
 ## Project Overview
 
-Erasmus+ KA220-ADU grant application auto-completion system that reduces form completion time from 40-60 hours to 30 minutes using AI to generate comprehensive answers for all 27 application questions.
+Erasmus+ KA220-ADU grant application auto-completion system that reduces form completion time from 40-60 hours to 30 minutes using OpenAI GPT to generate comprehensive answers for all 27 application questions.
 
-## Commands
+## Quick Start
 
-### Quick Start
 ```bash
-# Start both frontend and backend (WSL/Linux)
+# Start both frontend and backend
 ./start.sh
 
-# Alternative start scripts
-./fast-start.sh         # Optimized startup
-./start-improved.sh     # Enhanced with better error handling
-./start-neo4j.sh        # Start with Neo4j database support
-```
-
-### Backend Development
-```bash
+# Backend only (port 8000)
 cd backend
-
-# Create/activate virtual environment
-python3 -m venv venv
 source venv/bin/activate
-
-# Install dependencies  
-pip install -r requirements.txt
-
-# Start development server
 uvicorn app.main:app --reload --port 8000
 
-# Run tests
-python test_autofill.py        # Test complete auto-fill flow
-python test_proposal_save.py   # Test proposal persistence
-python test_error_handling.py  # Test error scenarios
-python validate_autofill.py    # Validate setup
-python test_basic.py           # Basic API tests
-python test-neo4j-integration.py  # Neo4j integration tests
-```
-
-### Frontend Development
-```bash
+# Frontend only (port 3000)
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start development server (port 3000)
 npm start
-
-# Build for production
-npm run build
-
-# Run tests
-npm test
-
-# Check frontend imports
-node test_frontend_imports.js
-bash check_frontend.sh
 ```
 
 ## Architecture
 
+### Technology Stack
+- **Backend**: FastAPI + OpenAI GPT-4
+- **Frontend**: React + Tailwind CSS
+- **Database**: PostgreSQL (Render/Neon)
+- **Deployment**: Render.com
+
 ### Core Application Flow
 1. User inputs project details → `ProjectInputForm.jsx`
-2. Frontend sends to `/api/form/generate-answers` 
+2. Frontend sends to `/api/form/generate-answers`
 3. Backend orchestrates AI generation via `ai_autofill_service.py`
-4. AI generates ALL 27 answers with context awareness
+4. OpenAI generates ALL 27 answers with context awareness
 5. User reviews/edits in `AnswerReview.jsx`
-6. Proposal saved to database with full authentication
+6. Proposal saved to database with authentication
 
 ### Backend Structure (`/backend/app/`)
 
@@ -85,15 +51,13 @@ bash check_frontend.sh
 - `settings.py` - User settings management
 
 **Service Layer** (`services/`)
-- `ai_autofill_service.py` - Core AI logic, manages context between questions
+- `ai_autofill_service.py` - Core AI logic using OpenAI GPT
 - `prompts_config.py` - Question-specific prompt templates
-- `claude_service.py` - Anthropic Claude API integration
-- `openai_service.py` - OpenAI fallback service
+- `openai_service.py` - OpenAI API integration
 
 **Data Layer** (`db/`)
 - `models.py` - SQLAlchemy models (User, Proposal)
 - `database.py` - Database connection and session management
-- `neo4j_db.py` - Neo4j graph database support (optional)
 
 ### Frontend Structure (`/frontend/src/`)
 
@@ -143,16 +107,12 @@ bash check_frontend.sh
 ### Backend (`backend/.env`)
 ```env
 # Required
-ANTHROPIC_API_KEY=sk-ant-...  # Claude API key
-DATABASE_URL=sqlite:///./erasmus_forms.db
+OPENAI_API_KEY=sk-...  # OpenAI API key
+DATABASE_URL=postgresql://...  # Set by Render automatically
 SECRET_KEY=your-secret-key-change-in-production
 
-# Optional
-OPENAI_API_KEY=sk-...  # OpenAI fallback
-STRIPE_SECRET_KEY=...  # Payment processing
-NEO4J_URI=bolt://localhost:7687  # Graph database
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=password
+# Application Settings
+DEBUG=False  # Set to False in production
 ```
 
 ### Frontend Configuration
@@ -205,11 +165,11 @@ python validate_autofill.py     # Verify all 27 questions are mapped
 python test_autofill.py         # Test actual generation
 python test_proposal_save.py    # Test database persistence
 python test_error_handling.py   # Test error scenarios
+python test_basic.py           # Basic API tests
 
 # Frontend testing
 cd frontend
 npm test                        # Run React tests
-node test_frontend_imports.js   # Verify imports
 ```
 
 ## Common Issues & Solutions
@@ -222,23 +182,28 @@ node test_frontend_imports.js   # Verify imports
 6. **PDF Export 404**: Ensure ReportLab is installed, check temp directory permissions
 7. **Authentication Errors**: Check JWT secret key, token expiration settings
 
-## Production Deployment
+## Production Deployment (Render)
 
-### Backend (Render/Railway)
+### Backend
 - Python 3.11+ runtime
 - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- Set all environment variables in platform dashboard
-- Enable health checks on `/api/health/ready`
+- Environment variables set in Render dashboard
+- Health checks on `/api/health/ready`
 
-### Frontend (Vercel/Netlify)
+### Frontend
 - Build command: `npm run build`
 - Publish directory: `build/`
 - Update API endpoint in `src/services/api.js` to production URL
 - Set environment variable `REACT_APP_API_URL`
 
-### Database Production
-- Use PostgreSQL for production (update `DATABASE_URL`)
+### Database
+- PostgreSQL on Render (automatically configured)
+- DATABASE_URL is automatically injected by Render
 - Run migrations: `alembic upgrade head`
 - Enable SSL for database connections
-- Regular backups recommended
-- iam using open ai not antropic
+
+## Important Notes
+
+- Using OpenAI GPT-4 (not Anthropic Claude)
+- Deployed on Render.com with PostgreSQL database
+- All configuration is in `render.yaml`
