@@ -227,31 +227,42 @@ async def stream_generation_progress(
     Stream generation progress using Server-Sent Events (SSE)
     """
     async def generate():
+        heartbeat_counter = 0
         while True:
-            session = db.query(GenerationSession).filter(
-                GenerationSession.id == session_id,
-                GenerationSession.user_id == current_user.id
-            ).first()
-            
-            if not session:
-                yield f"data: {json.dumps({'error': 'Session not found'})}\n\n"
+            try:
+                session = db.query(GenerationSession).filter(
+                    GenerationSession.id == session_id,
+                    GenerationSession.user_id == current_user.id
+                ).first()
+
+                if not session:
+                    yield f"data: {json.dumps({'error': 'Session not found'})}\n\n"
+                    break
+
+                data = {
+                    "status": session.status.value,
+                    "current_section": session.current_section,
+                    "completed_sections": session.completed_sections,
+                    "progress_percentage": session.progress_percentage,
+                    "error_message": session.error_message
+                }
+
+                yield f"data: {json.dumps(data)}\n\n"
+
+                # Send heartbeat every 10 iterations (10 seconds) to keep connection alive
+                heartbeat_counter += 1
+                if heartbeat_counter % 10 == 0:
+                    yield f": heartbeat\n\n"
+
+                if session.status in [GenerationStatus.COMPLETED, GenerationStatus.FAILED]:
+                    break
+
+                await asyncio.sleep(1)  # Poll every second
+                db.refresh(session)  # Refresh session data
+            except Exception as e:
+                logger.error(f"SSE generation error: {str(e)}")
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
                 break
-            
-            data = {
-                "status": session.status.value,
-                "current_section": session.current_section,
-                "completed_sections": session.completed_sections,
-                "progress_percentage": session.progress_percentage,
-                "error_message": session.error_message
-            }
-            
-            yield f"data: {json.dumps(data)}\n\n"
-            
-            if session.status in [GenerationStatus.COMPLETED, GenerationStatus.FAILED]:
-                break
-            
-            await asyncio.sleep(1)  # Poll every second
-            db.refresh(session)  # Refresh session data
     
     return StreamingResponse(
         generate(),

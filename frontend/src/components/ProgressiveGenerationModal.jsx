@@ -33,6 +33,7 @@ const ProgressiveGenerationModal = ({
   const [error, setError] = useState(null);
   const [answers, setAnswers] = useState({});
   const eventSourceRef = useRef(null);
+  const pollIntervalRef = useRef(null);
 
   useEffect(() => {
     if (isOpen && projectData) {
@@ -46,6 +47,11 @@ const ProgressiveGenerationModal = ({
     return () => {
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
       }
     };
   }, [isOpen, projectData, useProgressive]);
@@ -123,8 +129,21 @@ const ProgressiveGenerationModal = ({
 
   const handleStreamError = (error) => {
     console.error('Stream error:', error);
+
+    // Don't treat as error if generation is already complete
+    if (status === 'completed' || status === 'failed') {
+      return;
+    }
+
+    // Close the current event source
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+
     // Try to fetch status via polling as fallback
-    if (sessionId) {
+    if (sessionId && status === 'in_progress') {
+      console.log('SSE connection lost, switching to polling...');
       pollForStatus();
     }
   };
@@ -132,17 +151,25 @@ const ProgressiveGenerationModal = ({
   const pollForStatus = async () => {
     if (!sessionId) return;
 
-    const pollInterval = setInterval(async () => {
+    // Clear any existing polling interval
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+
+    pollIntervalRef.current = setInterval(async () => {
       try {
         const response = await api.getGenerationStatus(sessionId);
         handleProgressUpdate(response);
-        
+
         if (response.status === 'completed' || response.status === 'failed') {
-          clearInterval(pollInterval);
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
         }
       } catch (error) {
         console.error('Poll error:', error);
-        clearInterval(pollInterval);
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+        // Don't set error state here, just stop polling
       }
     }, 2000);
   };
