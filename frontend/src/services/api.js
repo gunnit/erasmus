@@ -88,8 +88,9 @@ const api = {
   },
 
   streamProgress: (sessionId, onMessage, onError) => {
+    const token = localStorage.getItem('access_token');
     const eventSource = new EventSource(
-      `${API_BASE_URL}/form/progressive/stream-progress/${sessionId}`,
+      `${API_BASE_URL}/form/progressive/stream-progress/${sessionId}?token=${token}`,
       {
         withCredentials: true
       }

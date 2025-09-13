@@ -11,7 +11,7 @@ import logging
 from app.db.database import get_db
 from app.db.models import GenerationSession, GenerationStatus, User
 from app.services.ai_autofill_service import AIAutoFillService
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, get_current_user_from_token_or_query
 from app.api.form_generator import ProjectInput
 
 logger = logging.getLogger(__name__)
@@ -220,7 +220,7 @@ async def generate_single_section(
 @router.get("/stream-progress/{session_id}")
 async def stream_generation_progress(
     session_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_from_token_or_query),
     db: Session = Depends(get_db)
 ):
     """
