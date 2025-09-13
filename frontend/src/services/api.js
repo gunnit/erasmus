@@ -5,7 +5,8 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api
 
 // Create axios instance with auth interceptor
 const axiosInstance = axios.create({
-  baseURL: API_BASE_URL
+  baseURL: API_BASE_URL,
+  timeout: 120000 // 2 minutes timeout for long-running requests
 });
 
 // Add auth token to requests
@@ -35,20 +36,103 @@ axiosInstance.interceptors.response.use(
 );
 
 const api = {
-  // Generate form answers
+  // Progressive generation endpoints
+  startProgressiveGeneration: async (projectData) => {
+    try {
+      const response = await axiosInstance.post('/form/progressive/start-generation', {
+        project: projectData,
+        language: 'en'
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      toast.error(error.response?.data?.detail || 'Failed to start generation');
+      throw error;
+    }
+  },
+
+  getGenerationStatus: async (sessionId) => {
+    try {
+      const response = await axiosInstance.get(`/form/progressive/generation-status/${sessionId}`);
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+
+  generateSection: async (sessionId, sectionName, retry = false) => {
+    try {
+      const response = await axiosInstance.post('/form/progressive/generate-section', {
+        session_id: sessionId,
+        section_name: sectionName,
+        retry
+      }, {
+        timeout: 30000 // 30 seconds per section
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+
+  cancelGeneration: async (sessionId) => {
+    try {
+      const response = await axiosInstance.post(`/form/progressive/cancel-generation/${sessionId}`);
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+
+  streamProgress: (sessionId, onMessage, onError) => {
+    const eventSource = new EventSource(
+      `${API_BASE_URL}/form/progressive/stream-progress/${sessionId}`,
+      {
+        withCredentials: true
+      }
+    );
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        onMessage(data);
+      } catch (error) {
+        console.error('SSE Parse Error:', error);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('SSE Error:', error);
+      onError(error);
+      eventSource.close();
+    };
+
+    return eventSource;
+  },
+
+  // Generate form answers (original method with fallback)
   generateAnswers: async (projectData) => {
     try {
       const response = await axiosInstance.post('/form/generate-answers', {
         project: projectData,
         generate_pdf: false,
         language: 'en'
+      }, {
+        timeout: 120000 // Explicit 2-minute timeout for generation
       });
       
       toast.success('Application generated successfully!');
       return response.data;
     } catch (error) {
       console.error('API Error:', error);
-      toast.error(error.response?.data?.detail || 'Failed to generate application');
+      if (error.code === 'ECONNABORTED') {
+        toast.error('Request timed out. The form generation is taking longer than expected. Please try again.');
+      } else {
+        toast.error(error.response?.data?.detail || 'Failed to generate application');
+      }
       throw error;
     }
   },

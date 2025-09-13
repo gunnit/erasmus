@@ -34,7 +34,7 @@ const ORGANIZATION_TYPES = [
   { value: 'SOCIAL', label: 'Social Enterprise' }
 ];
 
-const ProjectInputForm = ({ onSubmit, initialData }) => {
+const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgressive = true }) => {
   const [currentSection, setCurrentSection] = useState(0);
   const [formData, setFormData] = useState(initialData || {
     title: '',
@@ -678,15 +678,30 @@ const ProjectInputForm = ({ onSubmit, initialData }) => {
         </Button>
         
         {currentSection === sections.length - 1 ? (
-          <Button
-            onClick={handleSubmit}
-            variant="default"
-            size="lg"
-            icon={Sparkles}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-          >
-            Generate Application
-          </Button>
+          <div className="flex items-center space-x-4">
+            {onToggleProgressive && (
+              <div className="flex items-center space-x-2">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useProgressive}
+                    onChange={(e) => onToggleProgressive(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Progressive Generation</span>
+                </label>
+              </div>
+            )}
+            <Button
+              onClick={handleSubmit}
+              variant="default"
+              size="lg"
+              icon={Sparkles}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+            >
+              Generate Application
+            </Button>
+          </div>
         ) : (
           <Button
             onClick={handleNextSection}

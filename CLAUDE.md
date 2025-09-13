@@ -28,7 +28,7 @@ npm start
 ### Technology Stack
 - **Backend**: FastAPI + OpenAI GPT-4
 - **Frontend**: React + Tailwind CSS
-- **Database**: PostgreSQL (Render/Neon)
+- **Database**: PostgreSQL (Render)
 - **Deployment**: Render.com
 
 ### Core Application Flow

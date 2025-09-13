@@ -11,6 +11,7 @@ import ProposalDetail from './components/ProposalDetail';
 import ProposalEdit from './components/ProposalEdit';
 import ProjectInputForm from './components/ProjectInputForm.jsx';
 import AnswerReview from './components/AnswerReview.jsx';
+import ProgressiveGenerationModal from './components/ProgressiveGenerationModal';
 import { Layout } from './components/layout/Layout';
 import ProposalsList from './components/ProposalsList.jsx';
 import Analytics from './components/Analytics.jsx';
@@ -29,6 +30,8 @@ function ProposalCreator() {
   const [generatedAnswers, setGeneratedAnswers] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [showGenerationModal, setShowGenerationModal] = useState(false);
+  const [useProgressiveGeneration, setUseProgressiveGeneration] = useState(true);
 
   const steps = [
     { id: 'input', name: 'Project Details', icon: FileText },
@@ -38,45 +41,75 @@ function ProposalCreator() {
 
   const handleProjectSubmit = async (data) => {
     setProjectData(data);
-    setCurrentStep('generating');
-    setIsLoading(true);
     
-    // Simulate progress
-    const progressInterval = setInterval(() => {
-      setProgress(prev => Math.min(prev + 10, 90));
-    }, 500);
+    if (useProgressiveGeneration) {
+      // Use progressive generation with modal
+      setShowGenerationModal(true);
+    } else {
+      // Use original generation method
+      setCurrentStep('generating');
+      setIsLoading(true);
+      
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setProgress(prev => Math.min(prev + 10, 90));
+      }, 500);
 
+      try {
+        console.log('Submitting project data:', data);
+        const response = await api.generateAnswers(data);
+        clearInterval(progressInterval);
+        setProgress(100);
+        setGeneratedAnswers(response);
+        console.log('Generated answers:', response);
+        
+        // Save proposal to database
+        const proposalData = {
+          title: data.title,
+          project_idea: data.project_idea,
+          priorities: data.selected_priorities,
+          target_groups: Array.isArray(data.target_groups) ? data.target_groups : [data.target_groups],
+          partners: data.partner_organizations,
+          duration_months: parseInt(data.duration_months),
+          budget: String(data.budget_eur),
+          answers: response.answers
+        };
+        console.log('Creating proposal with data:', proposalData);
+        await api.createProposal(proposalData);
+        
+        setCurrentStep('review');
+      } catch (error) {
+        console.error('Error generating answers:', error);
+        console.error('Error details:', error.response?.data);
+        clearInterval(progressInterval);
+        setProgress(0);
+        setCurrentStep('input');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleProgressiveGenerationComplete = async (response) => {
+    setGeneratedAnswers(response);
+    setShowGenerationModal(false);
+    setCurrentStep('review');
+    
+    // Save proposal to database
     try {
-      console.log('Submitting project data:', data);
-      const response = await api.generateAnswers(data);
-      clearInterval(progressInterval);
-      setProgress(100);
-      setGeneratedAnswers(response);
-      console.log('Generated answers:', response);
-      
-      // Save proposal to database
       const proposalData = {
-        title: data.title,
-        project_idea: data.project_idea,
-        priorities: data.selected_priorities,
-        target_groups: Array.isArray(data.target_groups) ? data.target_groups : [data.target_groups],
-        partners: data.partner_organizations,
-        duration_months: parseInt(data.duration_months),
-        budget: String(data.budget_eur),
-        answers: response.answers
+        title: projectData.title,
+        project_idea: projectData.project_idea,
+        priorities: projectData.selected_priorities,
+        target_groups: Array.isArray(projectData.target_groups) ? projectData.target_groups : [projectData.target_groups],
+        partners: projectData.partner_organizations,
+        duration_months: parseInt(projectData.duration_months),
+        budget: String(projectData.budget_eur),
+        answers: response.sections || response.answers
       };
-      console.log('Creating proposal with data:', proposalData);
       await api.createProposal(proposalData);
-      
-      setCurrentStep('review');
     } catch (error) {
-      console.error('Error generating answers:', error);
-      console.error('Error details:', error.response?.data);
-      clearInterval(progressInterval);
-      setProgress(0);
-      setCurrentStep('input');
-    } finally {
-      setIsLoading(false);
+      console.error('Error saving proposal:', error);
     }
   };
 
@@ -204,6 +237,8 @@ function ProposalCreator() {
                   <ProjectInputForm 
                     onSubmit={handleProjectSubmit}
                     initialData={projectData}
+                    onToggleProgressive={setUseProgressiveGeneration}
+                    useProgressive={useProgressiveGeneration}
                   />
                 </CardContent>
               </Card>
@@ -283,6 +318,15 @@ function ProposalCreator() {
             </motion.div>
           )}
         </AnimatePresence>
+        
+        {/* Progressive Generation Modal */}
+        <ProgressiveGenerationModal
+          projectData={projectData}
+          isOpen={showGenerationModal}
+          onClose={() => setShowGenerationModal(false)}
+          onComplete={handleProgressiveGenerationComplete}
+          useProgressive={useProgressiveGeneration}
+        />
       </main>
     </motion.div>
   );
