@@ -11,7 +11,7 @@ import logging
 from app.db.database import get_db
 from app.db.models import GenerationSession, GenerationStatus, User
 from app.services.ai_autofill_service import AIAutoFillService
-from app.core.auth import get_current_user
+from app.api.dependencies import get_current_user
 from app.api.form_generator import ProjectInput
 
 logger = logging.getLogger(__name__)
