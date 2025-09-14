@@ -366,8 +366,27 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
 
         # Initialize AI service with error handling
         try:
+            logger.info(f"Attempting to initialize AI service for session {session_id}")
             ai_service = AIAutoFillService()
             logger.info(f"AI service initialized successfully for session {session_id}")
+
+            # Test if OpenAI client is properly configured
+            if not hasattr(ai_service, 'client') or not ai_service.client:
+                raise Exception("OpenAI client not properly configured - check OPENAI_API_KEY environment variable")
+
+            # Verify the model is set
+            if not hasattr(ai_service, 'model') or not ai_service.model:
+                raise Exception("OpenAI model not configured")
+
+            logger.info(f"OpenAI service validated for session {session_id} with model: {ai_service.model}")
+
+        except ValueError as e:
+            # This is raised when API key is not configured
+            logger.error(f"API key configuration error for session {session_id}: {str(e)}")
+            session.status = GenerationStatus.FAILED
+            session.error_message = "OpenAI API key is not properly configured. Please contact support."
+            db.commit()
+            return
         except Exception as e:
             logger.error(f"Failed to initialize AI service for session {session_id}: {str(e)}", exc_info=True)
             session.status = GenerationStatus.FAILED
@@ -433,20 +452,36 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
 
                     # Generate section answers with timeout
                     logger.info(f"Building context for section {section_key}")
-                    section_context = await asyncio.wait_for(
-                        ai_service._build_section_context(section_key),
-                        timeout=30.0
-                    )
+                    try:
+                        section_context = await asyncio.wait_for(
+                            ai_service._build_section_context(section_key),
+                            timeout=30.0
+                        )
+                        logger.info(f"Context built for section {section_key}: {len(str(section_context))} chars")
+                    except asyncio.TimeoutError:
+                        logger.error(f"Timeout building context for section {section_key}")
+                        raise
+                    except Exception as e:
+                        logger.error(f"Error building context for section {section_key}: {str(e)}", exc_info=True)
+                        raise
 
-                    logger.info(f"Processing section {section_key}")
-                    section_answers = await asyncio.wait_for(
-                        ai_service._process_section(
-                            section_key,
-                            section_data,
-                            section_context
-                        ),
-                        timeout=120.0  # 2 minutes timeout per section
-                    )
+                    logger.info(f"Processing section {section_key} with {len(section_data.get('questions', {}))} questions")
+                    try:
+                        section_answers = await asyncio.wait_for(
+                            ai_service._process_section(
+                                section_key,
+                                section_data,
+                                section_context
+                            ),
+                            timeout=120.0  # 2 minutes timeout per section
+                        )
+                        logger.info(f"Section {section_key} generated {len(section_answers) if section_answers else 0} answers")
+                    except asyncio.TimeoutError:
+                        logger.error(f"Timeout processing section {section_key} after 120 seconds")
+                        raise
+                    except Exception as e:
+                        logger.error(f"Error processing section {section_key}: {str(e)}", exc_info=True)
+                        raise
 
                     # Validate that we got answers
                     if not section_answers:
@@ -481,17 +516,24 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
                     retry_count += 1
                     logger.error(f"Timeout generating section {section_key} (attempt {retry_count}/{max_retries})")
                     if retry_count >= max_retries:
-                        session.failed_sections.append(section_key)
+                        if section_key not in session.failed_sections:
+                            session.failed_sections.append(section_key)
                         session.error_message = f"Timeout generating section {section_key} after {max_retries} attempts"
+                        logger.error(f"Section {section_key} failed permanently after {max_retries} attempts")
                     else:
+                        logger.info(f"Retrying section {section_key} after timeout...")
                         await asyncio.sleep(2)  # Wait before retry
                 except Exception as e:
                     retry_count += 1
-                    logger.error(f"Error generating section {section_key} (attempt {retry_count}/{max_retries}): {str(e)}")
+                    error_msg = str(e)
+                    logger.error(f"Error generating section {section_key} (attempt {retry_count}/{max_retries}): {error_msg}", exc_info=True)
                     if retry_count >= max_retries:
-                        session.failed_sections.append(section_key)
-                        session.error_message = f"Failed to generate section {section_key}: {str(e)}"
+                        if section_key not in session.failed_sections:
+                            session.failed_sections.append(section_key)
+                        session.error_message = f"Failed to generate section {section_key}: {error_msg}"
+                        logger.error(f"Section {section_key} failed permanently: {error_msg}")
                     else:
+                        logger.info(f"Retrying section {section_key} after error: {error_msg}")
                         await asyncio.sleep(2)  # Wait before retry
 
                 db.commit()
