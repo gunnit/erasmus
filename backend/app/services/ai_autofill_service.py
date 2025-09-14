@@ -28,7 +28,14 @@ class AIAutoFillService:
 
         # Rate limiting configuration for parallel processing
         self.max_concurrent_calls = 3  # Limit concurrent API calls per section
-        self.api_semaphore = asyncio.Semaphore(self.max_concurrent_calls)
+        self._api_semaphore = None  # Will be created lazily in the right event loop
+
+    @property
+    def api_semaphore(self):
+        """Lazy creation of semaphore in the correct event loop"""
+        if self._api_semaphore is None:
+            self._api_semaphore = asyncio.Semaphore(self.max_concurrent_calls)
+        return self._api_semaphore
         
     async def auto_fill_complete_application(
         self,
@@ -393,63 +400,76 @@ class AIAutoFillService:
         """
         Call OpenAI API with semaphore for rate limiting and proper error handling
         """
-        async with self.api_semaphore:  # Rate limiting for parallel calls
-            max_retries = 2  # Reduced retries since we have parallel processing
+        # Use semaphore if we're doing parallel calls, skip if not needed
+        semaphore = self.api_semaphore if hasattr(self, '_api_semaphore') else None
 
-            for attempt in range(max_retries):
-                try:
-                    logger.debug(f"AI call attempt {attempt + 1}/{max_retries}")
+        if semaphore:
+            async with semaphore:  # Rate limiting for parallel calls
+                return await self._make_api_call(prompt, temperature, max_tokens)
+        else:
+            return await self._make_api_call(prompt, temperature, max_tokens)
 
-                    # Direct API call with built-in timeout from client config
-                    response = await self.client.chat.completions.create(
-                        model=self.model,
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": self.prompts.get_system_prompt()
-                            },
-                            {
-                                "role": "user",
-                                "content": prompt
-                            }
-                        ],
-                        max_tokens=max_tokens,
-                        temperature=temperature,
-                    )
+    async def _make_api_call(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
+        """
+        Actual API call implementation
+        """
+        # Rate limiting for parallel calls
+        max_retries = 2  # Reduced retries since we have parallel processing
 
-                    if response and response.choices and response.choices[0].message.content:
-                        content = response.choices[0].message.content
-                        logger.debug(f"AI response received: {len(content)} chars")
-                        return content
-                    else:
-                        raise Exception("Empty response from OpenAI")
+        for attempt in range(max_retries):
+            try:
+                logger.debug(f"AI call attempt {attempt + 1}/{max_retries}")
 
-                except asyncio.TimeoutError:
-                    logger.error(f"AI call timeout (attempt {attempt + 1}/{max_retries})")
+                # Direct API call with built-in timeout from client config
+                response = await self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": self.prompts.get_system_prompt()
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                )
+
+                if response and response.choices and response.choices[0].message.content:
+                    content = response.choices[0].message.content
+                    logger.debug(f"AI response received: {len(content)} chars")
+                    return content
+                else:
+                    raise Exception("Empty response from OpenAI")
+
+            except asyncio.TimeoutError:
+                logger.error(f"AI call timeout (attempt {attempt + 1}/{max_retries})")
+                if attempt == max_retries - 1:
+                    raise Exception("OpenAI API timeout")
+                await asyncio.sleep(1.5)  # Shorter wait for parallel processing
+
+            except Exception as e:
+                error_msg = str(e)
+                if "500" in error_msg or "502" in error_msg or "503" in error_msg:
+                    logger.error(f"OpenAI API server error (attempt {attempt + 1}/{max_retries}): {error_msg}")
                     if attempt == max_retries - 1:
-                        raise Exception("OpenAI API timeout")
-                    await asyncio.sleep(1.5)  # Shorter wait for parallel processing
+                        raise Exception(f"OpenAI API server error: {error_msg[:100]}")
+                    await asyncio.sleep(2)  # Longer wait for server errors
+                elif "rate_limit" in error_msg.lower():
+                    logger.warning(f"Rate limit hit (attempt {attempt + 1}/{max_retries})")
+                    if attempt == max_retries - 1:
+                        raise Exception("Rate limit exceeded")
+                    await asyncio.sleep(5)  # Longer wait for rate limits
+                else:
+                    logger.error(f"AI call failed (attempt {attempt + 1}/{max_retries}): {error_msg}")
+                    if attempt == max_retries - 1:
+                        raise Exception(f"API error: {error_msg[:100]}")
+                    await asyncio.sleep(1.5)
 
-                except Exception as e:
-                    error_msg = str(e)
-                    if "500" in error_msg or "502" in error_msg or "503" in error_msg:
-                        logger.error(f"OpenAI API server error (attempt {attempt + 1}/{max_retries}): {error_msg}")
-                        if attempt == max_retries - 1:
-                            raise Exception(f"OpenAI API server error: {error_msg[:100]}")
-                        await asyncio.sleep(2)  # Longer wait for server errors
-                    elif "rate_limit" in error_msg.lower():
-                        logger.warning(f"Rate limit hit (attempt {attempt + 1}/{max_retries})")
-                        if attempt == max_retries - 1:
-                            raise Exception("Rate limit exceeded")
-                        await asyncio.sleep(5)  # Longer wait for rate limits
-                    else:
-                        logger.error(f"AI call failed (attempt {attempt + 1}/{max_retries}): {error_msg}")
-                        if attempt == max_retries - 1:
-                            raise Exception(f"API error: {error_msg[:100]}")
-                        await asyncio.sleep(1.5)
-
-            # Should not reach here
-            raise Exception("Failed to get AI response")
+        # Should not reach here
+        raise Exception("Failed to get AI response")
     
     def _optimize_for_length(self, text: str, limit: int) -> str:
         """

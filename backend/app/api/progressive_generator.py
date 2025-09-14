@@ -352,6 +352,7 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
     """
     Background task to generate all sections progressively
     """
+    session = None
     try:
         session = db.query(GenerationSession).filter(
             GenerationSession.id == session_id
@@ -363,8 +364,16 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
 
         logger.info(f"Starting progressive generation for session {session_id}")
 
-        # Initialize AI service
-        ai_service = AIAutoFillService()
+        # Initialize AI service with error handling
+        try:
+            ai_service = AIAutoFillService()
+            logger.info(f"AI service initialized successfully for session {session_id}")
+        except Exception as e:
+            logger.error(f"Failed to initialize AI service for session {session_id}: {str(e)}", exc_info=True)
+            session.status = GenerationStatus.FAILED
+            session.error_message = f"Failed to initialize AI service: {str(e)}"
+            db.commit()
+            return
 
         # Set up context memory
         ai_service.context_memory = {
