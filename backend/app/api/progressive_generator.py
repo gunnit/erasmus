@@ -240,7 +240,7 @@ async def stream_generation_progress(
     """
     async def generate():
         heartbeat_counter = 0
-        max_iterations = 300  # Max 5 minutes
+        max_iterations = 600  # Max 10 minutes (increased for longer generations)
         iteration = 0
 
         # Send initial connection message
@@ -298,7 +298,8 @@ async def stream_generation_progress(
                 break
 
         if iteration >= max_iterations:
-            yield f"data: {json.dumps({'error': 'Timeout after 5 minutes'})}\n\n"
+            logger.warning(f"SSE timeout reached for session {session_id} after {max_iterations} seconds")
+            yield f"data: {json.dumps({'error': 'Timeout after 10 minutes', 'status': 'timeout'})}\n\n"
     
     return StreamingResponse(
         generate(),
@@ -378,6 +379,7 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
                 continue
             
             try:
+                logger.info(f"Starting generation for section: {section_key}")
                 # Update current section and starting progress
                 session.status = GenerationStatus.IN_PROGRESS
                 session.current_section = section_key
@@ -387,6 +389,7 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
                 base_progress = (section_index / len(session.sections_order)) * 100
                 session.progress_percentage = int(base_progress + 8)  # Add 8% for starting
                 db.commit()
+                logger.info(f"Progress updated to {session.progress_percentage}% for section {section_key}")
 
                 # Get section data
                 section_data = form_questions['sections'].get(section_key)
@@ -418,10 +421,12 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
                 completed_progress = int((session.completed_count / session.total_sections) * 100)
                 # Ensure progress always moves forward
                 session.progress_percentage = max(completed_progress, session.progress_percentage)
-                
+
+                logger.info(f"Section {section_key} completed. Total completed: {session.completed_count}/{session.total_sections}, Progress: {session.progress_percentage}%")
+
                 # Update context memory for next section
                 ai_service.context_memory["answers"][section_key] = section_answers
-                
+
                 db.commit()
                 
                 # Small delay between sections
