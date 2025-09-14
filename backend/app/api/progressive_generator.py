@@ -47,6 +47,16 @@ async def start_generation(
     Start a new progressive generation session
     """
     try:
+        # Define sections order
+        sections_order = [
+            "project_summary",
+            "relevance",
+            "needs_analysis",
+            "partnership",
+            "impact",
+            "project_management"
+        ]
+
         # Create new generation session
         session = GenerationSession(
             user_id=current_user.id,
@@ -55,7 +65,9 @@ async def start_generation(
             answers={},
             completed_sections=[],
             failed_sections=[],
-            progress_percentage=0
+            progress_percentage=0,
+            sections_order=sections_order,
+            total_sections=len(sections_order)
         )
         
         db.add(session)
@@ -262,7 +274,19 @@ async def stream_generation_progress(
                     yield f": heartbeat {heartbeat_counter}\n\n"
 
                 if session.status in [GenerationStatus.COMPLETED, GenerationStatus.FAILED]:
-                    yield f"data: {json.dumps({'message': 'Generation finished', 'status': session.status.value})}\n\n"
+                    # Send final status
+                    final_data = {
+                        "status": session.status.value,
+                        "current_section": session.current_section,
+                        "completed_sections": session.completed_sections if session.completed_sections else [],
+                        "progress_percentage": 100 if session.status == GenerationStatus.COMPLETED else session.progress_percentage,
+                        "error_message": session.error_message,
+                        "message": "Generation finished",
+                        "final": True
+                    }
+                    yield f"data: {json.dumps(final_data)}\n\n"
+                    # Give frontend time to receive the final message
+                    await asyncio.sleep(1)
                     break
 
                 await asyncio.sleep(1)  # Poll every second
@@ -402,12 +426,20 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
         db.refresh(session)
         if session.status != GenerationStatus.CANCELLED:
             if len(session.completed_sections) == session.total_sections:
+                logger.info(f"Generation completed successfully for session {session_id}")
                 session.status = GenerationStatus.COMPLETED
                 session.completed_at = datetime.utcnow()
+                session.progress_percentage = 100
             elif session.failed_sections:
+                logger.error(f"Generation failed for session {session_id}, failed sections: {session.failed_sections}")
                 session.status = GenerationStatus.FAILED
-        
+            else:
+                logger.warning(f"Generation incomplete for session {session_id}")
+                session.status = GenerationStatus.FAILED
+                session.error_message = "Generation incomplete"
+
         db.commit()
+        logger.info(f"Background generation finished for session {session_id}, status: {session.status.value}")
         
     except Exception as e:
         logger.error(f"Background generation error: {str(e)}")

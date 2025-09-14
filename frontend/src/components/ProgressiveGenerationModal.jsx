@@ -116,6 +116,15 @@ const ProgressiveGenerationModal = ({
       return;
     }
 
+    // Handle final message
+    if (data.final) {
+      console.log('Received final generation message:', data);
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+    }
+
     setCurrentSection(data.current_section);
     setCompletedSections(data.completed_sections || []);
     setProgress(data.progress_percentage || 0);
@@ -123,6 +132,7 @@ const ProgressiveGenerationModal = ({
     setError(data.error_message);
 
     if (data.status === 'completed') {
+      console.log('Generation completed, fetching answers...');
       fetchCompleteAnswers();
     }
   };
