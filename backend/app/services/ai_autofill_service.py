@@ -25,17 +25,6 @@ class AIAutoFillService:
         self.model = settings.OPENAI_MODEL
         self.prompts = PromptsConfig()
         self.context_memory = {}
-
-        # Rate limiting configuration for parallel processing
-        self.max_concurrent_calls = 3  # Limit concurrent API calls per section
-        self._api_semaphore = None  # Will be created lazily in the right event loop
-
-    @property
-    def api_semaphore(self):
-        """Lazy creation of semaphore in the correct event loop"""
-        if self._api_semaphore is None:
-            self._api_semaphore = asyncio.Semaphore(self.max_concurrent_calls)
-        return self._api_semaphore
         
     async def auto_fill_complete_application(
         self,
@@ -183,23 +172,34 @@ class AIAutoFillService:
         section_context: Dict
     ) -> Dict:
         """
-        Process all questions in a section with parallel processing for better performance
+        Process all questions in a section with controlled parallel processing
         """
         questions = section_data.get('questions', [])
-        logger.info(f"Processing section {section_key} with {len(questions)} questions in parallel")
+        logger.info(f"Processing section {section_key} with {len(questions)} questions")
 
-        # Create tasks for all questions to run in parallel
-        tasks = []
-        for question in questions:
-            task = self._process_single_question(
-                question=question,
-                section_context=section_context,
-                section_key=section_key
-            )
-            tasks.append(task)
+        # Process questions in smaller batches to avoid overwhelming the API
+        MAX_CONCURRENT = 2  # Process 2 questions at a time
+        results = []
 
-        # Execute all tasks in parallel with proper error handling
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for i in range(0, len(questions), MAX_CONCURRENT):
+            batch = questions[i:i + MAX_CONCURRENT]
+            batch_tasks = []
+
+            for question in batch:
+                task = self._process_single_question(
+                    question=question,
+                    section_context=section_context,
+                    section_key=section_key
+                )
+                batch_tasks.append(task)
+
+            # Process this batch and wait for completion
+            batch_results = await asyncio.gather(*batch_tasks, return_exceptions=True)
+            results.extend(batch_results)
+
+            # Small delay between batches to avoid rate limiting
+            if i + MAX_CONCURRENT < len(questions):
+                await asyncio.sleep(0.5)
 
         # Process results and build section answers
         section_answers = {}
@@ -398,22 +398,8 @@ class AIAutoFillService:
     
     async def _call_ai(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
         """
-        Call OpenAI API with semaphore for rate limiting and proper error handling
+        Call OpenAI API with proper error handling
         """
-        # Use semaphore if we're doing parallel calls, skip if not needed
-        semaphore = self.api_semaphore if hasattr(self, '_api_semaphore') else None
-
-        if semaphore:
-            async with semaphore:  # Rate limiting for parallel calls
-                return await self._make_api_call(prompt, temperature, max_tokens)
-        else:
-            return await self._make_api_call(prompt, temperature, max_tokens)
-
-    async def _make_api_call(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
-        """
-        Actual API call implementation
-        """
-        # Rate limiting for parallel calls
         max_retries = 2  # Reduced retries since we have parallel processing
 
         for attempt in range(max_retries):
