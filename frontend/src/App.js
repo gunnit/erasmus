@@ -17,6 +17,7 @@ import ProposalsList from './components/ProposalsList.jsx';
 import Analytics from './components/Analytics.jsx';
 import Settings from './components/Settings.jsx';
 import Profile from './components/Profile.jsx';
+import ChiSiamo from './components/ChiSiamo.jsx';
 import { Progress, CircularProgress } from './components/ui/Progress';
 import { Card, CardContent } from './components/ui/Card';
 import { Sparkles, CheckCircle, FileText, Rocket } from 'lucide-react';
@@ -104,25 +105,79 @@ function ProposalCreator() {
   };
 
   const handleProgressiveGenerationComplete = async (response) => {
+    console.log('handleProgressiveGenerationComplete called with response:', response);
+
+    // Validate response structure
+    if (!response) {
+      console.error('No response received from generation');
+      toast.error('Generation completed but no data received');
+      return;
+    }
+
+    // Extract answers from response - handle different formats
+    const answers = response.sections || response.answers || response;
+    console.log('Extracted answers:', answers);
+
+    if (!answers || Object.keys(answers).length === 0) {
+      console.error('No answers found in response');
+      toast.error('Generation completed but no answers were generated');
+      return;
+    }
+
+    // Update state with generated answers
     setGeneratedAnswers(response);
     setShowGenerationModal(false);
     setCurrentStep('review');
-    
+
     // Save proposal to database
     try {
+      console.log('Preparing to save proposal with projectData:', projectData);
+
+      if (!projectData) {
+        console.error('No project data available for saving');
+        toast.error('Cannot save proposal: project data is missing');
+        return;
+      }
+
       const proposalData = {
-        title: projectData.title,
-        project_idea: projectData.project_idea,
-        priorities: projectData.selected_priorities,
-        target_groups: Array.isArray(projectData.target_groups) ? projectData.target_groups : [projectData.target_groups],
-        partners: projectData.partner_organizations,
-        duration_months: parseInt(projectData.duration_months),
-        budget: String(projectData.budget_eur),
-        answers: response.sections || response.answers
+        title: projectData.title || 'Untitled Proposal',
+        project_idea: projectData.project_idea || '',
+        priorities: projectData.selected_priorities || [],
+        target_groups: Array.isArray(projectData.target_groups)
+          ? projectData.target_groups
+          : [projectData.target_groups || 'General public'],
+        partners: projectData.partner_organizations || [],
+        duration_months: parseInt(projectData.duration_months) || 24,
+        budget: String(projectData.budget_eur || 250000),
+        answers: answers
       };
-      await api.createProposal(proposalData);
+
+      console.log('Saving proposal with data:', proposalData);
+      const saveResult = await api.createProposal(proposalData);
+      console.log('Proposal saved successfully:', saveResult);
+
+      // Show success message
+      toast.success('Application generated and saved successfully!');
     } catch (error) {
       console.error('Error saving proposal:', error);
+      console.error('Error details:', error.response?.data);
+
+      // Show detailed error message
+      let errorMessage = 'Failed to save proposal';
+      if (error.response?.data?.detail) {
+        if (typeof error.response.data.detail === 'string') {
+          errorMessage = error.response.data.detail;
+        } else if (Array.isArray(error.response.data.detail)) {
+          errorMessage = error.response.data.detail
+            .map(err => err.msg || 'Validation error')
+            .join(', ');
+        }
+      }
+
+      toast.error(`Failed to save proposal: ${errorMessage}`);
+
+      // Still show the review screen even if save failed
+      // User can still see and export the generated content
     }
   };
 
@@ -426,21 +481,27 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route 
-              path="/profile" 
+            <Route
+              path="/profile"
               element={
                 <ProtectedRoute>
                   <Profile />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/new-proposal" 
+            <Route
+              path="/chi-siamo"
+              element={
+                <ChiSiamo />
+              }
+            />
+            <Route
+              path="/new-proposal"
               element={
                 <ProtectedRoute>
                   <ProposalCreator />
                 </ProtectedRoute>
-              } 
+              }
             />
             <Route 
               path="/" 

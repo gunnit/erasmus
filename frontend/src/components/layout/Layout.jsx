@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  Menu, X, Home, FileText, BarChart3, Settings as SettingsIcon, LogOut, 
+import {
+  Menu, X, Home, FileText, BarChart3, Settings as SettingsIcon, LogOut,
   Moon, Sun, Bell, Search, User, ChevronDown, PlusCircle,
-  Layers, Sparkles, TrendingUp
+  Layers, Sparkles, TrendingUp, Info
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
@@ -13,6 +13,7 @@ const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Proposals', href: '/proposals', icon: FileText },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { name: 'Chi Siamo', href: '/chi-siamo', icon: Info },
   { name: 'Settings', href: '/settings', icon: SettingsIcon },
 ];
 

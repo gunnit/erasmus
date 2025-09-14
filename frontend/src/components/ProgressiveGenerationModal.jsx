@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Loader2, CheckCircle, AlertCircle, XCircle, 
-  RefreshCw, X, FileText, Target, Users, 
+import { toast } from 'react-hot-toast';
+import {
+  Loader2, CheckCircle, AlertCircle, XCircle,
+  RefreshCw, X, FileText, Target, Users,
   TrendingUp, Settings, Briefcase
 } from 'lucide-react';
 import api from '../services/api';
@@ -110,7 +111,10 @@ const ProgressiveGenerationModal = ({
   };
 
   const handleProgressUpdate = (data) => {
+    console.log('Progress update received:', data);
+
     if (data.error) {
+      console.error('Error in progress update:', data.error);
       setError(data.error);
       setStatus('failed');
       return;
@@ -125,15 +129,25 @@ const ProgressiveGenerationModal = ({
       }
     }
 
+    // Update state
     setCurrentSection(data.current_section);
     setCompletedSections(data.completed_sections || []);
     setProgress(data.progress_percentage || 0);
     setStatus(data.status);
     setError(data.error_message);
 
+    console.log('Updated status:', data.status, 'Progress:', data.progress_percentage);
+
+    // Check for completion
     if (data.status === 'completed') {
-      console.log('Generation completed, fetching answers...');
-      fetchCompleteAnswers();
+      console.log('Generation status is COMPLETED, fetching complete answers...');
+      // Add a small delay to ensure backend has finalized everything
+      setTimeout(() => {
+        fetchCompleteAnswers();
+      }, 500);
+    } else if (data.status === 'failed') {
+      console.error('Generation failed:', data.error_message);
+      toast.error(`Generation failed: ${data.error_message || 'Unknown error'}`);
     }
   };
 
@@ -185,20 +199,48 @@ const ProgressiveGenerationModal = ({
   };
 
   const fetchCompleteAnswers = async () => {
-    if (!sessionId) return;
+    if (!sessionId) {
+      console.error('No sessionId available for fetching answers');
+      return;
+    }
+
+    console.log('Fetching complete answers for session:', sessionId);
 
     try {
       const response = await api.getGenerationStatus(sessionId);
-      setAnswers(response.answers);
-      
+      console.log('Generation status response:', response);
+
+      // Extract answers from response
+      const answersData = response.answers || {};
+      console.log('Extracted answers data:', answersData);
+
+      // Check if we actually have answers
+      if (!answersData || Object.keys(answersData).length === 0) {
+        console.error('No answers in generation response');
+        toast.error('Generation completed but no answers were generated');
+        return;
+      }
+
+      // Update local state
+      setAnswers(answersData);
+
+      // Call the completion callback
       if (onComplete) {
-        onComplete({
-          sections: response.answers,
+        console.log('Calling onComplete callback with answers');
+        const completeData = {
+          sections: answersData,
+          answers: answersData,
           session_id: sessionId
-        });
+        };
+        console.log('Calling onComplete with data:', completeData);
+        onComplete(completeData);
+      } else {
+        console.warn('No onComplete callback provided');
       }
     } catch (error) {
       console.error('Failed to fetch complete answers:', error);
+      console.error('Error details:', error.response?.data);
+      toast.error('Failed to fetch generation results. Please try again.');
     }
   };
 
