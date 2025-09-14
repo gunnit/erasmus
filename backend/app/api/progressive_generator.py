@@ -378,16 +378,25 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
                 continue
             
             try:
-                # Update current section
+                # Update current section and starting progress
                 session.status = GenerationStatus.IN_PROGRESS
                 session.current_section = section_key
+
+                # Calculate progress - give partial credit for starting a section
+                section_index = session.sections_order.index(section_key)
+                base_progress = (section_index / len(session.sections_order)) * 100
+                session.progress_percentage = int(base_progress + 8)  # Add 8% for starting
                 db.commit()
-                
+
                 # Get section data
                 section_data = form_questions['sections'].get(section_key)
                 if not section_data:
                     continue
-                
+
+                # Update progress - midway through section
+                session.progress_percentage = int(base_progress + 10)
+                db.commit()
+
                 # Generate section answers
                 section_context = await ai_service._build_section_context(section_key)
                 section_answers = await ai_service._process_section(
@@ -395,7 +404,7 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
                     section_data,
                     section_context
                 )
-                
+
                 # Update session
                 if not session.answers:
                     session.answers = {}
@@ -403,9 +412,12 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
                 
                 if section_key not in session.completed_sections:
                     session.completed_sections.append(section_key)
-                
+
                 session.completed_count = len(session.completed_sections)
-                session.progress_percentage = int((session.completed_count / session.total_sections) * 100)
+                # Update progress to show section completion
+                completed_progress = int((session.completed_count / session.total_sections) * 100)
+                # Ensure progress always moves forward
+                session.progress_percentage = max(completed_progress, session.progress_percentage)
                 
                 # Update context memory for next section
                 ai_service.context_memory["answers"][section_key] = section_answers
