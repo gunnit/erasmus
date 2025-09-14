@@ -170,32 +170,65 @@ class AIAutoFillService:
         Process all questions in a section with context awareness
         """
         section_answers = {}
-        
-        for question in section_data.get('questions', []):
+        questions = section_data.get('questions', [])
+
+        logger.info(f"Processing section {section_key} with {len(questions)} questions")
+
+        for i, question in enumerate(questions):
             field = question['field']
-            
-            # Generate comprehensive answer
-            answer = await self._generate_comprehensive_answer(
-                question=question,
-                section_context=section_context,
-                section_key=section_key
-            )
-            
-            # Ensure character limit compliance
-            if question.get('character_limit'):
-                answer = self._optimize_for_length(answer, question['character_limit'])
-            
-            section_answers[field] = {
-                'answer': answer,
-                'question_id': question['id'],
-                'character_count': len(answer),
-                'character_limit': question.get('character_limit', 0),
-                'quality_score': await self._assess_answer_quality(answer, question)
-            }
-            
-            # Small delay between questions
+
+            try:
+                logger.info(f"Generating answer for question {i+1}/{len(questions)} in section {section_key}: {field}")
+
+                # Generate comprehensive answer with timeout
+                answer = await asyncio.wait_for(
+                    self._generate_comprehensive_answer(
+                        question=question,
+                        section_context=section_context,
+                        section_key=section_key
+                    ),
+                    timeout=30.0  # 30 seconds per question
+                )
+
+                # Ensure character limit compliance
+                if question.get('character_limit'):
+                    answer = self._optimize_for_length(answer, question['character_limit'])
+
+                section_answers[field] = {
+                    'answer': answer,
+                    'question_id': question['id'],
+                    'character_count': len(answer),
+                    'character_limit': question.get('character_limit', 0),
+                    'quality_score': await self._assess_answer_quality(answer, question)
+                }
+
+                logger.info(f"Successfully generated answer for {field} ({len(answer)} chars)")
+
+            except asyncio.TimeoutError:
+                logger.error(f"Timeout generating answer for {field} in section {section_key}")
+                # Provide a fallback answer
+                section_answers[field] = {
+                    'answer': f"[Answer generation timeout - please regenerate this section]",
+                    'question_id': question['id'],
+                    'character_count': 0,
+                    'character_limit': question.get('character_limit', 0),
+                    'quality_score': 0
+                }
+            except Exception as e:
+                logger.error(f"Error generating answer for {field} in section {section_key}: {str(e)}")
+                # Provide a fallback answer
+                section_answers[field] = {
+                    'answer': f"[Error generating answer - please regenerate this section]",
+                    'question_id': question['id'],
+                    'character_count': 0,
+                    'character_limit': question.get('character_limit', 0),
+                    'quality_score': 0
+                }
+
+            # Small delay between questions to avoid rate limiting
             await asyncio.sleep(0.2)
-        
+
+        logger.info(f"Completed processing section {section_key} with {len(section_answers)} answers")
         return section_answers
     
     async def _generate_comprehensive_answer(
@@ -242,30 +275,52 @@ class AIAutoFillService:
     
     async def _call_ai(self, prompt: str, temperature: float = 0.7) -> str:
         """
-        Call OpenAI API with proper error handling
+        Call OpenAI API with proper error handling and timeout
         """
-        try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": self.prompts.get_system_prompt()
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                max_tokens=2000,
-                temperature=temperature
-            )
-            
-            return response.choices[0].message.content
-            
-        except Exception as e:
-            logger.error(f"AI call failed: {str(e)}")
-            raise
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                logger.debug(f"AI call attempt {attempt + 1}/{max_retries}")
+
+                # Set a timeout for the API call
+                response = await asyncio.wait_for(
+                    self.client.chat.completions.create(
+                        model=self.model,
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": self.prompts.get_system_prompt()
+                            },
+                            {
+                                "role": "user",
+                                "content": prompt
+                            }
+                        ],
+                        max_tokens=2000,
+                        temperature=temperature,
+                        timeout=60.0  # 60 second timeout per API call
+                    ),
+                    timeout=65.0  # Slightly longer than API timeout
+                )
+
+                if response and response.choices and response.choices[0].message.content:
+                    return response.choices[0].message.content
+                else:
+                    raise Exception("Empty response from OpenAI")
+
+            except asyncio.TimeoutError:
+                logger.error(f"AI call timeout (attempt {attempt + 1}/{max_retries})")
+                if attempt == max_retries - 1:
+                    raise Exception("OpenAI API timeout after multiple attempts")
+                await asyncio.sleep(2)  # Wait before retry
+            except Exception as e:
+                logger.error(f"AI call failed (attempt {attempt + 1}/{max_retries}): {str(e)}")
+                if attempt == max_retries - 1:
+                    raise Exception(f"OpenAI API error after {max_retries} attempts: {str(e)}")
+                await asyncio.sleep(2)  # Wait before retry
+
+        # Should not reach here
+        raise Exception("Failed to get AI response")
     
     def _optimize_for_length(self, text: str, limit: int) -> str:
         """

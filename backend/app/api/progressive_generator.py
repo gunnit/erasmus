@@ -240,8 +240,10 @@ async def stream_generation_progress(
     """
     async def generate():
         heartbeat_counter = 0
-        max_iterations = 600  # Max 10 minutes (increased for longer generations)
+        max_iterations = 900  # Max 15 minutes (increased for longer generations)
         iteration = 0
+
+        logger.info(f"Starting SSE stream for session {session_id}")
 
         # Send initial connection message
         yield f"data: {json.dumps({'message': 'Connected', 'session_id': session_id})}\n\n"
@@ -254,6 +256,7 @@ async def stream_generation_progress(
                 ).first()
 
                 if not session:
+                    logger.error(f"Session {session_id} not found during SSE streaming")
                     yield f"data: {json.dumps({'error': 'Session not found'})}\n\n"
                     break
 
@@ -271,9 +274,11 @@ async def stream_generation_progress(
                 # Send heartbeat every 10 iterations (10 seconds) to keep connection alive
                 heartbeat_counter += 1
                 if heartbeat_counter % 10 == 0:
+                    logger.debug(f"SSE heartbeat {heartbeat_counter} for session {session_id}")
                     yield f": heartbeat {heartbeat_counter}\n\n"
 
-                if session.status in [GenerationStatus.COMPLETED, GenerationStatus.FAILED]:
+                if session.status in [GenerationStatus.COMPLETED, GenerationStatus.FAILED, GenerationStatus.CANCELLED]:
+                    logger.info(f"Generation finished for session {session_id} with status: {session.status.value}")
                     # Send final status
                     final_data = {
                         "status": session.status.value,
@@ -287,19 +292,25 @@ async def stream_generation_progress(
                     yield f"data: {json.dumps(final_data)}\n\n"
                     # Give frontend time to receive the final message
                     await asyncio.sleep(1)
+                    logger.info(f"SSE stream completed for session {session_id}")
                     break
 
                 await asyncio.sleep(1)  # Poll every second
                 db.refresh(session)  # Refresh session data
                 iteration += 1
+
+                # Log progress every 30 seconds
+                if iteration % 30 == 0:
+                    logger.info(f"SSE progress for session {session_id}: {session.progress_percentage}%, status: {session.status.value}, iteration: {iteration}")
+
             except Exception as e:
-                logger.error(f"SSE generation error: {str(e)}")
+                logger.error(f"SSE generation error for session {session_id}: {str(e)}", exc_info=True)
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
                 break
 
         if iteration >= max_iterations:
             logger.warning(f"SSE timeout reached for session {session_id} after {max_iterations} seconds")
-            yield f"data: {json.dumps({'error': 'Timeout after 10 minutes', 'status': 'timeout'})}\n\n"
+            yield f"data: {json.dumps({'error': 'Timeout after 15 minutes', 'status': 'timeout'})}\n\n"
     
     return StreamingResponse(
         generate(),
@@ -345,20 +356,23 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
         session = db.query(GenerationSession).filter(
             GenerationSession.id == session_id
         ).first()
-        
+
         if not session:
+            logger.error(f"Session {session_id} not found")
             return
-        
+
+        logger.info(f"Starting progressive generation for session {session_id}")
+
         # Initialize AI service
         ai_service = AIAutoFillService()
-        
+
         # Set up context memory
         ai_service.context_memory = {
             "project": session.project_context,
             "language": "en",
             "answers": {}
         }
-        
+
         # Load form questions
         import os
         form_questions_path = os.path.join(
@@ -366,100 +380,151 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
         )
         with open(form_questions_path, 'r') as f:
             form_questions = json.load(f)
-        
+
         # Process each section
-        for section_key in session.sections_order:
+        for section_index, section_key in enumerate(session.sections_order):
             # Check if cancelled
             db.refresh(session)
             if session.status == GenerationStatus.CANCELLED:
+                logger.info(f"Generation cancelled for session {session_id}")
                 break
-            
+
             # Skip already completed sections
             if section_key in session.completed_sections:
+                logger.info(f"Skipping already completed section: {section_key}")
                 continue
-            
-            try:
-                logger.info(f"Starting generation for section: {section_key}")
-                # Update current section and starting progress
-                session.status = GenerationStatus.IN_PROGRESS
-                session.current_section = section_key
 
-                # Calculate progress - give partial credit for starting a section
-                section_index = session.sections_order.index(section_key)
-                base_progress = (section_index / len(session.sections_order)) * 100
-                session.progress_percentage = int(base_progress + 8)  # Add 8% for starting
+            # Retry logic for each section
+            max_retries = 3
+            retry_count = 0
+            section_generated = False
+
+            while retry_count < max_retries and not section_generated:
+                try:
+                    logger.info(f"Starting generation for section: {section_key} (attempt {retry_count + 1}/{max_retries})")
+                    # Update current section and starting progress
+                    session.status = GenerationStatus.IN_PROGRESS
+                    session.current_section = section_key
+
+                    # Calculate progress - give partial credit for starting a section
+                    base_progress = (section_index / len(session.sections_order)) * 100
+                    session.progress_percentage = int(base_progress + 8)  # Add 8% for starting
+                    db.commit()
+                    logger.info(f"Progress updated to {session.progress_percentage}% for section {section_key}")
+
+                    # Get section data
+                    section_data = form_questions['sections'].get(section_key)
+                    if not section_data:
+                        logger.warning(f"Section data not found for {section_key}")
+                        break
+
+                    # Update progress - midway through section
+                    session.progress_percentage = int(base_progress + 10)
+                    db.commit()
+
+                    # Generate section answers with timeout
+                    logger.info(f"Building context for section {section_key}")
+                    section_context = await asyncio.wait_for(
+                        ai_service._build_section_context(section_key),
+                        timeout=30.0
+                    )
+
+                    logger.info(f"Processing section {section_key}")
+                    section_answers = await asyncio.wait_for(
+                        ai_service._process_section(
+                            section_key,
+                            section_data,
+                            section_context
+                        ),
+                        timeout=120.0  # 2 minutes timeout per section
+                    )
+
+                    # Validate that we got answers
+                    if not section_answers:
+                        raise Exception(f"No answers generated for section {section_key}")
+
+                    # Update session
+                    if not session.answers:
+                        session.answers = {}
+                    session.answers[section_key] = section_answers
+
+                    if section_key not in session.completed_sections:
+                        session.completed_sections.append(section_key)
+
+                    session.completed_count = len(session.completed_sections)
+                    # Update progress to show section completion
+                    completed_progress = int((session.completed_count / session.total_sections) * 100)
+                    # Ensure progress always moves forward
+                    session.progress_percentage = max(completed_progress, session.progress_percentage)
+
+                    logger.info(f"Section {section_key} completed successfully. Total completed: {session.completed_count}/{session.total_sections}, Progress: {session.progress_percentage}%")
+
+                    # Update context memory for next section
+                    ai_service.context_memory["answers"][section_key] = section_answers
+
+                    db.commit()
+                    section_generated = True
+
+                    # Small delay between sections
+                    await asyncio.sleep(0.5)
+
+                except asyncio.TimeoutError:
+                    retry_count += 1
+                    logger.error(f"Timeout generating section {section_key} (attempt {retry_count}/{max_retries})")
+                    if retry_count >= max_retries:
+                        session.failed_sections.append(section_key)
+                        session.error_message = f"Timeout generating section {section_key} after {max_retries} attempts"
+                    else:
+                        await asyncio.sleep(2)  # Wait before retry
+                except Exception as e:
+                    retry_count += 1
+                    logger.error(f"Error generating section {section_key} (attempt {retry_count}/{max_retries}): {str(e)}")
+                    if retry_count >= max_retries:
+                        session.failed_sections.append(section_key)
+                        session.error_message = f"Failed to generate section {section_key}: {str(e)}"
+                    else:
+                        await asyncio.sleep(2)  # Wait before retry
+
                 db.commit()
-                logger.info(f"Progress updated to {session.progress_percentage}% for section {section_key}")
-
-                # Get section data
-                section_data = form_questions['sections'].get(section_key)
-                if not section_data:
-                    continue
-
-                # Update progress - midway through section
-                session.progress_percentage = int(base_progress + 10)
-                db.commit()
-
-                # Generate section answers
-                section_context = await ai_service._build_section_context(section_key)
-                section_answers = await ai_service._process_section(
-                    section_key,
-                    section_data,
-                    section_context
-                )
-
-                # Update session
-                if not session.answers:
-                    session.answers = {}
-                session.answers[section_key] = section_answers
-                
-                if section_key not in session.completed_sections:
-                    session.completed_sections.append(section_key)
-
-                session.completed_count = len(session.completed_sections)
-                # Update progress to show section completion
-                completed_progress = int((session.completed_count / session.total_sections) * 100)
-                # Ensure progress always moves forward
-                session.progress_percentage = max(completed_progress, session.progress_percentage)
-
-                logger.info(f"Section {section_key} completed. Total completed: {session.completed_count}/{session.total_sections}, Progress: {session.progress_percentage}%")
-
-                # Update context memory for next section
-                ai_service.context_memory["answers"][section_key] = section_answers
-
-                db.commit()
-                
-                # Small delay between sections
-                await asyncio.sleep(0.5)
-                
-            except Exception as e:
-                logger.error(f"Error generating section {section_key}: {str(e)}")
-                session.failed_sections.append(section_key)
-                session.error_message = str(e)
-                db.commit()
-                continue
         
         # Final status update
         db.refresh(session)
         if session.status != GenerationStatus.CANCELLED:
-            if len(session.completed_sections) == session.total_sections:
+            completed_count = len(session.completed_sections) if session.completed_sections else 0
+            total_count = session.total_sections
+
+            logger.info(f"Final status check for session {session_id}: completed {completed_count}/{total_count} sections")
+
+            if completed_count == total_count:
                 logger.info(f"Generation completed successfully for session {session_id}")
                 session.status = GenerationStatus.COMPLETED
                 session.completed_at = datetime.utcnow()
                 session.progress_percentage = 100
+                session.error_message = None
             elif session.failed_sections:
-                logger.error(f"Generation failed for session {session_id}, failed sections: {session.failed_sections}")
+                logger.error(f"Generation partially failed for session {session_id}, failed sections: {session.failed_sections}")
                 session.status = GenerationStatus.FAILED
+                session.error_message = f"Failed to generate sections: {', '.join(session.failed_sections)}"
+            elif completed_count > 0:
+                # Partial completion
+                logger.warning(f"Generation partially complete for session {session_id}: {completed_count}/{total_count} sections")
+                session.status = GenerationStatus.FAILED
+                missing_sections = [s for s in session.sections_order if s not in session.completed_sections]
+                session.error_message = f"Generation incomplete. Missing sections: {', '.join(missing_sections)}"
             else:
-                logger.warning(f"Generation incomplete for session {session_id}")
+                logger.error(f"Generation failed completely for session {session_id}")
                 session.status = GenerationStatus.FAILED
-                session.error_message = "Generation incomplete"
+                session.error_message = "No sections were generated successfully"
 
         db.commit()
-        logger.info(f"Background generation finished for session {session_id}, status: {session.status.value}")
-        
+        logger.info(f"Background generation finished for session {session_id}, status: {session.status.value}, completed: {len(session.completed_sections) if session.completed_sections else 0}/{session.total_sections}")
+
     except Exception as e:
-        logger.error(f"Background generation error: {str(e)}")
-        session.status = GenerationStatus.FAILED
-        session.error_message = str(e)
-        db.commit()
+        logger.error(f"Background generation critical error for session {session_id}: {str(e)}", exc_info=True)
+        try:
+            if session:
+                session.status = GenerationStatus.FAILED
+                session.error_message = f"Critical error: {str(e)}"
+                db.commit()
+        except:
+            logger.error(f"Failed to update session status after critical error")
