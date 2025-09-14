@@ -16,10 +16,19 @@ class AIAutoFillService:
     """
     
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        # Configure OpenAI client with connection pooling
+        self.client = AsyncOpenAI(
+            api_key=settings.OPENAI_API_KEY,
+            max_retries=2,  # Built-in retry logic
+            timeout=60.0,    # Default timeout
+        )
         self.model = settings.OPENAI_MODEL
         self.prompts = PromptsConfig()
         self.context_memory = {}
+
+        # Rate limiting configuration for parallel processing
+        self.max_concurrent_calls = 3  # Limit concurrent API calls per section
+        self.api_semaphore = asyncio.Semaphore(self.max_concurrent_calls)
         
     async def auto_fill_complete_application(
         self,
@@ -167,69 +176,108 @@ class AIAutoFillService:
         section_context: Dict
     ) -> Dict:
         """
-        Process all questions in a section with context awareness
+        Process all questions in a section with parallel processing for better performance
         """
-        section_answers = {}
         questions = section_data.get('questions', [])
+        logger.info(f"Processing section {section_key} with {len(questions)} questions in parallel")
 
-        logger.info(f"Processing section {section_key} with {len(questions)} questions")
+        # Create tasks for all questions to run in parallel
+        tasks = []
+        for question in questions:
+            task = self._process_single_question(
+                question=question,
+                section_context=section_context,
+                section_key=section_key
+            )
+            tasks.append(task)
 
-        for i, question in enumerate(questions):
+        # Execute all tasks in parallel with proper error handling
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Process results and build section answers
+        section_answers = {}
+        for i, (question, result) in enumerate(zip(questions, results)):
             field = question['field']
 
-            try:
-                logger.info(f"Generating answer for question {i+1}/{len(questions)} in section {section_key}: {field}")
+            if isinstance(result, Exception):
+                logger.error(f"Error processing {field} in section {section_key}: {str(result)}")
+                # Provide a fallback answer for failed questions
+                section_answers[field] = {
+                    'answer': f"[Error generating answer: {str(result)[:100]}. Please regenerate.]",
+                    'question_id': question['id'],
+                    'character_count': 0,
+                    'character_limit': question.get('character_limit', 0),
+                    'quality_score': 0
+                }
+            else:
+                section_answers[field] = result
+                logger.info(f"Successfully processed {field} ({result['character_count']} chars)")
 
-                # Generate comprehensive answer with timeout
+        successful_count = sum(1 for a in section_answers.values() if a['quality_score'] > 0)
+        logger.info(f"Completed section {section_key}: {successful_count}/{len(questions)} questions successful")
+
+        return section_answers
+
+    async def _process_single_question(
+        self,
+        question: Dict,
+        section_context: Dict,
+        section_key: str
+    ) -> Dict:
+        """
+        Process a single question with proper error handling and retry logic
+        """
+        field = question['field']
+        max_retries = 2  # Reduced retries for parallel processing
+
+        for attempt in range(max_retries):
+            try:
+                logger.debug(f"Processing {field} in {section_key} (attempt {attempt + 1}/{max_retries})")
+
+                # Generate answer with timeout
                 answer = await asyncio.wait_for(
                     self._generate_comprehensive_answer(
                         question=question,
                         section_context=section_context,
                         section_key=section_key
                     ),
-                    timeout=30.0  # 30 seconds per question
+                    timeout=45.0  # Increased timeout for more reliable generation
                 )
 
                 # Ensure character limit compliance
                 if question.get('character_limit'):
                     answer = self._optimize_for_length(answer, question['character_limit'])
 
-                section_answers[field] = {
+                # Assess quality (make this async but don't wait too long)
+                try:
+                    quality_score = await asyncio.wait_for(
+                        self._assess_answer_quality(answer, question),
+                        timeout=5.0
+                    )
+                except:
+                    quality_score = 0.7  # Default quality score if assessment fails
+
+                return {
                     'answer': answer,
                     'question_id': question['id'],
                     'character_count': len(answer),
                     'character_limit': question.get('character_limit', 0),
-                    'quality_score': await self._assess_answer_quality(answer, question)
+                    'quality_score': quality_score
                 }
-
-                logger.info(f"Successfully generated answer for {field} ({len(answer)} chars)")
 
             except asyncio.TimeoutError:
-                logger.error(f"Timeout generating answer for {field} in section {section_key}")
-                # Provide a fallback answer
-                section_answers[field] = {
-                    'answer': f"[Answer generation timeout - please regenerate this section]",
-                    'question_id': question['id'],
-                    'character_count': 0,
-                    'character_limit': question.get('character_limit', 0),
-                    'quality_score': 0
-                }
+                logger.warning(f"Timeout for {field} in {section_key} (attempt {attempt + 1}/{max_retries})")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(1)  # Brief pause before retry
+                    continue
+                raise TimeoutError(f"Timeout after {max_retries} attempts")
+
             except Exception as e:
-                logger.error(f"Error generating answer for {field} in section {section_key}: {str(e)}")
-                # Provide a fallback answer
-                section_answers[field] = {
-                    'answer': f"[Error generating answer - please regenerate this section]",
-                    'question_id': question['id'],
-                    'character_count': 0,
-                    'character_limit': question.get('character_limit', 0),
-                    'quality_score': 0
-                }
-
-            # Small delay between questions to avoid rate limiting
-            await asyncio.sleep(0.2)
-
-        logger.info(f"Completed processing section {section_key} with {len(section_answers)} answers")
-        return section_answers
+                logger.warning(f"Error for {field} in {section_key} (attempt {attempt + 1}/{max_retries}): {str(e)}")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(1)  # Brief pause before retry
+                    continue
+                raise
     
     async def _generate_comprehensive_answer(
         self,
@@ -239,6 +287,7 @@ class AIAutoFillService:
     ) -> str:
         """
         Generate a comprehensive, high-quality answer for a specific question
+        with dynamic parameters based on question type
         """
         # Get specialized prompt based on question type
         prompt = self.prompts.get_question_prompt(
@@ -247,44 +296,112 @@ class AIAutoFillService:
             section_context=section_context,
             section_key=section_key
         )
-        
-        # Adjust temperature based on question type
-        temperature = 0.7
-        if 'innovation' in question['field']:
-            temperature = 0.8
-        elif 'budget' in question['field'] or 'management' in question['field']:
-            temperature = 0.3
-        
-        # Generate answer with retry logic
-        max_retries = 3
-        for attempt in range(max_retries):
-            try:
-                response = await self._call_ai(prompt, temperature=temperature)
-                
-                # Validate response quality
-                if len(response) > 50:  # Minimum quality check
-                    return response
-                    
-            except Exception as e:
-                logger.error(f"Attempt {attempt + 1} failed: {str(e)}")
-                if attempt == max_retries - 1:
-                    raise
-                await asyncio.sleep(1)
-        
-        return response
-    
-    async def _call_ai(self, prompt: str, temperature: float = 0.7) -> str:
-        """
-        Call OpenAI API with proper error handling and timeout
-        """
-        max_retries = 3
-        for attempt in range(max_retries):
-            try:
-                logger.debug(f"AI call attempt {attempt + 1}/{max_retries}")
 
-                # Set a timeout for the API call
-                response = await asyncio.wait_for(
-                    self.client.chat.completions.create(
+        # Get optimized parameters for this question type
+        params = self._get_question_parameters(question, section_key)
+
+        # Generate answer with optimized parameters
+        try:
+            response = await self._call_ai(
+                prompt,
+                temperature=params['temperature'],
+                max_tokens=params['max_tokens']
+            )
+
+            # Validate response quality
+            if len(response) > 50:  # Minimum quality check
+                return response
+            else:
+                # If response is too short, try again with higher temperature
+                logger.warning(f"Response too short for {question['field']}, retrying with higher temperature")
+                response = await self._call_ai(
+                    prompt,
+                    temperature=min(params['temperature'] + 0.2, 1.0),
+                    max_tokens=params['max_tokens']
+                )
+                return response
+
+        except Exception as e:
+            logger.error(f"Failed to generate answer for {question['field']}: {str(e)}")
+            raise
+
+    def _get_question_parameters(self, question: Dict, section_key: str) -> Dict:
+        """
+        Get optimized parameters for different question types
+        """
+        field = question['field'].lower()
+        character_limit = question.get('character_limit', 3000)
+
+        # Base parameters
+        params = {
+            'temperature': 0.7,
+            'max_tokens': min(character_limit // 3, 2000)  # Rough token estimate
+        }
+
+        # Question-specific optimizations
+        if section_key == 'project_summary':
+            # Summary questions need concise, clear answers
+            params['temperature'] = 0.6
+            params['max_tokens'] = min(character_limit // 3, 1500)
+
+        elif section_key == 'relevance':
+            # Relevance questions need analytical, detailed answers
+            params['temperature'] = 0.7
+            params['max_tokens'] = min(character_limit // 3, 2000)
+
+        elif section_key == 'needs_analysis':
+            # Needs analysis requires data-driven responses
+            params['temperature'] = 0.5
+            params['max_tokens'] = min(character_limit // 3, 1800)
+
+        elif section_key == 'partnership':
+            # Partnership questions need structured, clear answers
+            params['temperature'] = 0.6
+            params['max_tokens'] = min(character_limit // 3, 1600)
+
+        elif section_key == 'impact':
+            # Impact questions can be more creative
+            params['temperature'] = 0.8
+            params['max_tokens'] = min(character_limit // 3, 2000)
+
+        elif section_key == 'project_management':
+            # Management questions need precise, structured answers
+            params['temperature'] = 0.4
+            params['max_tokens'] = min(character_limit // 3, 1800)
+
+        # Field-specific overrides
+        if 'innovation' in field or 'creative' in field:
+            params['temperature'] = min(params['temperature'] + 0.2, 0.9)
+        elif 'budget' in field or 'timeline' in field or 'milestone' in field:
+            params['temperature'] = 0.3  # Very precise for numbers and dates
+            params['max_tokens'] = min(params['max_tokens'], 1200)
+        elif 'risk' in field or 'quality' in field:
+            params['temperature'] = 0.5  # Balanced for risk assessment
+        elif 'dissemination' in field or 'sustainability' in field:
+            params['temperature'] = 0.7  # More creative for future planning
+
+        # For shorter questions, use fewer tokens
+        if character_limit < 1000:
+            params['max_tokens'] = min(params['max_tokens'], 500)
+        elif character_limit < 2000:
+            params['max_tokens'] = min(params['max_tokens'], 1000)
+
+        logger.debug(f"Parameters for {field} in {section_key}: temp={params['temperature']}, tokens={params['max_tokens']}")
+        return params
+    
+    async def _call_ai(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
+        """
+        Call OpenAI API with semaphore for rate limiting and proper error handling
+        """
+        async with self.api_semaphore:  # Rate limiting for parallel calls
+            max_retries = 2  # Reduced retries since we have parallel processing
+
+            for attempt in range(max_retries):
+                try:
+                    logger.debug(f"AI call attempt {attempt + 1}/{max_retries}")
+
+                    # Direct API call with built-in timeout from client config
+                    response = await self.client.chat.completions.create(
                         model=self.model,
                         messages=[
                             {
@@ -296,31 +413,43 @@ class AIAutoFillService:
                                 "content": prompt
                             }
                         ],
-                        max_tokens=2000,
+                        max_tokens=max_tokens,
                         temperature=temperature,
-                        timeout=60.0  # 60 second timeout per API call
-                    ),
-                    timeout=65.0  # Slightly longer than API timeout
-                )
+                    )
 
-                if response and response.choices and response.choices[0].message.content:
-                    return response.choices[0].message.content
-                else:
-                    raise Exception("Empty response from OpenAI")
+                    if response and response.choices and response.choices[0].message.content:
+                        content = response.choices[0].message.content
+                        logger.debug(f"AI response received: {len(content)} chars")
+                        return content
+                    else:
+                        raise Exception("Empty response from OpenAI")
 
-            except asyncio.TimeoutError:
-                logger.error(f"AI call timeout (attempt {attempt + 1}/{max_retries})")
-                if attempt == max_retries - 1:
-                    raise Exception("OpenAI API timeout after multiple attempts")
-                await asyncio.sleep(2)  # Wait before retry
-            except Exception as e:
-                logger.error(f"AI call failed (attempt {attempt + 1}/{max_retries}): {str(e)}")
-                if attempt == max_retries - 1:
-                    raise Exception(f"OpenAI API error after {max_retries} attempts: {str(e)}")
-                await asyncio.sleep(2)  # Wait before retry
+                except asyncio.TimeoutError:
+                    logger.error(f"AI call timeout (attempt {attempt + 1}/{max_retries})")
+                    if attempt == max_retries - 1:
+                        raise Exception("OpenAI API timeout")
+                    await asyncio.sleep(1.5)  # Shorter wait for parallel processing
 
-        # Should not reach here
-        raise Exception("Failed to get AI response")
+                except Exception as e:
+                    error_msg = str(e)
+                    if "500" in error_msg or "502" in error_msg or "503" in error_msg:
+                        logger.error(f"OpenAI API server error (attempt {attempt + 1}/{max_retries}): {error_msg}")
+                        if attempt == max_retries - 1:
+                            raise Exception(f"OpenAI API server error: {error_msg[:100]}")
+                        await asyncio.sleep(2)  # Longer wait for server errors
+                    elif "rate_limit" in error_msg.lower():
+                        logger.warning(f"Rate limit hit (attempt {attempt + 1}/{max_retries})")
+                        if attempt == max_retries - 1:
+                            raise Exception("Rate limit exceeded")
+                        await asyncio.sleep(5)  # Longer wait for rate limits
+                    else:
+                        logger.error(f"AI call failed (attempt {attempt + 1}/{max_retries}): {error_msg}")
+                        if attempt == max_retries - 1:
+                            raise Exception(f"API error: {error_msg[:100]}")
+                        await asyncio.sleep(1.5)
+
+            # Should not reach here
+            raise Exception("Failed to get AI response")
     
     def _optimize_for_length(self, text: str, limit: int) -> str:
         """

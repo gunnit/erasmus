@@ -24,7 +24,9 @@
       "Bash(./venv/bin/pip list)",
       "mcp__render__query_render_postgres",
       "Bash(python:*)",
-      "Bash(./venv/bin/python:*)"
+      "Bash(./venv/bin/python:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs"
     ],
     "deny": [],
     "ask": []
