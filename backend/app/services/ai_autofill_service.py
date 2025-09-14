@@ -17,14 +17,26 @@ class AIAutoFillService:
     
     def __init__(self):
         # Configure OpenAI client with connection pooling
-        self.client = AsyncOpenAI(
-            api_key=settings.OPENAI_API_KEY,
-            max_retries=2,  # Built-in retry logic
-            timeout=60.0,    # Default timeout
-        )
-        self.model = settings.OPENAI_MODEL
-        self.prompts = PromptsConfig()
-        self.context_memory = {}
+        api_key = settings.OPENAI_API_KEY
+        if not api_key or api_key == "your-openai-api-key-here":
+            logger.error("OPENAI_API_KEY is not properly configured!")
+            raise ValueError("OPENAI_API_KEY is not properly configured")
+
+        logger.info(f"Initializing OpenAI client with model: {settings.OPENAI_MODEL}")
+
+        try:
+            self.client = AsyncOpenAI(
+                api_key=api_key,
+                max_retries=2,  # Built-in retry logic
+                timeout=60.0,    # Default timeout
+            )
+            self.model = settings.OPENAI_MODEL
+            self.prompts = PromptsConfig()
+            self.context_memory = {}
+            logger.info("OpenAI client initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize OpenAI client: {str(e)}")
+            raise
         
     async def auto_fill_complete_application(
         self,

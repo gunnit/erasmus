@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     # OpenAI API
     OPENAI_API_KEY: str
-    OPENAI_MODEL: str = "gpt-4-turbo-preview"
+    OPENAI_MODEL: str = "gpt-4-turbo"  # Updated model name
 
     # Database - configured for Render PostgreSQL
     DATABASE_URL: Optional[str] = "sqlite:///./erasmus_forms.db"
