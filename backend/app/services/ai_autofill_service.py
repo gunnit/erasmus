@@ -3,7 +3,7 @@ import json
 import logging
 from datetime import datetime
 import asyncio
-from openai import OpenAI
+from openai import AsyncOpenAI
 from app.core.config import settings
 from app.services.prompts_config import PromptsConfig
 
@@ -16,7 +16,7 @@ class AIAutoFillService:
     """
     
     def __init__(self):
-        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.model = settings.OPENAI_MODEL
         self.prompts = PromptsConfig()
         self.context_memory = {}
@@ -245,7 +245,7 @@ class AIAutoFillService:
         Call OpenAI API with proper error handling
         """
         try:
-            response = self.client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {

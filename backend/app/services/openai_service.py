@@ -1,4 +1,4 @@
-from openai import OpenAI
+from openai import AsyncOpenAI
 from typing import Dict, List, Optional
 import json
 from app.core.config import settings
@@ -10,7 +10,7 @@ class OpenAIService:
     """Service for interacting with OpenAI API for form completion"""
     
     def __init__(self):
-        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.model = settings.OPENAI_MODEL
         
     async def generate_answer(
@@ -32,7 +32,7 @@ class OpenAIService:
         )
         
         try:
-            response = self.client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {

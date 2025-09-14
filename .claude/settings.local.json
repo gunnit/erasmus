@@ -22,7 +22,9 @@
       "Bash(source:*)",
       "Bash(./venv/bin/python3:*)",
       "Bash(./venv/bin/pip list)",
-      "mcp__render__query_render_postgres"
+      "mcp__render__query_render_postgres",
+      "Bash(python:*)",
+      "Bash(./venv/bin/python:*)"
     ],
     "deny": [],
     "ask": []
