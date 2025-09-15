@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { 
-  Target, Users, Globe, Calendar, Euro, Building2, 
-  Plus, Trash2, ChevronRight, Info, Sparkles, 
-  CheckCircle, AlertCircle, Briefcase, MapPin
+import {
+  Target, Users, Globe, Calendar, Euro, Building2,
+  Plus, Trash2, ChevronRight, Info, Sparkles,
+  CheckCircle, AlertCircle, Briefcase, MapPin, Save, Cloud, CloudOff
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input, Textarea } from './ui/Input';
@@ -34,8 +34,10 @@ const ORGANIZATION_TYPES = [
   { value: 'SOCIAL', label: 'Social Enterprise' }
 ];
 
-const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgressive = true }) => {
+const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgressive = true, proposalId, onAutoSave }) => {
   const [currentSection, setCurrentSection] = useState(0);
+  const [saveTimeout, setSaveTimeout] = useState(null);
+  const [saveStatus, setSaveStatus] = useState('idle'); // idle, saving, saved, error
   const [formData, setFormData] = useState(initialData || {
     title: '',
     project_idea: '',
@@ -68,16 +70,58 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
       ...prev,
       [field]: value
     }));
+
+    // Trigger auto-save with debounce
+    if (onAutoSave && proposalId) {
+      // Clear existing timeout
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+      }
+
+      // Set new timeout for auto-save
+      setSaveStatus('pending');
+      const timeout = setTimeout(() => {
+        handleAutoSave({ ...formData, [field]: value });
+      }, 1500); // Save after 1.5 seconds of inactivity
+
+      setSaveTimeout(timeout);
+    }
+  };
+
+  const handleAutoSave = async (data) => {
+    if (!proposalId || !onAutoSave) return;
+
+    try {
+      setSaveStatus('saving');
+      await onAutoSave(proposalId, data);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    }
   };
 
   const handleLeadOrgChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
+    const newData = {
+      ...formData,
       lead_organization: {
-        ...prev.lead_organization,
+        ...formData.lead_organization,
         [field]: value
       }
-    }));
+    };
+    setFormData(newData);
+
+    // Trigger auto-save
+    if (onAutoSave && proposalId) {
+      if (saveTimeout) clearTimeout(saveTimeout);
+      setSaveStatus('pending');
+      const timeout = setTimeout(() => {
+        handleAutoSave(newData);
+      }, 1500);
+      setSaveTimeout(timeout);
+    }
   };
 
   const handlePartnerChange = (index, field, value) => {
@@ -86,10 +130,21 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
       ...newPartners[index],
       [field]: value
     };
-    setFormData(prev => ({
-      ...prev,
+    const newData = {
+      ...formData,
       partner_organizations: newPartners
-    }));
+    };
+    setFormData(newData);
+
+    // Trigger auto-save
+    if (onAutoSave && proposalId) {
+      if (saveTimeout) clearTimeout(saveTimeout);
+      setSaveStatus('pending');
+      const timeout = setTimeout(() => {
+        handleAutoSave(newData);
+      }, 1500);
+      setSaveTimeout(timeout);
+    }
   };
 
   const addPartner = () => {
@@ -123,13 +178,14 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
   const handlePriorityToggle = (priorityCode) => {
     setFormData(prev => {
       const isSelected = prev.selected_priorities.includes(priorityCode);
+      let newData;
       if (isSelected) {
-        return {
+        newData = {
           ...prev,
           selected_priorities: prev.selected_priorities.filter(p => p !== priorityCode)
         };
       } else if (prev.selected_priorities.length < 3) {
-        return {
+        newData = {
           ...prev,
           selected_priorities: [...prev.selected_priorities, priorityCode]
         };
@@ -137,6 +193,18 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
         toast.error('Maximum 3 priorities allowed');
         return prev;
       }
+
+      // Trigger auto-save
+      if (onAutoSave && proposalId && newData !== prev) {
+        if (saveTimeout) clearTimeout(saveTimeout);
+        setSaveStatus('pending');
+        const timeout = setTimeout(() => {
+          handleAutoSave(newData);
+        }, 1500);
+        setSaveTimeout(timeout);
+      }
+
+      return newData;
     });
   };
 
@@ -611,6 +679,37 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
 
   return (
     <div className="p-8">
+      {/* Save Status Indicator */}
+      {proposalId && (
+        <div className="fixed top-4 right-4 z-50">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className={cn(
+              "flex items-center space-x-2 px-3 py-2 rounded-lg shadow-md",
+              saveStatus === 'idle' && "bg-gray-100 text-gray-600",
+              saveStatus === 'pending' && "bg-yellow-100 text-yellow-700",
+              saveStatus === 'saving' && "bg-blue-100 text-blue-700",
+              saveStatus === 'saved' && "bg-green-100 text-green-700",
+              saveStatus === 'error' && "bg-red-100 text-red-700"
+            )}
+          >
+            {saveStatus === 'idle' && <Cloud className="w-4 h-4" />}
+            {saveStatus === 'pending' && <Cloud className="w-4 h-4 animate-pulse" />}
+            {saveStatus === 'saving' && <Save className="w-4 h-4 animate-spin" />}
+            {saveStatus === 'saved' && <CheckCircle className="w-4 h-4" />}
+            {saveStatus === 'error' && <CloudOff className="w-4 h-4" />}
+            <span className="text-sm font-medium">
+              {saveStatus === 'idle' && 'Draft saved'}
+              {saveStatus === 'pending' && 'Changes pending...'}
+              {saveStatus === 'saving' && 'Saving...'}
+              {saveStatus === 'saved' && 'Saved'}
+              {saveStatus === 'error' && 'Save failed'}
+            </span>
+          </motion.div>
+        </div>
+      )}
+
       {/* Section Progress */}
       <div className="mb-8">
         <div className="flex items-center justify-between">

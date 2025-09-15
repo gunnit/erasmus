@@ -158,16 +158,25 @@ The system generates answers for 27 questions across 6 sections:
 
 ## Testing & Validation
 
+### Backend Testing
 ```bash
-# Backend validation
 cd backend
+
+# Configuration checks
+python3 check_openai_env.py      # Check OpenAI API key configuration
+python3 check_render_config.py   # Check Render environment setup
+python3 test_openai_config.py    # Test OpenAI API connection
+
+# Functional testing
 python validate_autofill.py     # Verify all 27 questions are mapped
 python test_autofill.py         # Test actual generation
 python test_proposal_save.py    # Test database persistence
 python test_error_handling.py   # Test error scenarios
 python test_basic.py           # Basic API tests
+```
 
-# Frontend testing
+### Frontend Testing
+```bash
 cd frontend
 npm test                        # Run React tests
 ```
@@ -182,6 +191,35 @@ npm test                        # Run React tests
 6. **PDF Export 404**: Ensure ReportLab is installed, check temp directory permissions
 7. **Authentication Errors**: Check JWT secret key, token expiration settings
 
+### Generation Failures & Proposal Save Issues
+
+**Symptoms:**
+- "Generation failed: No sections were generated successfully"
+- Proposals not saved after generation completes
+- Missing POST /api/proposals/ requests in logs
+
+**Root Causes:**
+1. Missing OPENAI_API_KEY in Render environment
+2. Broken callback chain between generation and save
+3. AI service initialization failure
+
+**Diagnosis:**
+```bash
+# Check OpenAI configuration locally
+python3 check_openai_env.py
+
+# Check Render environment (deploy this to Render)
+python3 check_render_config.py
+
+# Test OpenAI API connection (requires openai package)
+python3 test_openai_config.py
+```
+
+**Fix:**
+1. Add OPENAI_API_KEY to Render environment variables
+2. Verify callback chain in `App.js:handleProgressiveGenerationComplete()`
+3. Check logs: `backend/app/api/progressive_generator.py` for AI init errors
+
 ## Production Deployment (Render)
 
 ### Backend
@@ -189,6 +227,14 @@ npm test                        # Run React tests
 - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - Environment variables set in Render dashboard
 - Health checks on `/api/health/ready`
+
+### Required Environment Variables (Render Dashboard)
+```env
+OPENAI_API_KEY=sk-...          # CRITICAL: Must be set for generation to work
+DATABASE_URL=postgresql://...   # Auto-configured by Render
+SECRET_KEY=your-secret-key      # Change from default for security
+DEBUG=False                     # Must be False in production
+```
 
 ### Frontend
 - Build command: `npm run build`
@@ -202,8 +248,48 @@ npm test                        # Run React tests
 - Run migrations: `alembic upgrade head`
 - Enable SSL for database connections
 
+### Deployment Checklist
+- [ ] OPENAI_API_KEY configured in Render environment
+- [ ] DATABASE_URL configured (auto by Render)
+- [ ] SECRET_KEY changed from default
+- [ ] DEBUG set to False
+- [ ] Frontend API URL points to backend service
+- [ ] Database migrations run
+- [ ] Health checks passing
+
+## Progressive Generation Flow
+
+The system uses Server-Sent Events (SSE) for real-time generation progress:
+
+1. **Frontend initiates generation** (`ProjectInputForm.jsx`)
+   - Calls `/api/form/progressive-generation/start`
+   - Opens SSE connection to `/api/form/progressive-generation/stream/{session_id}`
+
+2. **Backend processes sections** (`progressive_generator.py`)
+   - Background task generates sections sequentially
+   - Updates Redis/in-memory cache with progress
+   - Streams updates via SSE
+
+3. **Frontend handles completion** (`ProgressiveGenerationModal.jsx`)
+   - Fetches complete answers: `/api/form/progressive-generation/answers/{session_id}`
+   - Calls `onComplete` callback → `handleProgressiveGenerationComplete` in `App.js`
+
+4. **Proposal saved** (`App.js:handleProgressiveGenerationComplete`)
+   - Validates response structure
+   - Creates proposal via `/api/proposals/`
+   - Navigates to review page
+
+### Failure Points
+- AI service initialization (missing OPENAI_API_KEY)
+- SSE connection timeout (>120s)
+- Callback chain break (onComplete not called)
+- Save API failure (auth/validation errors)
+
 ## Important Notes
 
 - Using OpenAI GPT-4 (not Anthropic Claude)
 - Deployed on Render.com with PostgreSQL database
 - All configuration is in `render.yaml`
+- Progressive generation uses SSE for real-time updates
+- Sessions stored in Redis (production) or memory (development)
+- we are always working on render front and back end when building something deploy it ad then use the render mcp to check the deployment log if it worked . Do not use or test on localhost

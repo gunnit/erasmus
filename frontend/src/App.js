@@ -33,6 +33,8 @@ function ProposalCreator() {
   const [progress, setProgress] = useState(0);
   const [showGenerationModal, setShowGenerationModal] = useState(false);
   const [useProgressiveGeneration, setUseProgressiveGeneration] = useState(true);
+  const [proposalId, setProposalId] = useState(null);
+  const [saveStatus, setSaveStatus] = useState('idle'); // idle, saving, saved, error
 
   const steps = [
     { id: 'input', name: 'Project Details', icon: FileText },
@@ -129,55 +131,27 @@ function ProposalCreator() {
     setShowGenerationModal(false);
     setCurrentStep('review');
 
-    // Save proposal to database
-    try {
-      console.log('Preparing to save proposal with projectData:', projectData);
+    // Update existing proposal with generated answers
+    if (proposalId) {
+      try {
+        setSaveStatus('saving');
+        console.log('Updating proposal with generated answers:', proposalId);
 
-      if (!projectData) {
-        console.error('No project data available for saving');
-        toast.error('Cannot save proposal: project data is missing');
-        return;
+        const updateData = {
+          ...projectData,
+          answers: answers,
+          status: 'generated'
+        };
+
+        const result = await api.updateProposal(proposalId, updateData);
+        console.log('Proposal updated with answers:', result);
+        setSaveStatus('saved');
+        toast.success('Application generated and saved successfully!');
+      } catch (error) {
+        console.error('Error updating proposal with answers:', error);
+        setSaveStatus('error');
+        toast.error('Failed to save generated answers');
       }
-
-      const proposalData = {
-        title: projectData.title || 'Untitled Proposal',
-        project_idea: projectData.project_idea || '',
-        priorities: projectData.selected_priorities || [],
-        target_groups: Array.isArray(projectData.target_groups)
-          ? projectData.target_groups
-          : [projectData.target_groups || 'General public'],
-        partners: projectData.partner_organizations || [],
-        duration_months: parseInt(projectData.duration_months) || 24,
-        budget: String(projectData.budget_eur || 250000),
-        answers: answers
-      };
-
-      console.log('Saving proposal with data:', proposalData);
-      const saveResult = await api.createProposal(proposalData);
-      console.log('Proposal saved successfully:', saveResult);
-
-      // Show success message
-      toast.success('Application generated and saved successfully!');
-    } catch (error) {
-      console.error('Error saving proposal:', error);
-      console.error('Error details:', error.response?.data);
-
-      // Show detailed error message
-      let errorMessage = 'Failed to save proposal';
-      if (error.response?.data?.detail) {
-        if (typeof error.response.data.detail === 'string') {
-          errorMessage = error.response.data.detail;
-        } else if (Array.isArray(error.response.data.detail)) {
-          errorMessage = error.response.data.detail
-            .map(err => err.msg || 'Validation error')
-            .join(', ');
-        }
-      }
-
-      toast.error(`Failed to save proposal: ${errorMessage}`);
-
-      // Still show the review screen even if save failed
-      // User can still see and export the generated content
     }
   };
 
@@ -192,7 +166,7 @@ function ProposalCreator() {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial="hidden"
       animate="visible"
       variants={staggerContainer}
@@ -302,11 +276,13 @@ function ProposalCreator() {
             >
               <Card className="shadow-2xl">
                 <CardContent className="p-0">
-                  <ProjectInputForm 
+                  <ProjectInputForm
                     onSubmit={handleProjectSubmit}
                     initialData={projectData}
                     onToggleProgressive={setUseProgressiveGeneration}
                     useProgressive={useProgressiveGeneration}
+                    proposalId={proposalId}
+                    onAutoSave={handleAutoSave}
                   />
                 </CardContent>
               </Card>
