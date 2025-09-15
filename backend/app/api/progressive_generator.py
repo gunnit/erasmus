@@ -8,7 +8,7 @@ import asyncio
 from datetime import datetime
 import logging
 
-from app.db.database import get_db
+from app.db.database import get_db, SessionLocal
 from app.db.models import GenerationSession, GenerationStatus, User
 from app.services.ai_autofill_service import AIAutoFillService
 from app.api.dependencies import get_current_user, get_current_user_from_token_or_query
@@ -77,8 +77,7 @@ async def start_generation(
         # Start background generation
         background_tasks.add_task(
             generate_all_sections_progressively,
-            session_id=session.id,
-            db=db
+            session_id=session.id
         )
         
         return GenerationSessionResponse(
@@ -364,10 +363,12 @@ async def cancel_generation(
     
     return {"message": "Generation cancelled successfully"}
 
-async def generate_all_sections_progressively(session_id: str, db: Session):
+async def generate_all_sections_progressively(session_id: str):
     """
     Background task to generate all sections progressively
     """
+    # Create a new database session for the background task
+    db = SessionLocal()
     session = None
     try:
         session = db.query(GenerationSession).filter(
@@ -636,3 +637,6 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
                 db.commit()
         except:
             logger.error(f"Failed to update session status after critical error")
+    finally:
+        # Always close the database session
+        db.close()

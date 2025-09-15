@@ -35,6 +35,7 @@ function ProposalCreator() {
   const [useProgressiveGeneration, setUseProgressiveGeneration] = useState(true);
   const [proposalId, setProposalId] = useState(null);
   const [saveStatus, setSaveStatus] = useState('idle'); // idle, saving, saved, error
+  const [isCreatingProposal, setIsCreatingProposal] = useState(false); // Prevent duplicate creation
 
   const steps = [
     { id: 'input', name: 'Project Details', icon: FileText },
@@ -48,6 +49,7 @@ function ProposalCreator() {
 
     const initializeProposal = async () => {
       try {
+        setIsCreatingProposal(true); // Set flag to prevent duplicate creation
         console.log('Initializing new proposal...');
         const newProposal = await api.createProposal({
           title: 'Untitled Proposal',
@@ -68,20 +70,21 @@ function ProposalCreator() {
       } catch (error) {
         console.error('Failed to create initial proposal:', error);
         if (isMounted) {
+          setIsCreatingProposal(false); // Reset flag on error
           toast.error('Failed to create proposal. Please try again.');
         }
       }
     };
 
-    // Only create a new proposal if we don't have one already
-    if (!proposalId) {
+    // Only create a new proposal if we don't have one already and not currently creating
+    if (!proposalId && !isCreatingProposal) {
       initializeProposal();
     }
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, []); // Empty dependency array - only run once on mount
 
   // Auto-save function
   const handleAutoSave = async (proposalId, data) => {
