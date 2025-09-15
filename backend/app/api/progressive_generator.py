@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, flag_modified
 from pydantic import BaseModel
 from typing import Dict, List, Optional, Any
 import json
@@ -201,10 +201,12 @@ async def generate_single_section(
 
         if request.section_name not in session.completed_sections:
             session.completed_sections.append(request.section_name)
+            flag_modified(session, 'completed_sections')
 
         # Remove from failed sections if it was there
         if request.section_name in session.failed_sections:
             session.failed_sections.remove(request.section_name)
+            flag_modified(session, 'failed_sections')
         
         # Update progress
         session.completed_count = len(session.completed_sections)
@@ -232,6 +234,7 @@ async def generate_single_section(
         if session.failed_sections is None:
             session.failed_sections = []
         session.failed_sections.append(request.section_name)
+        flag_modified(session, 'failed_sections')
         session.error_message = str(e)
         session.retry_count += 1
         
@@ -378,10 +381,13 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
         # Initialize JSON fields that might be None from the database
         if session.completed_sections is None:
             session.completed_sections = []
+            flag_modified(session, 'completed_sections')
         if session.failed_sections is None:
             session.failed_sections = []
+            flag_modified(session, 'failed_sections')
         if session.answers is None:
             session.answers = {}
+            flag_modified(session, 'answers')
 
         logger.info(f"Starting progressive generation for session {session_id}")
 
@@ -442,6 +448,7 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
             # Ensure completed_sections is not None
             if session.completed_sections is None:
                 session.completed_sections = []
+                flag_modified(session, 'completed_sections')
 
             if section_key in session.completed_sections:
                 logger.info(f"Skipping already completed section: {section_key}")
@@ -516,13 +523,16 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
                     if not session.answers:
                         session.answers = {}
                     session.answers[section_key] = section_answers
+                    flag_modified(session, 'answers')
 
                     # Ensure completed_sections is not None
                     if session.completed_sections is None:
                         session.completed_sections = []
+                        flag_modified(session, 'completed_sections')
 
                     if section_key not in session.completed_sections:
                         session.completed_sections.append(section_key)
+                        flag_modified(session, 'completed_sections')
 
                     session.completed_count = len(session.completed_sections)
                     # Update progress to show section completion
@@ -550,6 +560,7 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
                             session.failed_sections = []
                         if section_key not in session.failed_sections:
                             session.failed_sections.append(section_key)
+                            flag_modified(session, 'failed_sections')
                         session.error_message = f"Timeout generating section {section_key} after {max_retries} attempts"
                         logger.error(f"Section {section_key} failed permanently after {max_retries} attempts")
                     else:
@@ -565,6 +576,7 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
                             session.failed_sections = []
                         if section_key not in session.failed_sections:
                             session.failed_sections.append(section_key)
+                            flag_modified(session, 'failed_sections')
                         session.error_message = f"Failed to generate section {section_key}: {error_msg}"
                         logger.error(f"Section {section_key} failed permanently: {error_msg}")
                     else:
@@ -579,8 +591,10 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
             # Ensure completed_sections and failed_sections are not None
             if session.completed_sections is None:
                 session.completed_sections = []
+                flag_modified(session, 'completed_sections')
             if session.failed_sections is None:
                 session.failed_sections = []
+                flag_modified(session, 'failed_sections')
 
             completed_count = len(session.completed_sections)
             total_count = session.total_sections
