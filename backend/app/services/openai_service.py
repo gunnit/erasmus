@@ -13,47 +13,81 @@ class OpenAIService:
         self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.model = settings.OPENAI_MODEL
 
-    async def generate_project_description(self, title: str) -> str:
+    async def generate_project_description(self, title: str, existing_description: str = "") -> str:
         """
-        Generate a compelling project description for Erasmus+ grant based on title
+        Generate or enhance a project description for Erasmus+ grant
         """
-        prompt = f"""
-        Create a detailed and compelling project description for an Erasmus+ KA220-ADU (Adult Education) grant application.
+        if existing_description:
+            # Enhance existing description
+            prompt = f"""
+            You have a draft project description for an Erasmus+ KA220-ADU (Adult Education) grant application.
+            Your task is to enhance, expand, and improve it to create a comprehensive grant-worthy description.
 
-        Project Title: {title}
+            Project Title: {title if title else "(Title to be determined)"}
 
-        Generate a comprehensive 600-800 word description that includes:
+            Existing Description/Ideas:
+            {existing_description}
 
-        1. PROJECT CONTEXT & RATIONALE (150 words)
-        - Why this project is needed now
-        - Current challenges in adult education it addresses
-        - European dimension and transnational relevance
+            Please enhance this into a comprehensive 600-800 word description that:
 
-        2. OBJECTIVES & INNOVATION (150 words)
-        - 3-4 specific, measurable objectives
-        - Innovative aspects and unique approach
-        - How it differs from existing solutions
+            1. PRESERVES the user's core ideas and concepts
+            2. EXPANDS on their vision with specific details
+            3. STRUCTURES the content professionally for grant applications
+            4. ADDS missing essential elements for Erasmus+ grants:
+               - European dimension and transnational relevance
+               - Specific, measurable objectives
+               - Clear target groups and their needs
+               - Innovative methodology and activities
+               - Expected results and sustainability
+               - Alignment with EU priorities
 
-        3. TARGET GROUPS & NEEDS (150 words)
-        - Primary beneficiaries (adult learners, educators, organizations)
-        - Specific needs being addressed
-        - Expected number of participants
+            5. IMPROVES the language to be:
+               - Professional and suitable for EU grants
+               - Specific with concrete examples
+               - Ambitious yet realistic
+               - Clear and compelling
 
-        4. METHODOLOGY & ACTIVITIES (150 words)
-        - Key project activities and phases
-        - Pedagogical approaches
-        - Digital tools and resources to be developed
+            Maintain the user's original intent while transforming it into a winning grant proposal description.
+            """
+        else:
+            # Generate from scratch using only title
+            prompt = f"""
+            Create a detailed and compelling project description for an Erasmus+ KA220-ADU (Adult Education) grant application.
 
-        5. EXPECTED RESULTS & IMPACT (150 words)
-        - Tangible outputs (courses, materials, platforms)
-        - Short and long-term impact
-        - Sustainability measures
-        - Contribution to EU policy priorities
+            Project Title: {title}
 
-        Make it specific, ambitious yet realistic, and aligned with Erasmus+ priorities for adult education.
-        Use clear, professional language suitable for EU grant applications.
-        Include concrete examples and avoid generic statements.
-        """
+            Generate a comprehensive 600-800 word description that includes:
+
+            1. PROJECT CONTEXT & RATIONALE (150 words)
+            - Why this project is needed now
+            - Current challenges in adult education it addresses
+            - European dimension and transnational relevance
+
+            2. OBJECTIVES & INNOVATION (150 words)
+            - 3-4 specific, measurable objectives
+            - Innovative aspects and unique approach
+            - How it differs from existing solutions
+
+            3. TARGET GROUPS & NEEDS (150 words)
+            - Primary beneficiaries (adult learners, educators, organizations)
+            - Specific needs being addressed
+            - Expected number of participants
+
+            4. METHODOLOGY & ACTIVITIES (150 words)
+            - Key project activities and phases
+            - Pedagogical approaches
+            - Digital tools and resources to be developed
+
+            5. EXPECTED RESULTS & IMPACT (150 words)
+            - Tangible outputs (courses, materials, platforms)
+            - Short and long-term impact
+            - Sustainability measures
+            - Contribution to EU policy priorities
+
+            Make it specific, ambitious yet realistic, and aligned with Erasmus+ priorities for adult education.
+            Use clear, professional language suitable for EU grant applications.
+            Include concrete examples and avoid generic statements.
+            """
 
         try:
             response = await self.client.chat.completions.create(
@@ -61,7 +95,7 @@ class OpenAIService:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert Erasmus+ grant writer specializing in KA220-ADU adult education projects. Write compelling, specific, and innovative project descriptions that align with EU priorities."
+                        "content": "You are an expert Erasmus+ grant writer specializing in KA220-ADU adult education projects. Write compelling, specific, and innovative project descriptions that align with EU priorities. When enhancing existing descriptions, preserve the user's original ideas while elevating them to grant-winning quality."
                     },
                     {
                         "role": "user",

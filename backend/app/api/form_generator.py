@@ -179,16 +179,17 @@ async def generate_project_description(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Generate a project description based on the title using AI
+    Generate or enhance a project description using AI
     """
     title = request.get("title", "").strip()
+    existing_description = request.get("existing_description", "").strip()
 
-    if not title:
-        raise HTTPException(status_code=400, detail="Project title is required")
+    if not title and not existing_description:
+        raise HTTPException(status_code=400, detail="Project title or existing description is required")
 
     try:
         openai_service = OpenAIService()
-        description = await openai_service.generate_project_description(title)
+        description = await openai_service.generate_project_description(title, existing_description)
 
         return {
             "success": True,

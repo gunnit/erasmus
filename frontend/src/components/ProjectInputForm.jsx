@@ -243,14 +243,17 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
   };
 
   const handleGenerateDescription = async () => {
-    if (!formData.title || formData.title.trim() === '') {
-      toast.error('Please enter a project title first');
+    if (!formData.title && !formData.project_idea) {
+      toast.error('Please enter a project title or some initial description');
       return;
     }
 
     setIsGeneratingDescription(true);
     try {
-      const response = await api.generateProjectDescription(formData.title);
+      const response = await api.generateProjectDescription(
+        formData.title || '',
+        formData.project_idea || ''
+      );
       if (response.success && response.description) {
         handleInputChange('project_idea', response.description);
         toast.success('Project description generated successfully!');
@@ -294,15 +297,44 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
               helper="Choose a title that clearly communicates your project's purpose"
             />
 
-            <Textarea
-              label="Project Idea"
-              value={formData.project_idea}
-              onChange={(e) => handleInputChange('project_idea', e.target.value)}
-              placeholder="Describe your innovative project idea in detail..."
-              rows={8}
-              required
-              helper="Explain the main concept, objectives, and expected impact (500-1000 words recommended)"
-            />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700">
+                  Project Idea <span className="text-red-500">*</span>
+                </label>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleGenerateDescription}
+                  disabled={isGeneratingDescription || (!formData.title && !formData.project_idea)}
+                  className="flex items-center gap-2"
+                >
+                  {isGeneratingDescription ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-4 h-4" />
+                      AI Generate
+                    </>
+                  )}
+                </Button>
+              </div>
+              <textarea
+                value={formData.project_idea}
+                onChange={(e) => handleInputChange('project_idea', e.target.value)}
+                placeholder="Describe your innovative project idea in detail... Or enter a title above and click 'AI Generate' for assistance."
+                rows={8}
+                required
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+              />
+              <p className="text-sm text-gray-500">
+                Explain the main concept, objectives, and expected impact (500-1000 words recommended)
+              </p>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input

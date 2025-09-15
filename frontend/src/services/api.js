@@ -163,9 +163,12 @@ const api = {
   },
 
   // Generate project description using AI
-  generateProjectDescription: async (title) => {
+  generateProjectDescription: async (title, existingDescription = '') => {
     try {
-      const response = await axiosInstance.post('/form/generate-description', { title });
+      const response = await axiosInstance.post('/form/generate-description', {
+        title,
+        existing_description: existingDescription
+      });
       return response.data;
     } catch (error) {
       console.error('API Error:', error);
