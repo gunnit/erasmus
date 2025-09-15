@@ -43,48 +43,8 @@ function ProposalCreator() {
     { id: 'review', name: 'Review & Export', icon: CheckCircle }
   ];
 
-  // Initialize proposal on component mount
-  useEffect(() => {
-    let isMounted = true;
-
-    const initializeProposal = async () => {
-      try {
-        setIsCreatingProposal(true); // Set flag to prevent duplicate creation
-        console.log('Initializing new proposal...');
-        const newProposal = await api.createProposal({
-          title: 'Untitled Proposal',
-          project_idea: '',
-          priorities: [],
-          target_groups: [],
-          partners: [],
-          duration_months: 24,
-          budget: '250000',
-          status: 'draft'
-        });
-
-        if (isMounted) {
-          console.log('New proposal created:', newProposal);
-          setProposalId(newProposal.id);
-          toast.success('New proposal created - auto-save enabled');
-        }
-      } catch (error) {
-        console.error('Failed to create initial proposal:', error);
-        if (isMounted) {
-          setIsCreatingProposal(false); // Reset flag on error
-          toast.error('Failed to create proposal. Please try again.');
-        }
-      }
-    };
-
-    // Only create a new proposal if we don't have one already and not currently creating
-    if (!proposalId && !isCreatingProposal) {
-      initializeProposal();
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, []); // Empty dependency array - only run once on mount
+  // Remove automatic proposal creation - proposals should be created explicitly
+  // when the form is submitted, not on component mount
 
   // Auto-save function
   const handleAutoSave = async (proposalId, data) => {
@@ -120,7 +80,35 @@ function ProposalCreator() {
 
   const handleProjectSubmit = async (data) => {
     setProjectData(data);
-    
+
+    // First, create a proposal if we don't have one
+    if (!proposalId && !isCreatingProposal) {
+      try {
+        setIsCreatingProposal(true);
+        console.log('Creating proposal before generation...');
+        const proposalData = {
+          title: data.title || 'Untitled Proposal',
+          project_idea: data.project_idea || '',
+          priorities: data.selected_priorities || [],
+          target_groups: Array.isArray(data.target_groups) ? data.target_groups : [data.target_groups || ''],
+          partners: data.partner_organizations || [],
+          duration_months: parseInt(data.duration_months) || 24,
+          budget: String(data.budget_eur || 250000),
+          status: 'draft'
+        };
+
+        const newProposal = await api.createProposal(proposalData);
+        console.log('Proposal created:', newProposal);
+        setProposalId(newProposal.id);
+        setIsCreatingProposal(false);
+      } catch (error) {
+        console.error('Failed to create proposal:', error);
+        setIsCreatingProposal(false);
+        toast.error('Failed to create proposal. Please try again.');
+        return;
+      }
+    }
+
     if (useProgressiveGeneration) {
       // Use progressive generation with modal
       setShowGenerationModal(true);
@@ -128,7 +116,7 @@ function ProposalCreator() {
       // Use original generation method
       setCurrentStep('generating');
       setIsLoading(true);
-      
+
       // Simulate progress
       const progressInterval = setInterval(() => {
         setProgress(prev => Math.min(prev + 10, 90));
@@ -143,7 +131,8 @@ function ProposalCreator() {
         console.log('Generated answers:', response);
 
         // Update existing proposal with generated answers
-        if (proposalId) {
+        const currentProposalId = proposalId || newProposal?.id;
+        if (currentProposalId) {
           const updateData = {
             title: data.title,
             project_idea: data.project_idea,
@@ -155,8 +144,8 @@ function ProposalCreator() {
             answers: response.answers,
             status: 'generated'
           };
-          console.log('Updating proposal with generated answers:', proposalId, updateData);
-          const updateResult = await api.updateProposal(proposalId, updateData);
+          console.log('Updating proposal with generated answers:', currentProposalId, updateData);
+          const updateResult = await api.updateProposal(currentProposalId, updateData);
           console.log('Proposal updated successfully:', updateResult);
         } else {
           console.warn('No proposal ID available for updating answers');
@@ -212,11 +201,41 @@ function ProposalCreator() {
     setShowGenerationModal(false);
     setCurrentStep('review');
 
-    // Update existing proposal with generated answers
-    if (proposalId) {
+    // Create proposal if we don't have one (shouldn't happen, but safety check)
+    let currentProposalId = proposalId;
+    if (!currentProposalId && !isCreatingProposal) {
+      try {
+        setIsCreatingProposal(true);
+        console.log('Creating proposal after generation...');
+        const proposalData = {
+          title: projectData?.title || 'Untitled Proposal',
+          project_idea: projectData?.project_idea || '',
+          priorities: projectData?.selected_priorities || [],
+          target_groups: Array.isArray(projectData?.target_groups) ? projectData.target_groups : [projectData?.target_groups || ''],
+          partners: projectData?.partner_organizations || [],
+          duration_months: parseInt(projectData?.duration_months) || 24,
+          budget: String(projectData?.budget_eur || 250000),
+          answers: answers,
+          status: 'generated'
+        };
+
+        const newProposal = await api.createProposal(proposalData);
+        console.log('Proposal created after generation:', newProposal);
+        currentProposalId = newProposal.id;
+        setProposalId(newProposal.id);
+        setIsCreatingProposal(false);
+        toast.success('Application generated and saved successfully!');
+      } catch (error) {
+        console.error('Failed to create proposal:', error);
+        setIsCreatingProposal(false);
+        toast.error('Failed to save proposal. Please try again.');
+        return;
+      }
+    } else if (currentProposalId) {
+      // Update existing proposal with generated answers
       try {
         setSaveStatus('saving');
-        console.log('Updating proposal with generated answers:', proposalId);
+        console.log('Updating proposal with generated answers:', currentProposalId);
 
         const updateData = {
           ...projectData,
@@ -224,7 +243,7 @@ function ProposalCreator() {
           status: 'generated'
         };
 
-        const result = await api.updateProposal(proposalId, updateData);
+        const result = await api.updateProposal(currentProposalId, updateData);
         console.log('Proposal updated with answers:', result);
         setSaveStatus('saved');
         toast.success('Application generated and saved successfully!');
