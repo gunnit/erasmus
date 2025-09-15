@@ -44,11 +44,11 @@ const Dashboard = () => {
       console.log('Stats response:', statsResponse);
 
       // Handle proposals data
-      const proposalsData = proposalsResponse?.proposals || proposalsResponse || [];
+      const proposalsData = proposalsResponse?.proposals || [];
       setProposals(Array.isArray(proposalsData) ? proposalsData : []);
 
       // Handle stats data
-      setStats(statsResponse?.stats || statsResponse || {
+      setStats(statsResponse?.stats || {
         totalProposals: proposalsData.length,
         approvedProposals: 0,
         pendingProposals: 0,
@@ -141,7 +141,8 @@ const Dashboard = () => {
   const filteredProposals = Array.isArray(proposals) 
     ? proposals.filter(proposal => {
         const matchesFilter = filter === 'all' || proposal.status === filter;
-        const matchesSearch = proposal.title?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+        const matchesSearch = proposal.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           proposal.project_idea?.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesFilter && matchesSearch;
       })
     : [];

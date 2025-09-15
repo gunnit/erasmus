@@ -4,8 +4,10 @@ import toast from 'react-hot-toast';
 import {
   Target, Users, Globe, Calendar, Euro, Building2,
   Plus, Trash2, ChevronRight, Info, Sparkles,
-  CheckCircle, AlertCircle, Briefcase, MapPin, Save, Cloud, CloudOff
+  CheckCircle, AlertCircle, Briefcase, MapPin, Save, Cloud, CloudOff,
+  Loader2, Wand2
 } from 'lucide-react';
+import api from '../services/api';
 import { Button } from './ui/Button';
 import { Input, Textarea } from './ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/Card';
@@ -38,6 +40,7 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
   const [currentSection, setCurrentSection] = useState(0);
   const [saveTimeout, setSaveTimeout] = useState(null);
   const [saveStatus, setSaveStatus] = useState('idle'); // idle, saving, saved, error
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [formData, setFormData] = useState(initialData || {
     title: '',
     project_idea: '',
@@ -236,6 +239,29 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
   const handlePreviousSection = () => {
     if (currentSection > 0) {
       setCurrentSection(currentSection - 1);
+    }
+  };
+
+  const handleGenerateDescription = async () => {
+    if (!formData.title || formData.title.trim() === '') {
+      toast.error('Please enter a project title first');
+      return;
+    }
+
+    setIsGeneratingDescription(true);
+    try {
+      const response = await api.generateProjectDescription(formData.title);
+      if (response.success && response.description) {
+        handleInputChange('project_idea', response.description);
+        toast.success('Project description generated successfully!');
+      } else {
+        toast.error('Failed to generate description');
+      }
+    } catch (error) {
+      console.error('Error generating description:', error);
+      toast.error('Failed to generate description. Please try again.');
+    } finally {
+      setIsGeneratingDescription(false);
     }
   };
 

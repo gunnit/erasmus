@@ -162,6 +162,17 @@ const api = {
     }
   },
 
+  // Generate project description using AI
+  generateProjectDescription: async (title) => {
+    try {
+      const response = await axiosInstance.post('/form/generate-description', { title });
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+
   // Get form questions structure
   getFormQuestions: async () => {
     try {

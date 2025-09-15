@@ -8,10 +8,75 @@ logger = logging.getLogger(__name__)
 
 class OpenAIService:
     """Service for interacting with OpenAI API for form completion"""
-    
+
     def __init__(self):
         self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.model = settings.OPENAI_MODEL
+
+    async def generate_project_description(self, title: str) -> str:
+        """
+        Generate a compelling project description for Erasmus+ grant based on title
+        """
+        prompt = f"""
+        Create a detailed and compelling project description for an Erasmus+ KA220-ADU (Adult Education) grant application.
+
+        Project Title: {title}
+
+        Generate a comprehensive 600-800 word description that includes:
+
+        1. PROJECT CONTEXT & RATIONALE (150 words)
+        - Why this project is needed now
+        - Current challenges in adult education it addresses
+        - European dimension and transnational relevance
+
+        2. OBJECTIVES & INNOVATION (150 words)
+        - 3-4 specific, measurable objectives
+        - Innovative aspects and unique approach
+        - How it differs from existing solutions
+
+        3. TARGET GROUPS & NEEDS (150 words)
+        - Primary beneficiaries (adult learners, educators, organizations)
+        - Specific needs being addressed
+        - Expected number of participants
+
+        4. METHODOLOGY & ACTIVITIES (150 words)
+        - Key project activities and phases
+        - Pedagogical approaches
+        - Digital tools and resources to be developed
+
+        5. EXPECTED RESULTS & IMPACT (150 words)
+        - Tangible outputs (courses, materials, platforms)
+        - Short and long-term impact
+        - Sustainability measures
+        - Contribution to EU policy priorities
+
+        Make it specific, ambitious yet realistic, and aligned with Erasmus+ priorities for adult education.
+        Use clear, professional language suitable for EU grant applications.
+        Include concrete examples and avoid generic statements.
+        """
+
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert Erasmus+ grant writer specializing in KA220-ADU adult education projects. Write compelling, specific, and innovative project descriptions that align with EU priorities."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                max_tokens=1200,
+                temperature=0.7
+            )
+
+            return response.choices[0].message.content.strip()
+
+        except Exception as e:
+            logger.error(f"Error generating project description: {str(e)}")
+            raise
         
     async def generate_answer(
         self,

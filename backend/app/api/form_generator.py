@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Response
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Response, Depends
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import Dict, List, Optional
@@ -17,6 +17,8 @@ import io
 from app.services.openai_service import OpenAIService
 from app.services.ai_autofill_service import AIAutoFillService
 from app.core.config import settings
+from app.api.dependencies import get_current_user
+from app.db.models import User
 
 router = APIRouter()
 
@@ -170,6 +172,30 @@ async def get_form_questions():
     Get all form questions with their requirements
     """
     return FORM_QUESTIONS
+
+@router.post("/generate-description")
+async def generate_project_description(
+    request: Dict,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Generate a project description based on the title using AI
+    """
+    title = request.get("title", "").strip()
+
+    if not title:
+        raise HTTPException(status_code=400, detail="Project title is required")
+
+    try:
+        openai_service = OpenAIService()
+        description = await openai_service.generate_project_description(title)
+
+        return {
+            "success": True,
+            "description": description
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate description: {str(e)}")
 
 @router.get("/priorities")
 async def get_available_priorities():

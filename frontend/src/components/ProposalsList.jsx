@@ -30,7 +30,7 @@ const ProposalsList = () => {
     setLoading(true);
     try {
       const data = await api.getProposals(0, 100);
-      setProposals(Array.isArray(data) ? data : []);
+      setProposals(Array.isArray(data.proposals) ? data.proposals : []);
     } catch (error) {
       toast.error('Failed to load proposals');
       setProposals([]);
