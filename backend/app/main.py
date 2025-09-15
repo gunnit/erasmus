@@ -7,6 +7,7 @@ from app.api import form_generator, health, auth, proposals, dashboard, analytic
 from app.api import settings as settings_api
 from app.api import user_profile as profile
 from app.api import progressive_generator
+from app.api import simple_generator
 from app.core.config import settings
 from app.db.database import engine, Base
 
@@ -42,6 +43,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api/health", tags=["health"])
 app.include_router(form_generator.router, prefix="/api/form", tags=["form"])
 app.include_router(progressive_generator.router, prefix="/api/form/progressive", tags=["progressive"])
+app.include_router(simple_generator.router, prefix="/api/form/simple", tags=["simple"])
 app.include_router(auth.router, prefix="/api")
 app.include_router(proposals.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")

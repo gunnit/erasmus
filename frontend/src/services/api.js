@@ -36,6 +36,34 @@ axiosInstance.interceptors.response.use(
 );
 
 const api = {
+  // Simple section-by-section generation
+  generateSection: async (sectionName, projectData, previousAnswers = {}) => {
+    try {
+      const response = await axiosInstance.post('/form/simple/generate-section', {
+        section_name: sectionName,
+        project_data: projectData,
+        previous_answers: previousAnswers,
+        language: 'en'
+      }, {
+        timeout: 30000 // 30 seconds per section
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+
+  getSectionsList: async () => {
+    try {
+      const response = await axiosInstance.get('/form/simple/sections');
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+
   // Progressive generation endpoints
   startProgressiveGeneration: async (projectData) => {
     try {

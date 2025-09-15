@@ -12,6 +12,7 @@ import ProposalEdit from './components/ProposalEdit';
 import ProjectInputForm from './components/ProjectInputForm.jsx';
 import AnswerReview from './components/AnswerReview.jsx';
 import ProgressiveGenerationModal from './components/ProgressiveGenerationModal';
+import SimpleGenerationModal from './components/SimpleGenerationModal';
 import { Layout } from './components/layout/Layout';
 import ProposalsList from './components/ProposalsList.jsx';
 import Analytics from './components/Analytics.jsx';
@@ -33,6 +34,7 @@ function ProposalCreator() {
   const [progress, setProgress] = useState(0);
   const [showGenerationModal, setShowGenerationModal] = useState(false);
   const [useProgressiveGeneration, setUseProgressiveGeneration] = useState(true);
+  const [useSimpleGeneration, setUseSimpleGeneration] = useState(true); // Use simple generation by default
   const [proposalId, setProposalId] = useState(null);
   const [saveStatus, setSaveStatus] = useState('idle'); // idle, saving, saved, error
   const [isCreatingProposal, setIsCreatingProposal] = useState(false); // Prevent duplicate creation
@@ -172,6 +174,30 @@ function ProposalCreator() {
         toast.error(errorMessage);
       } finally {
         setIsLoading(false);
+      }
+    }
+  };
+
+  const handleSectionComplete = async (sectionKey, sectionAnswers, allAnswers) => {
+    console.log(`Section ${sectionKey} completed, auto-saving...`);
+
+    // If we have a proposalId, update it with the new answers
+    if (proposalId) {
+      try {
+        setSaveStatus('saving');
+        const updateData = {
+          ...projectData,
+          answers: allAnswers,
+          status: 'generating'
+        };
+
+        await api.updateProposal(proposalId, updateData);
+        setSaveStatus('saved');
+        console.log(`Auto-saved section ${sectionKey} to proposal ${proposalId}`);
+      } catch (error) {
+        console.error(`Failed to auto-save section ${sectionKey}:`, error);
+        setSaveStatus('error');
+        // Don't throw - let generation continue even if auto-save fails
       }
     }
   };
@@ -463,14 +489,24 @@ function ProposalCreator() {
           )}
         </AnimatePresence>
         
-        {/* Progressive Generation Modal */}
-        <ProgressiveGenerationModal
-          projectData={projectData}
-          isOpen={showGenerationModal}
-          onClose={() => setShowGenerationModal(false)}
-          onComplete={handleProgressiveGenerationComplete}
-          useProgressive={useProgressiveGeneration}
-        />
+        {/* Generation Modal - Use Simple Generation by default */}
+        {useSimpleGeneration ? (
+          <SimpleGenerationModal
+            projectData={projectData}
+            isOpen={showGenerationModal}
+            onClose={() => setShowGenerationModal(false)}
+            onComplete={handleProgressiveGenerationComplete}
+            onSectionComplete={handleSectionComplete}
+          />
+        ) : (
+          <ProgressiveGenerationModal
+            projectData={projectData}
+            isOpen={showGenerationModal}
+            onClose={() => setShowGenerationModal(false)}
+            onComplete={handleProgressiveGenerationComplete}
+            useProgressive={useProgressiveGeneration}
+          />
+        )}
       </main>
     </motion.div>
   );
