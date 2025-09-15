@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -42,6 +42,79 @@ function ProposalCreator() {
     { id: 'review', name: 'Review & Export', icon: CheckCircle }
   ];
 
+  // Initialize proposal on component mount
+  useEffect(() => {
+    let isMounted = true;
+
+    const initializeProposal = async () => {
+      try {
+        console.log('Initializing new proposal...');
+        const newProposal = await api.createProposal({
+          title: 'Untitled Proposal',
+          project_idea: '',
+          priorities: [],
+          target_groups: [],
+          partners: [],
+          duration_months: 24,
+          budget: '250000',
+          status: 'draft'
+        });
+
+        if (isMounted) {
+          console.log('New proposal created:', newProposal);
+          setProposalId(newProposal.id);
+          toast.success('New proposal created - auto-save enabled');
+        }
+      } catch (error) {
+        console.error('Failed to create initial proposal:', error);
+        if (isMounted) {
+          toast.error('Failed to create proposal. Please try again.');
+        }
+      }
+    };
+
+    // Only create a new proposal if we don't have one already
+    if (!proposalId) {
+      initializeProposal();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Auto-save function
+  const handleAutoSave = async (proposalId, data) => {
+    if (!proposalId) {
+      console.warn('Cannot auto-save: no proposal ID');
+      return;
+    }
+
+    try {
+      setSaveStatus('saving');
+      console.log('Auto-saving proposal:', proposalId, data);
+
+      const updateData = {
+        title: data.title || 'Untitled Proposal',
+        project_idea: data.project_idea || '',
+        priorities: data.selected_priorities || [],
+        target_groups: Array.isArray(data.target_groups) ? data.target_groups : [data.target_groups || ''],
+        partners: data.partner_organizations || [],
+        duration_months: parseInt(data.duration_months) || 24,
+        budget: String(data.budget_eur || 250000),
+        status: 'draft'
+      };
+
+      await api.updateProposal(proposalId, updateData);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch (error) {
+      setSaveStatus('error');
+      console.error('Auto-save failed:', error);
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    }
+  };
+
   const handleProjectSubmit = async (data) => {
     setProjectData(data);
     
@@ -65,22 +138,27 @@ function ProposalCreator() {
         setProgress(100);
         setGeneratedAnswers(response);
         console.log('Generated answers:', response);
-        
-        // Save proposal to database
-        const proposalData = {
-          title: data.title,
-          project_idea: data.project_idea,
-          priorities: data.selected_priorities,
-          target_groups: Array.isArray(data.target_groups) ? data.target_groups : [data.target_groups],
-          partners: data.partner_organizations,
-          duration_months: parseInt(data.duration_months),
-          budget: String(data.budget_eur),
-          answers: response.answers
-        };
-        console.log('Creating proposal with data:', proposalData);
-        const createResult = await api.createProposal(proposalData);
-        console.log('Proposal created successfully:', createResult);
-        
+
+        // Update existing proposal with generated answers
+        if (proposalId) {
+          const updateData = {
+            title: data.title,
+            project_idea: data.project_idea,
+            priorities: data.selected_priorities,
+            target_groups: Array.isArray(data.target_groups) ? data.target_groups : [data.target_groups],
+            partners: data.partner_organizations,
+            duration_months: parseInt(data.duration_months),
+            budget: String(data.budget_eur),
+            answers: response.answers,
+            status: 'generated'
+          };
+          console.log('Updating proposal with generated answers:', proposalId, updateData);
+          const updateResult = await api.updateProposal(proposalId, updateData);
+          console.log('Proposal updated successfully:', updateResult);
+        } else {
+          console.warn('No proposal ID available for updating answers');
+        }
+
         setCurrentStep('review');
       } catch (error) {
         console.error('Error generating answers:', error);
