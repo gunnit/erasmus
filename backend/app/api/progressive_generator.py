@@ -439,7 +439,8 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
         # Process each section
         for section_index, section_key in enumerate(session.sections_order):
             # Check if cancelled
-            db.refresh(session)
+            # NOTE: Removed db.refresh(session) here as it was causing data loss
+            # The session object in memory has the correct state
             if session.status == GenerationStatus.CANCELLED:
                 logger.info(f"Generation cancelled for session {session_id}")
                 break
@@ -584,9 +585,10 @@ async def generate_all_sections_progressively(session_id: str, db: Session):
                         await asyncio.sleep(2)  # Wait before retry
 
                 db.commit()
-        
+
         # Final status update
-        db.refresh(session)
+        # NOTE: Removed db.refresh(session) here as it was loading stale data
+        # The in-memory session object has all the completed sections
         if session.status != GenerationStatus.CANCELLED:
             # Ensure completed_sections and failed_sections are not None
             if session.completed_sections is None:
