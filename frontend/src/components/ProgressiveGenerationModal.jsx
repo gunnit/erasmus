@@ -249,7 +249,7 @@ const ProgressiveGenerationModal = ({
 
     try {
       setFailedSections(prev => prev.filter(s => s !== sectionKey));
-      const response = await api.generateSection(sessionId, sectionKey, true);
+      const response = await api.generateProgressiveSection(sessionId, sectionKey, true);
       
       if (response.status === 'success') {
         setCompletedSections(prev => [...prev, sectionKey]);

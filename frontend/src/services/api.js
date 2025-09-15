@@ -89,7 +89,7 @@ const api = {
     }
   },
 
-  generateSection: async (sessionId, sectionName, retry = false) => {
+  generateProgressiveSection: async (sessionId, sectionName, retry = false) => {
     try {
       const response = await axiosInstance.post('/form/progressive/generate-section', {
         session_id: sessionId,
