@@ -38,6 +38,7 @@ function ProposalCreator() {
   const [proposalId, setProposalId] = useState(null);
   const [saveStatus, setSaveStatus] = useState('idle'); // idle, saving, saved, error
   const [isCreatingProposal, setIsCreatingProposal] = useState(false); // Prevent duplicate creation
+  const [currentProposalIdForGeneration, setCurrentProposalIdForGeneration] = useState(null);
 
   const steps = [
     { id: 'input', name: 'Project Details', icon: FileText },
@@ -84,7 +85,8 @@ function ProposalCreator() {
     setProjectData(data);
 
     // First, create a proposal if we don't have one
-    if (!proposalId && !isCreatingProposal) {
+    let currentProposalId = proposalId;
+    if (!currentProposalId && !isCreatingProposal) {
       try {
         setIsCreatingProposal(true);
         console.log('Creating proposal before generation...');
@@ -101,6 +103,7 @@ function ProposalCreator() {
 
         const newProposal = await api.createProposal(proposalData);
         console.log('Proposal created:', newProposal);
+        currentProposalId = newProposal.id;
         setProposalId(newProposal.id);
         setIsCreatingProposal(false);
       } catch (error) {
@@ -111,8 +114,11 @@ function ProposalCreator() {
       }
     }
 
-    if (useProgressiveGeneration) {
-      // Use progressive generation with modal
+    // Store the proposal ID for the generation modal
+    setCurrentProposalIdForGeneration(currentProposalId);
+
+    if (useProgressiveGeneration || useSimpleGeneration) {
+      // Use progressive/simple generation with modal
       setShowGenerationModal(true);
     } else {
       // Use original generation method
@@ -181,8 +187,10 @@ function ProposalCreator() {
   const handleSectionComplete = async (sectionKey, sectionAnswers, allAnswers) => {
     console.log(`Section ${sectionKey} completed, auto-saving...`);
 
-    // If we have a proposalId, update it with the new answers
-    if (proposalId) {
+    // Use the proposal ID that was set during generation start
+    const idToUse = currentProposalIdForGeneration || proposalId;
+
+    if (idToUse) {
       try {
         setSaveStatus('saving');
         const updateData = {
@@ -191,14 +199,16 @@ function ProposalCreator() {
           status: 'generating'
         };
 
-        await api.updateProposal(proposalId, updateData);
+        await api.updateProposal(idToUse, updateData);
         setSaveStatus('saved');
-        console.log(`Auto-saved section ${sectionKey} to proposal ${proposalId}`);
+        console.log(`Auto-saved section ${sectionKey} to proposal ${idToUse}`);
       } catch (error) {
         console.error(`Failed to auto-save section ${sectionKey}:`, error);
         setSaveStatus('error');
         // Don't throw - let generation continue even if auto-save fails
       }
+    } else {
+      console.warn(`No proposal ID available for auto-save of section ${sectionKey}`);
     }
   };
 
@@ -227,8 +237,8 @@ function ProposalCreator() {
     setShowGenerationModal(false);
     setCurrentStep('review');
 
-    // Create proposal if we don't have one (shouldn't happen, but safety check)
-    let currentProposalId = proposalId;
+    // Use the proposal ID that was set during generation start
+    let currentProposalId = currentProposalIdForGeneration || proposalId;
     if (!currentProposalId && !isCreatingProposal) {
       try {
         setIsCreatingProposal(true);
