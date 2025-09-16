@@ -507,6 +507,7 @@ const ProposalDetailNew = () => {
         />
       </div>
     ) : null}
+      </div>
     </div>
   );
 };
