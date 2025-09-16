@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthProvider } from './context/AuthContext';
@@ -9,6 +9,7 @@ import Register from './components/Register';
 import Dashboard from './components/Dashboard.jsx';
 import ProposalDetail from './components/ProposalDetail';
 import ProposalDetailNew from './components/ProposalDetailNew';
+import ProposalAnswers from './components/ProposalAnswers';
 import ProposalEdit from './components/ProposalEdit';
 import ProjectInputForm from './components/ProjectInputForm.jsx';
 import AnswerReview from './components/AnswerReview.jsx';
@@ -28,6 +29,7 @@ import './App.css';
 import { fadeInVariants, staggerContainer } from './lib/utils';
 
 function ProposalCreator() {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState('input');
   const [projectData, setProjectData] = useState(null);
   const [generatedAnswers, setGeneratedAnswers] = useState(null);
@@ -116,7 +118,7 @@ function ProposalCreator() {
 
         toast.success('Proposal created successfully!');
         // Navigate directly to the proposal detail page
-        window.location.href = `/proposals/${currentProposalId}`;
+        navigate(`/proposals/${currentProposalId}`);
         return;
       } catch (error) {
         console.error('Failed to create proposal:', error);
@@ -128,7 +130,7 @@ function ProposalCreator() {
 
     // If we already have a proposal, just redirect to it
     if (currentProposalId) {
-      window.location.href = `/proposals/${currentProposalId}`;
+      navigate(`/proposals/${currentProposalId}`);
     }
   };
 
@@ -524,6 +526,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ProposalDetailNew />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/proposals/:id/answers"
+              element={
+                <ProtectedRoute>
+                  <ProposalAnswers />
                 </ProtectedRoute>
               }
             />
