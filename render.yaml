@@ -31,13 +31,13 @@ services:
   - type: web
     name: erasmus-frontend
     env: static
-    buildCommand: cd frontend && npm install && npm run build
+    buildCommand: cd frontend && npm install && REACT_APP_API_URL=https://erasmus-backend.onrender.com/api npm run build
     staticPublishPath: ./frontend/build
     envVars:
       - key: NODE_VERSION
         value: 18
       - key: REACT_APP_API_URL
-        value: https://erasmus-backend.onrender.com
+        value: https://erasmus-backend.onrender.com/api
     autoDeploy: true
     
 databases:
