@@ -255,7 +255,7 @@ const api = {
   generateSingleAnswer: async (data) => {
     try {
       const response = await axiosInstance.post('/form/single/generate-single-answer', data, {
-        timeout: 15000 // 15 seconds for single question
+        timeout: 60000 // 60 seconds for single question (AI generation can take time)
       });
       return response.data;
     } catch (error) {
