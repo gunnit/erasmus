@@ -408,6 +408,19 @@ const api = {
     }
   },
 
+  getProposalPDF: async (proposalId) => {
+    try {
+      const response = await axiosInstance.get(`/proposals/${proposalId}/pdf`, {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      toast.error('Failed to generate PDF');
+      throw error;
+    }
+  },
+
   get: axiosInstance.get,
   post: axiosInstance.post,
   put: axiosInstance.put,

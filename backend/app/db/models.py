@@ -41,7 +41,10 @@ class Proposal(Base):
     
     # Store all 27 answers as JSON
     answers = Column(JSON)
-    
+
+    # Workplan data
+    workplan = Column(JSON)
+
     # Metadata
     status = Column(String, default="draft")  # draft, submitted, approved, rejected
     created_at = Column(DateTime, default=datetime.utcnow)

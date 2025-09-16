@@ -1,11 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
+import os
+import tempfile
 from app.db.database import get_db
 from app.db.models import User, Proposal
 from app.schemas.proposal import ProposalCreate, ProposalUpdate, Proposal as ProposalSchema, ProposalList
 from app.api.dependencies import get_current_user
+from app.services.pdf_generator import ProposalPDFGenerator
 
 router = APIRouter(prefix="/proposals", tags=["proposals"])
 
@@ -144,3 +148,39 @@ async def submit_proposal(
     db.refresh(proposal)
     
     return {"message": "Proposal submitted successfully", "proposal_id": proposal.id}
+
+@router.get("/{proposal_id}/pdf")
+async def export_proposal_pdf(
+    proposal_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Export proposal with workplan as PDF
+    """
+    proposal = db.query(Proposal).filter(
+        Proposal.id == proposal_id,
+        Proposal.user_id == current_user.id
+    ).first()
+
+    if not proposal:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Proposal not found"
+        )
+
+    # Generate PDF
+    pdf_generator = ProposalPDFGenerator()
+    pdf_path = await pdf_generator.generate_proposal_pdf(proposal)
+
+    if not os.path.exists(pdf_path):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate PDF"
+        )
+
+    return FileResponse(
+        pdf_path,
+        media_type='application/pdf',
+        filename=f"{proposal.title.replace(' ', '_').lower()}_proposal.pdf"
+    )

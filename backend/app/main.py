@@ -9,6 +9,7 @@ from app.api import user_profile as profile
 from app.api import progressive_generator
 from app.api import simple_generator
 from app.api import single_question_generator
+from app.api import workplan_generator
 from app.core.config import settings
 from app.db.database import engine, Base
 
@@ -52,6 +53,7 @@ app.include_router(dashboard.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(settings_api.router, prefix="/api/settings", tags=["settings"])
 app.include_router(profile.router, prefix="/api/profile", tags=["profile"])
+app.include_router(workplan_generator.router)
 
 @app.get("/")
 async def root():

@@ -19,14 +19,17 @@ import {
   CheckCircle,
   AlertCircle,
   ArrowRight,
-  Wand2
+  Wand2,
+  Briefcase
 } from 'lucide-react';
+import WorkplanViewer from './WorkplanViewer';
 
 const ProposalDetailNew = () => {
   const [proposal, setProposal] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -273,7 +276,43 @@ const ProposalDetailNew = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Tabs */}
+        <div className="bg-white rounded-lg shadow mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8 px-6">
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`py-3 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'overview'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Overview
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveTab('workplan')}
+                className={`py-3 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'workplan'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <Briefcase className="h-4 w-4" />
+                  Workplan
+                </span>
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'overview' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Project Information */}
           <div className="bg-white rounded-lg shadow">
             <div className="p-6">
@@ -344,7 +383,7 @@ const ProposalDetailNew = () => {
                       key={index}
                       className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm"
                     >
-                      {group}
+                      {typeof group === 'object' ? JSON.stringify(group) : group}
                     </span>
                   ))}
                 </div>
@@ -366,7 +405,11 @@ const ProposalDetailNew = () => {
                   {proposal.partners.map((partner, index) => (
                     <li key={index} className="flex items-start">
                       <span className="text-gray-400 mr-2">•</span>
-                      <span className="text-gray-900 text-sm">{partner}</span>
+                      <span className="text-gray-900 text-sm">
+                        {typeof partner === 'object' ?
+                          `${partner.name || 'Partner ' + (index + 1)}${partner.country ? ' (' + partner.country + ')' : ''}${partner.type ? ' - ' + partner.type : ''}`
+                          : partner}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -455,7 +498,20 @@ const ProposalDetailNew = () => {
           </div>
         </div>
       </div>
+    ) : activeTab === 'workplan' ? (
+      <div className="bg-white rounded-lg shadow p-6">
+        <WorkplanViewer
+          proposalId={id}
+          proposalData={proposal}
+          onWorkplanGenerated={(workplan) => {
+            setProposal(prev => ({ ...prev, workplan }));
+            toast.success('Workplan generated successfully!');
+          }}
+        />
+      </div>
+    ) : null}
     </div>
+  </div>
   );
 };
 
