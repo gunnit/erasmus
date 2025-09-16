@@ -8,6 +8,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard.jsx';
 import ProposalDetail from './components/ProposalDetail';
+import ProposalDetailNew from './components/ProposalDetailNew';
 import ProposalEdit from './components/ProposalEdit';
 import ProjectInputForm from './components/ProjectInputForm.jsx';
 import AnswerReview from './components/AnswerReview.jsx';
@@ -89,7 +90,7 @@ function ProposalCreator() {
     if (!currentProposalId && !isCreatingProposal) {
       try {
         setIsCreatingProposal(true);
-        console.log('Creating proposal before generation...');
+        console.log('Creating proposal with data:', data);
         const proposalData = {
           title: data.title || 'Untitled Proposal',
           project_idea: data.project_idea || '',
@@ -98,7 +99,13 @@ function ProposalCreator() {
           partners: data.partner_organizations || [],
           duration_months: parseInt(data.duration_months) || 24,
           budget: String(data.budget_eur || 250000),
-          status: 'draft'
+          status: 'draft',
+          answers: {}, // Initialize with empty answers
+          // Store full project data for later question generation
+          metadata: {
+            lead_organization: data.lead_organization,
+            project_full_data: data
+          }
         };
 
         const newProposal = await api.createProposal(proposalData);
@@ -106,6 +113,11 @@ function ProposalCreator() {
         currentProposalId = newProposal.id;
         setProposalId(newProposal.id);
         setIsCreatingProposal(false);
+
+        toast.success('Proposal created successfully!');
+        // Navigate directly to the proposal detail page
+        window.location.href = `/proposals/${currentProposalId}`;
+        return;
       } catch (error) {
         console.error('Failed to create proposal:', error);
         setIsCreatingProposal(false);
@@ -114,73 +126,9 @@ function ProposalCreator() {
       }
     }
 
-    // Store the proposal ID for the generation modal
-    setCurrentProposalIdForGeneration(currentProposalId);
-
-    if (useProgressiveGeneration || useSimpleGeneration) {
-      // Use progressive/simple generation with modal
-      setShowGenerationModal(true);
-    } else {
-      // Use original generation method
-      setCurrentStep('generating');
-      setIsLoading(true);
-
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 10, 90));
-      }, 500);
-
-      try {
-        console.log('Submitting project data:', data);
-        const response = await api.generateAnswers(data);
-        clearInterval(progressInterval);
-        setProgress(100);
-        setGeneratedAnswers(response);
-        console.log('Generated answers:', response);
-
-        // Update existing proposal with generated answers
-        const currentProposalId = proposalId || newProposal?.id;
-        if (currentProposalId) {
-          const updateData = {
-            title: data.title,
-            project_idea: data.project_idea,
-            priorities: data.selected_priorities,
-            target_groups: Array.isArray(data.target_groups) ? data.target_groups : [data.target_groups],
-            partners: data.partner_organizations,
-            duration_months: parseInt(data.duration_months),
-            budget: String(data.budget_eur),
-            answers: response.answers,
-            status: 'generated'
-          };
-          console.log('Updating proposal with generated answers:', currentProposalId, updateData);
-          const updateResult = await api.updateProposal(currentProposalId, updateData);
-          console.log('Proposal updated successfully:', updateResult);
-        } else {
-          console.warn('No proposal ID available for updating answers');
-        }
-
-        setCurrentStep('review');
-      } catch (error) {
-        console.error('Error generating answers:', error);
-        console.error('Error details:', error.response?.data);
-        clearInterval(progressInterval);
-        setProgress(0);
-        setCurrentStep('input');
-
-        // Handle error display properly
-        let errorMessage = 'Failed to generate application';
-        if (error.response?.data?.detail) {
-          if (typeof error.response.data.detail === 'string') {
-            errorMessage = error.response.data.detail;
-          } else if (Array.isArray(error.response.data.detail)) {
-            // Handle validation errors
-            errorMessage = error.response.data.detail.map(err => err.msg || 'Validation error').join(', ');
-          }
-        }
-        toast.error(errorMessage);
-      } finally {
-        setIsLoading(false);
-      }
+    // If we already have a proposal, just redirect to it
+    if (currentProposalId) {
+      window.location.href = `/proposals/${currentProposalId}`;
     }
   };
 
@@ -571,13 +519,13 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route 
-              path="/proposals/:id" 
+            <Route
+              path="/proposals/:id"
               element={
                 <ProtectedRoute>
-                  <ProposalDetail />
+                  <ProposalDetailNew />
                 </ProtectedRoute>
-              } 
+              }
             />
             <Route 
               path="/proposals/:id/edit" 

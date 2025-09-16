@@ -233,7 +233,7 @@ const api = {
         `/form/pdf/${applicationId}`,
         { responseType: 'blob' }
       );
-      
+
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -242,11 +242,36 @@ const api = {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       toast.success('PDF downloaded successfully!');
     } catch (error) {
       console.error('API Error:', error);
       toast.error('Failed to export PDF');
+      throw error;
+    }
+  },
+
+  // Single question generation
+  generateSingleAnswer: async (data) => {
+    try {
+      const response = await axiosInstance.post('/form/single/generate-single-answer', data, {
+        timeout: 15000 // 15 seconds for single question
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      toast.error(error.response?.data?.detail || 'Failed to generate answer');
+      throw error;
+    }
+  },
+
+  // Get questions for a section
+  getSectionQuestions: async (section) => {
+    try {
+      const response = await axiosInstance.get(`/form/single/questions/${section}`);
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
       throw error;
     }
   },
