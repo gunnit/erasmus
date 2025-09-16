@@ -467,36 +467,36 @@ const ProposalDetailNew = () => {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="lg:col-span-2 mt-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">Next Steps</h3>
-          <p className="text-blue-700 mb-4">
-            {progress === 0
-              ? "Start generating AI-powered answers for your Erasmus+ application."
-              : progress < 100
-              ? "Continue working on your application to complete all required sections."
-              : "Review your completed application and export it as a PDF."}
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => navigate(`/proposals/${id}/answers`)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-            >
-              <Wand2 className="h-4 w-4" />
-              {progress === 0 ? 'Start Application' : 'Continue Application'}
-            </button>
-            {progress === 100 && (
+          {/* Quick Actions */}
+          <div className="lg:col-span-2 mt-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-blue-900 mb-2">Next Steps</h3>
+            <p className="text-blue-700 mb-4">
+              {progress === 0
+                ? "Start generating AI-powered answers for your Erasmus+ application."
+                : progress < 100
+                ? "Continue working on your application to complete all required sections."
+                : "Review your completed application and export it as a PDF."}
+            </p>
+            <div className="flex gap-3">
               <button
-                onClick={handleExportPDF}
-                className="px-4 py-2 bg-white text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 flex items-center gap-2"
+                onClick={() => navigate(`/proposals/${id}/answers`)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
               >
-                <Download className="h-4 w-4" />
-                Download PDF
+                <Wand2 className="h-4 w-4" />
+                {progress === 0 ? 'Start Application' : 'Continue Application'}
               </button>
-            )}
+              {progress === 100 && (
+                <button
+                  onClick={handleExportPDF}
+                  className="px-4 py-2 bg-white text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download PDF
+                </button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
       ) : activeTab === 'workplan' ? (
           <div className="bg-white rounded-lg shadow p-6">
             <WorkplanViewer
