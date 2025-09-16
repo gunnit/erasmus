@@ -30,7 +30,7 @@ const WorkplanViewer = ({ proposalId, proposalData, onWorkplanGenerated }) => {
   const fetchWorkplan = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/api/form/workplan/${proposalId}`);
+      const response = await api.get(`/form/workplan/${proposalId}`);
       if (response.data.success && response.data.workplan) {
         setWorkplan(response.data.workplan);
         setEditedWorkplan(response.data.workplan);
@@ -50,7 +50,7 @@ const WorkplanViewer = ({ proposalId, proposalData, onWorkplanGenerated }) => {
   const handleGenerateWorkplan = async () => {
     try {
       setGenerating(true);
-      const response = await api.post('/api/form/workplan/generate', {
+      const response = await api.post('/form/workplan/generate', {
         proposal_id: proposalId,
         regenerate: workplan !== null
       });
@@ -77,7 +77,7 @@ const WorkplanViewer = ({ proposalId, proposalData, onWorkplanGenerated }) => {
 
   const handleSaveWorkplan = async () => {
     try {
-      const response = await api.put(`/api/form/workplan/${proposalId}`, editedWorkplan);
+      const response = await api.put(`/form/workplan/${proposalId}`, editedWorkplan);
       if (response.data.success) {
         setWorkplan(editedWorkplan);
         setEditMode(false);
