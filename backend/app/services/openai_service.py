@@ -10,6 +10,15 @@ class OpenAIService:
     """Service for interacting with OpenAI API for form completion"""
 
     def __init__(self):
+        if not settings.OPENAI_API_KEY:
+            logger.error("OPENAI_API_KEY is not set in environment variables")
+            raise ValueError("OPENAI_API_KEY is not configured")
+
+        if settings.OPENAI_API_KEY == "sk-...":
+            logger.error("OPENAI_API_KEY is still set to placeholder value")
+            raise ValueError("OPENAI_API_KEY is not properly configured")
+
+        logger.info(f"Initializing OpenAI client with model: {settings.OPENAI_MODEL}")
         self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.model = settings.OPENAI_MODEL
 
@@ -111,7 +120,46 @@ class OpenAIService:
         except Exception as e:
             logger.error(f"Error generating project description: {str(e)}")
             raise
-        
+
+    async def generate_completion(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        max_tokens: int = 1000,
+        temperature: float = 0.7
+    ) -> str:
+        """
+        Generate a completion using OpenAI API
+
+        Args:
+            system_prompt: The system role prompt
+            user_prompt: The user prompt
+            max_tokens: Maximum tokens to generate
+            temperature: Temperature for generation (0-1)
+
+        Returns:
+            The generated text
+        """
+        try:
+            logger.info("Generating completion with OpenAI")
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                max_tokens=max_tokens,
+                temperature=temperature
+            )
+
+            answer = response.choices[0].message.content
+            logger.info(f"Successfully generated completion of length {len(answer)}")
+            return answer
+
+        except Exception as e:
+            logger.error(f"Error generating completion: {str(e)}")
+            raise
+
     async def generate_answer(
         self,
         question: Dict,
