@@ -42,8 +42,8 @@ class Proposal(Base):
     # Store all 27 answers as JSON
     answers = Column(JSON)
 
-    # Workplan data
-    workplan = Column(JSON)
+    # Workplan data (optional - may not exist in older databases)
+    workplan = Column(JSON, nullable=True, default=None)
 
     # Metadata
     status = Column(String, default="draft")  # draft, submitted, approved, rejected

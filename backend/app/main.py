@@ -19,6 +19,15 @@ load_dotenv()
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
+# Add workplan column if it doesn't exist (for existing databases)
+from sqlalchemy import text
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE proposals ADD COLUMN IF NOT EXISTS workplan JSON"))
+        conn.commit()
+except Exception as e:
+    print(f"Note: Could not add workplan column (may already exist): {e}")
+
 # Create FastAPI app
 app = FastAPI(
     title="Erasmus+ Form Completion API",
