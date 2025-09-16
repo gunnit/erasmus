@@ -418,9 +418,8 @@ const ProposalDetailNew = () => {
               )}
             </div>
           </div>
-        </div>
 
-        {/* Statistics */}
+          {/* Statistics */
         <div className="mt-6 bg-white rounded-lg shadow">
           <div className="p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -497,8 +496,8 @@ const ProposalDetailNew = () => {
             )}
           </div>
         </div>
-      </div>
-    ) : activeTab === 'workplan' ? (
+        </div>
+      ) : activeTab === 'workplan' ? (
       <div className="bg-white rounded-lg shadow p-6">
         <WorkplanViewer
           proposalId={id}
