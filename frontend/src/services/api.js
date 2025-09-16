@@ -6,7 +6,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api
 // Create axios instance with auth interceptor
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 120000 // 2 minutes timeout for long-running requests
+  timeout: 180000 // 3 minutes timeout for long-running requests (increased for AI generation)
 });
 
 // Add auth token to requests
@@ -45,7 +45,7 @@ const api = {
         previous_answers: previousAnswers,
         language: 'en'
       }, {
-        timeout: 30000 // 30 seconds per section
+        timeout: 60000 // 60 seconds per section (increased for complex AI generation)
       });
       return response.data;
     } catch (error) {
