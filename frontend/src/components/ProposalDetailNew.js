@@ -383,7 +383,7 @@ const ProposalDetailNew = () => {
                       key={index}
                       className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm"
                     >
-                      {typeof group === 'object' ? JSON.stringify(group) : group}
+                      {typeof group === 'string' ? group : group?.name || `Target Group ${index + 1}`}
                     </span>
                   ))}
                 </div>
@@ -406,9 +406,9 @@ const ProposalDetailNew = () => {
                     <li key={index} className="flex items-start">
                       <span className="text-gray-400 mr-2">•</span>
                       <span className="text-gray-900 text-sm">
-                        {typeof partner === 'object' ?
-                          `${partner.name || 'Partner ' + (index + 1)}${partner.country ? ' (' + partner.country + ')' : ''}${partner.type ? ' - ' + partner.type : ''}`
-                          : partner}
+                        {typeof partner === 'string'
+                          ? partner
+                          : `${partner?.name || 'Partner ' + (index + 1)}${partner?.country ? ' (' + partner.country + ')' : ''}${partner?.type ? ' - ' + partner.type : ''}`}
                       </span>
                     </li>
                   ))}
