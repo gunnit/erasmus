@@ -193,8 +193,8 @@ function ProposalCreator() {
     if (idToUse) {
       try {
         setSaveStatus('saving');
+        // Only send the fields that need updating to avoid validation errors
         const updateData = {
-          ...projectData,
           answers: allAnswers,
           status: 'generating'
         };

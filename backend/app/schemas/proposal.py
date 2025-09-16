@@ -14,8 +14,15 @@ class ProposalBase(BaseModel):
 class ProposalCreate(ProposalBase):
     answers: Optional[Dict[str, Any]] = None
 
-class ProposalUpdate(ProposalBase):
+class ProposalUpdate(BaseModel):
+    """Schema for updating proposals - all fields are optional"""
     title: Optional[str] = None
+    project_idea: Optional[str] = None
+    priorities: Optional[List[str]] = None
+    target_groups: Optional[List[str]] = None
+    partners: Optional[List[Dict[str, Any]]] = None
+    duration_months: Optional[int] = None
+    budget: Optional[str] = None
     answers: Optional[Dict[str, Any]] = None
     status: Optional[str] = None
 
