@@ -493,20 +493,21 @@ const ProposalDetailNew = () => {
                 Download PDF
               </button>
             )}
+            </div>
           </div>
         </div>
-      ) : activeTab === 'workplan' ? (
-      <div className="bg-white rounded-lg shadow p-6">
-        <WorkplanViewer
-          proposalId={id}
-          proposalData={proposal}
-          onWorkplanGenerated={(workplan) => {
-            setProposal(prev => ({ ...prev, workplan }));
-            toast.success('Workplan generated successfully!');
-          }}
-        />
-      </div>
-    ) : null}
+        ) : activeTab === 'workplan' ? (
+          <div className="bg-white rounded-lg shadow p-6">
+            <WorkplanViewer
+              proposalId={id}
+              proposalData={proposal}
+              onWorkplanGenerated={(workplan) => {
+                setProposal(prev => ({ ...prev, workplan }));
+                toast.success('Workplan generated successfully!');
+              }}
+            />
+          </div>
+        ) : null}
       </div>
     </div>
   );
