@@ -420,7 +420,7 @@ const ProposalDetailNew = () => {
           </div>
 
           {/* Statistics */
-        <div className="mt-6 bg-white rounded-lg shadow">
+          <div className="lg:col-span-2 mt-6 bg-white rounded-lg shadow">
           <div className="p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-gray-500" />
@@ -465,9 +465,10 @@ const ProposalDetailNew = () => {
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Quick Actions */}
-          <div className="mt-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+        {/* Quick Actions */}
+        <div className="lg:col-span-2 mt-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-blue-900 mb-2">Next Steps</h3>
           <p className="text-blue-700 mb-4">
             {progress === 0
@@ -493,10 +494,10 @@ const ProposalDetailNew = () => {
                 Download PDF
               </button>
             )}
-            </div>
           </div>
         </div>
-        ) : activeTab === 'workplan' ? (
+      </div>
+      ) : activeTab === 'workplan' ? (
           <div className="bg-white rounded-lg shadow p-6">
             <WorkplanViewer
               proposalId={id}
