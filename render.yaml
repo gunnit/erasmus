@@ -27,7 +27,7 @@ services:
         value: 99
     autoDeploy: true
     
-  # Frontend Static Site  
+  # Frontend Static Site
   - type: web
     name: erasmus-frontend
     env: static
@@ -37,10 +37,7 @@ services:
       - key: NODE_VERSION
         value: 18
       - key: REACT_APP_API_URL
-        fromService:
-          type: web
-          name: erasmus-backend
-          property: host
+        value: https://erasmus-backend.onrender.com
     autoDeploy: true
     
 databases:
