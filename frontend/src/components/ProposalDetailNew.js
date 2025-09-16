@@ -312,192 +312,194 @@ const ProposalDetailNew = () => {
 
         {/* Tab Content */}
         {activeTab === 'overview' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Project Information */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <FileText className="h-5 w-5 text-gray-500" />
-                Project Information
-              </h2>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm text-gray-500">Project Idea</label>
-                  <p className="text-gray-900">{proposal.project_idea || 'Not specified'}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm text-gray-500 flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      Duration
-                    </label>
-                    <p className="text-gray-900">{proposal.duration_months || 24} months</p>
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Project Information */}
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-gray-500" />
+                    Project Information
+                  </h2>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm text-gray-500">Project Idea</label>
+                      <p className="text-gray-900">{proposal.project_idea || 'Not specified'}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-gray-500 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Duration
+                        </label>
+                        <p className="text-gray-900">{proposal.duration_months || 24} months</p>
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-500 flex items-center gap-1">
+                          <DollarSign className="h-3 w-3" />
+                          Budget
+                        </label>
+                        <p className="text-gray-900">€{Number(proposal.budget || 250000).toLocaleString()}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-sm text-gray-500 flex items-center gap-1">
-                      <DollarSign className="h-3 w-3" />
-                      Budget
-                    </label>
-                    <p className="text-gray-900">€{Number(proposal.budget || 250000).toLocaleString()}</p>
+                </div>
+              </div>
+
+              {/* Priorities */}
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Award className="h-5 w-5 text-gray-500" />
+                    Selected Priorities
+                  </h2>
+                  {proposal.priorities && proposal.priorities.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {proposal.priorities.map((priority, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm"
+                        >
+                          {priority}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No priorities selected</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Target Groups */}
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Target className="h-5 w-5 text-gray-500" />
+                    Target Groups
+                  </h2>
+                  {proposal.target_groups && proposal.target_groups.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {proposal.target_groups.map((group, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm"
+                        >
+                          {typeof group === 'string' ? group : group?.name || `Target Group ${index + 1}`}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No target groups specified</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Partners */}
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Users className="h-5 w-5 text-gray-500" />
+                    Partner Organizations
+                  </h2>
+                  {proposal.partners && proposal.partners.length > 0 ? (
+                    <ul className="space-y-2">
+                      {proposal.partners.map((partner, index) => (
+                        <li key={index} className="flex items-start">
+                          <span className="text-gray-400 mr-2">•</span>
+                          <span className="text-gray-900 text-sm">
+                            {typeof partner === 'string'
+                              ? partner
+                              : `${partner?.name || 'Partner ' + (index + 1)}${partner?.country ? ' (' + partner.country + ')' : ''}${partner?.type ? ' - ' + partner.type : ''}`}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No partner organizations added</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Statistics */}
+            <div className="mt-6 bg-white rounded-lg shadow">
+              <div className="p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-gray-500" />
+                  Answer Statistics
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <p className="text-3xl font-bold text-blue-600">
+                      {(() => {
+                        let count = 0;
+                        if (proposal.answers) {
+                          Object.values(proposal.answers).forEach(section => {
+                            if (typeof section === 'object') {
+                              count += Object.values(section).filter(a => a).length;
+                            }
+                          });
+                        }
+                        return count;
+                      })()}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">Answers Completed</p>
+                  </div>
+                  <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <p className="text-3xl font-bold text-gray-600">
+                      {27 - (() => {
+                        let count = 0;
+                        if (proposal.answers) {
+                          Object.values(proposal.answers).forEach(section => {
+                            if (typeof section === 'object') {
+                              count += Object.values(section).filter(a => a).length;
+                            }
+                          });
+                        }
+                        return count;
+                      })()}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">Answers Remaining</p>
+                  </div>
+                  <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <p className="text-3xl font-bold text-green-600">6</p>
+                    <p className="text-sm text-gray-600 mt-1">Total Sections</p>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Priorities */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Award className="h-5 w-5 text-gray-500" />
-                Selected Priorities
-              </h2>
-              {proposal.priorities && proposal.priorities.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {proposal.priorities.map((priority, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm"
-                    >
-                      {priority}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-sm">No priorities selected</p>
-              )}
-            </div>
-          </div>
-
-          {/* Target Groups */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Target className="h-5 w-5 text-gray-500" />
-                Target Groups
-              </h2>
-              {proposal.target_groups && proposal.target_groups.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {proposal.target_groups.map((group, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm"
-                    >
-                      {typeof group === 'string' ? group : group?.name || `Target Group ${index + 1}`}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-sm">No target groups specified</p>
-              )}
-            </div>
-          </div>
-
-          {/* Partners */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Users className="h-5 w-5 text-gray-500" />
-                Partner Organizations
-              </h2>
-              {proposal.partners && proposal.partners.length > 0 ? (
-                <ul className="space-y-2">
-                  {proposal.partners.map((partner, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="text-gray-400 mr-2">•</span>
-                      <span className="text-gray-900 text-sm">
-                        {typeof partner === 'string'
-                          ? partner
-                          : `${partner?.name || 'Partner ' + (index + 1)}${partner?.country ? ' (' + partner.country + ')' : ''}${partner?.type ? ' - ' + partner.type : ''}`}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-gray-500 text-sm">No partner organizations added</p>
-              )}
-            </div>
-          </div>
-
-          {/* Statistics */
-          <div className="lg:col-span-2 mt-6 bg-white rounded-lg shadow">
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-gray-500" />
-              Answer Statistics
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-3xl font-bold text-blue-600">
-                  {(() => {
-                    let count = 0;
-                    if (proposal.answers) {
-                      Object.values(proposal.answers).forEach(section => {
-                        if (typeof section === 'object') {
-                          count += Object.values(section).filter(a => a).length;
-                        }
-                      });
-                    }
-                    return count;
-                  })()}
-                </p>
-                <p className="text-sm text-gray-600 mt-1">Answers Completed</p>
-              </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-3xl font-bold text-gray-600">
-                  {27 - (() => {
-                    let count = 0;
-                    if (proposal.answers) {
-                      Object.values(proposal.answers).forEach(section => {
-                        if (typeof section === 'object') {
-                          count += Object.values(section).filter(a => a).length;
-                        }
-                      });
-                    }
-                    return count;
-                  })()}
-                </p>
-                <p className="text-sm text-gray-600 mt-1">Answers Remaining</p>
-              </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-3xl font-bold text-green-600">6</p>
-                <p className="text-sm text-gray-600 mt-1">Total Sections</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-          {/* Quick Actions */}
-          <div className="lg:col-span-2 mt-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-blue-900 mb-2">Next Steps</h3>
-            <p className="text-blue-700 mb-4">
-              {progress === 0
-                ? "Start generating AI-powered answers for your Erasmus+ application."
-                : progress < 100
-                ? "Continue working on your application to complete all required sections."
-                : "Review your completed application and export it as a PDF."}
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => navigate(`/proposals/${id}/answers`)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-              >
-                <Wand2 className="h-4 w-4" />
-                {progress === 0 ? 'Start Application' : 'Continue Application'}
-              </button>
-              {progress === 100 && (
+            {/* Quick Actions */}
+            <div className="mt-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">Next Steps</h3>
+              <p className="text-blue-700 mb-4">
+                {progress === 0
+                  ? "Start generating AI-powered answers for your Erasmus+ application."
+                  : progress < 100
+                  ? "Continue working on your application to complete all required sections."
+                  : "Review your completed application and export it as a PDF."}
+              </p>
+              <div className="flex gap-3">
                 <button
-                  onClick={handleExportPDF}
-                  className="px-4 py-2 bg-white text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 flex items-center gap-2"
+                  onClick={() => navigate(`/proposals/${id}/answers`)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
                 >
-                  <Download className="h-4 w-4" />
-                  Download PDF
+                  <Wand2 className="h-4 w-4" />
+                  {progress === 0 ? 'Start Application' : 'Continue Application'}
                 </button>
-              )}
+                {progress === 100 && (
+                  <button
+                    onClick={handleExportPDF}
+                    className="px-4 py-2 bg-white text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download PDF
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
-      ) : activeTab === 'workplan' ? (
+          </>
+        ) : activeTab === 'workplan' ? (
           <div className="bg-white rounded-lg shadow p-6">
             <WorkplanViewer
               proposalId={id}
