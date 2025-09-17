@@ -278,3 +278,4 @@ The system uses Server-Sent Events (SSE) for real-time generation progress:
 - Sessions stored in Redis (production) or memory (development)
 - Always work on Render front and backend when building - deploy and use Render MCP to check deployment logs
 - Do not use or test on localhost unless explicitly for development
+- you have to always deploy to render and check the logs if successeful , we do not do anything localy

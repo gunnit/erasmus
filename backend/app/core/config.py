@@ -22,7 +22,21 @@ class Settings(BaseSettings):
     FORM_PRICE_EUR: int = 99
     MAX_RESPONSE_TIME_SECONDS: int = 120
     CACHE_TTL_SECONDS: int = 3600
-    
+
+    # PayPal Configuration
+    PAYPAL_CLIENT_ID: str = ""
+    PAYPAL_CLIENT_SECRET: str = ""
+    PAYPAL_MODE: str = "sandbox"  # "sandbox" or "live"
+    PAYPAL_WEBHOOK_ID: str = ""
+
+    # Subscription Plans
+    STARTER_PLAN_PRICE: float = 49.00
+    STARTER_PLAN_PROPOSALS: int = 3
+    STARTER_PLAN_DAYS: int = 30
+    PROFESSIONAL_PLAN_PRICE: float = 149.00
+    PROFESSIONAL_PLAN_PROPOSALS: int = 15
+    PROFESSIONAL_PLAN_DAYS: int = 90
+
     class Config:
         env_file = ".env"
         case_sensitive = True

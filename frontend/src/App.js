@@ -21,6 +21,9 @@ import Analytics from './components/Analytics.jsx';
 import Settings from './components/Settings.jsx';
 import Profile from './components/Profile.jsx';
 import ErasmusResources from './components/ErasmusResources.jsx';
+import PricingPlans from './components/PricingPlans.jsx';
+import PaymentCheckout from './components/PaymentCheckout.jsx';
+import PaymentSuccess from './components/PaymentSuccess.jsx';
 import { Progress, CircularProgress } from './components/ui/Progress';
 import { Card, CardContent } from './components/ui/Card';
 import { Sparkles, CheckCircle, FileText, Rocket } from 'lucide-react';
@@ -573,6 +576,42 @@ function App() {
               path="/resources"
               element={
                 <ErasmusResources />
+              }
+            />
+            <Route
+              path="/pricing"
+              element={
+                <PricingPlans />
+              }
+            />
+            <Route
+              path="/payment"
+              element={
+                <ProtectedRoute>
+                  <PaymentCheckout />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payment-success"
+              element={
+                <ProtectedRoute>
+                  <PaymentSuccess />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payment-cancelled"
+              element={
+                <div className="min-h-screen flex items-center justify-center">
+                  <div className="text-center">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Payment Cancelled</h2>
+                    <p className="text-gray-600 mb-6">Your payment was cancelled. No charges were made.</p>
+                    <a href="/pricing" className="bg-blue-600 text-white px-6 py-3 rounded-lg inline-block">
+                      Return to Pricing
+                    </a>
+                  </div>
+                </div>
               }
             />
             <Route

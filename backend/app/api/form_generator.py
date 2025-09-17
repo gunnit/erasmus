@@ -19,6 +19,9 @@ from app.services.ai_autofill_service import AIAutoFillService
 from app.core.config import settings
 from app.api.dependencies import get_current_user
 from app.db.models import User
+from app.core.subscription_deps import require_valid_subscription, use_proposal_credit
+from app.db.database import get_db
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 
@@ -76,7 +79,9 @@ with open(form_questions_path, 'r') as f:
 @router.post("/generate-answers", response_model=GenerateFormResponse)
 async def generate_form_answers(
     request: GenerateFormRequest,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(require_valid_subscription),
+    db: Session = Depends(get_db)
 ):
     """
     Generate complete Erasmus+ KA220-ADU form answers based on project idea
@@ -147,7 +152,7 @@ async def generate_form_answers(
             estimated_score=estimated_score,
             total_generation_time=generation_time
         )
-        
+
         # Generate PDF if requested (in background)
         if request.generate_pdf:
             background_tasks.add_task(
@@ -157,7 +162,10 @@ async def generate_form_answers(
                 project_context
             )
             response.pdf_url = f"/api/form/pdf/{application_id}"
-        
+
+        # Use one proposal credit after successful generation
+        await use_proposal_credit(current_user, db)
+
         return response
         
     except Exception as e:

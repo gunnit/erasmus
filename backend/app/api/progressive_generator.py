@@ -14,6 +14,7 @@ from app.db.models import GenerationSession, GenerationStatus, User
 from app.services.ai_autofill_service import AIAutoFillService
 from app.api.dependencies import get_current_user, get_current_user_from_token_or_query
 from app.api.form_generator import ProjectInput
+from app.core.subscription_deps import require_valid_subscription, use_proposal_credit
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,7 @@ class SectionGenerationRequest(BaseModel):
 async def start_generation(
     request: StartGenerationRequest,
     background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_valid_subscription),
     db: Session = Depends(get_db)
 ):
     """
@@ -611,6 +612,11 @@ async def generate_all_sections_progressively(session_id: str):
                 session.completed_at = datetime.utcnow()
                 session.progress_percentage = 100
                 session.error_message = None
+
+                # Use one proposal credit after successful generation
+                user = db.query(User).filter_by(id=session.user_id).first()
+                if user:
+                    await use_proposal_credit(user, db)
             elif session.failed_sections:
                 logger.error(f"Generation partially failed for session {session_id}, failed sections: {session.failed_sections}")
                 session.status = GenerationStatus.FAILED

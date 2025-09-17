@@ -20,6 +20,7 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import { cn, fadeInVariants, staggerContainer } from '../lib/utils';
 import { formatDateWithFullMonth } from '../utils/dateUtils';
+import SubscriptionStatus from './SubscriptionStatus';
 
 const Dashboard = () => {
   const [proposals, setProposals] = useState([]);
@@ -274,6 +275,47 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
+      </motion.div>
+
+      {/* Subscription Status */}
+      <motion.div variants={fadeInVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1">
+          <SubscriptionStatus />
+        </div>
+        <div className="lg:col-span-2">
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+              <CardDescription>Start working on your proposals</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button
+                onClick={() => navigate('/new-proposal')}
+                className="w-full justify-start"
+                variant="outline"
+                icon={Plus}
+              >
+                Create New Proposal
+              </Button>
+              <Button
+                onClick={() => navigate('/proposals')}
+                className="w-full justify-start"
+                variant="outline"
+                icon={FileText}
+              >
+                View All Proposals
+              </Button>
+              <Button
+                onClick={() => navigate('/resources')}
+                className="w-full justify-start"
+                variant="outline"
+                icon={Sparkles}
+              >
+                Learning Resources
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </motion.div>
 
       {/* Charts Row */}

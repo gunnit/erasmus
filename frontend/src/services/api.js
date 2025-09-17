@@ -488,6 +488,81 @@ const api = {
     }
   },
 
+  // Payment and Subscription Methods
+  getPricingPlans: async () => {
+    try {
+      const response = await axiosInstance.get('/payments/pricing-plans');
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      toast.error('Failed to fetch pricing plans');
+      throw error;
+    }
+  },
+
+  getSubscriptionStatus: async () => {
+    try {
+      const response = await axiosInstance.get('/payments/subscription-status');
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      // Don't show error toast for subscription status as it might be expected
+      throw error;
+    }
+  },
+
+  createPaymentOrder: async (planType, returnUrl, cancelUrl) => {
+    try {
+      const response = await axiosInstance.post('/payments/create-order', {
+        plan_type: planType,
+        return_url: returnUrl,
+        cancel_url: cancelUrl
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      toast.error('Failed to create payment order');
+      throw error;
+    }
+  },
+
+  capturePaymentOrder: async (orderId) => {
+    try {
+      const response = await axiosInstance.post('/payments/capture-order', {
+        order_id: orderId
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      toast.error('Failed to process payment');
+      throw error;
+    }
+  },
+
+  checkSubscription: async () => {
+    try {
+      const response = await axiosInstance.post('/payments/check-subscription');
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      if (error.response?.status === 403) {
+        toast.error(error.response.data.detail || 'Subscription required');
+      }
+      throw error;
+    }
+  },
+
+  getPaymentHistory: async () => {
+    try {
+      const response = await axiosInstance.get('/payments/payment-history');
+      return response.data;
+    } catch (error) {
+      console.error('API Error:', error);
+      toast.error('Failed to fetch payment history');
+      throw error;
+    }
+  },
+
   get: axiosInstance.get,
   post: axiosInstance.post,
   put: axiosInstance.put,
