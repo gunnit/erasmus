@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { formatDateWithFullMonth } from '../utils/dateUtils';
 
 const ProposalDetail = () => {
   const [proposal, setProposal] = useState(null);
@@ -187,8 +188,8 @@ const ProposalDetail = () => {
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{proposal.title}</h1>
                 <p className="text-sm text-gray-500 mt-1">
-                  Created: {new Date(proposal.created_at).toLocaleDateString()} | 
-                  Updated: {new Date(proposal.updated_at).toLocaleDateString()}
+                  Created: {formatDateWithFullMonth(proposal.created_at)} |
+                  Updated: {formatDateWithFullMonth(proposal.updated_at)}
                 </p>
               </div>
             </div>

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { formatDateWithFullMonth } from '../utils/dateUtils';
 import {
   Loader2,
   FileText,
@@ -140,12 +141,7 @@ const ProposalDetailNew = () => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'Not set';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    return formatDateWithFullMonth(dateString);
   };
 
   const getStatusColor = (status) => {
@@ -657,7 +653,7 @@ const ProposalDetailNew = () => {
                     <div>
                       <span className="text-gray-500">Last Calculated:</span>
                       <span className="ml-2 text-gray-900">
-                        {new Date(qualityScore.calculated_at).toLocaleDateString()}
+                        {formatDateWithFullMonth(qualityScore.calculated_at)}
                       </span>
                     </div>
                   )}

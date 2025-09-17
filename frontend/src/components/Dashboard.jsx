@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, 
+import {
+  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   RadialBarChart, RadialBar, AreaChart, Area
 } from 'recharts';
-import { 
+import {
   FileText, TrendingUp, Clock, CheckCircle, AlertCircle,
   Plus, ArrowRight, Calendar, Euro, Users, Target,
   Download, Edit3, Trash2, Eye, Filter, Search,
@@ -19,6 +19,7 @@ import { Skeleton, SkeletonCard } from './ui/Skeleton';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { cn, fadeInVariants, staggerContainer } from '../lib/utils';
+import { formatDateWithFullMonth } from '../utils/dateUtils';
 
 const Dashboard = () => {
   const [proposals, setProposals] = useState([]);
@@ -536,7 +537,7 @@ const Dashboard = () => {
                           </td>
                           <td className="py-4 px-4">
                             <p className="text-sm text-gray-500">
-                              {new Date(proposal.created_at).toLocaleDateString()}
+                              {formatDateWithFullMonth(proposal.created_at)}
                             </p>
                           </td>
                           <td className="py-4 px-4">

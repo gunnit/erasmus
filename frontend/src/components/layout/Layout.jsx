@@ -9,6 +9,7 @@ import {
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import { formatDeadlineDate, formatBrusselsTime } from '../../utils/dateUtils';
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -186,10 +187,10 @@ export const Layout = () => {
                               KA220-ADU Adult Education
                             </p>
                             <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                              6 March 2025
+                              {formatDeadlineDate('2025-03-06')}
                             </p>
                             <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                              12:00 PM (Brussels time)
+                              {formatBrusselsTime('2025-03-06T12:00:00')}
                             </p>
                           </div>
                         </div>

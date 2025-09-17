@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  FileText, Plus, Search, Filter, Calendar, DollarSign, 
+import {
+  FileText, Plus, Search, Filter, Calendar, DollarSign,
   Clock, CheckCircle, AlertCircle, Eye, Edit3, Trash2,
   Download, ChevronRight, Users, Target
 } from 'lucide-react';
@@ -13,6 +13,7 @@ import { Skeleton, SkeletonCard } from './ui/Skeleton';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { cn, fadeInVariants, staggerContainer } from '../lib/utils';
+import { formatDateWithFullMonth } from '../utils/dateUtils';
 
 const ProposalsList = () => {
   const [proposals, setProposals] = useState([]);
@@ -221,7 +222,7 @@ const ProposalsList = () => {
                               <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                                 <div className="flex items-center space-x-1">
                                   <Calendar className="w-4 h-4" />
-                                  <span>Created {new Date(proposal.created_at).toLocaleDateString()}</span>
+                                  <span>Created {formatDateWithFullMonth(proposal.created_at)}</span>
                                 </div>
                                 <div className="flex items-center space-x-1">
                                   <DollarSign className="w-4 h-4" />
