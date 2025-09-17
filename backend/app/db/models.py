@@ -175,7 +175,7 @@ class Payment(Base):
     # Payment metadata
     payment_method = Column(String, default="paypal")
     description = Column(String)
-    metadata = Column(JSON, nullable=True)
+    payment_metadata = Column(JSON, nullable=True)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)

@@ -220,7 +220,7 @@ class PayPalService:
             paypal_payer_email=payer.get("email_address"),
             payment_method="paypal",
             description=f"{plan_type.value.capitalize()} Plan Subscription",
-            metadata={
+            payment_metadata={
                 "plan_type": plan_type.value,
                 "proposals_limit": proposals_limit,
                 "days_valid": days_valid

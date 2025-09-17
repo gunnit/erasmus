@@ -58,7 +58,7 @@ def upgrade():
         sa.Column('paypal_payer_email', sa.String(), nullable=True),
         sa.Column('payment_method', sa.String(), nullable=True, server_default='paypal'),
         sa.Column('description', sa.String(), nullable=True),
-        sa.Column('metadata', sa.JSON(), nullable=True),
+        sa.Column('payment_metadata', sa.JSON(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=True, server_default=sa.func.now()),
         sa.Column('completed_at', sa.DateTime(), nullable=True),
         sa.Column('refunded_at', sa.DateTime(), nullable=True),
