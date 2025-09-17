@@ -4,16 +4,17 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Menu, X, Home, FileText, BarChart3, Settings as SettingsIcon, LogOut,
   Moon, Sun, Bell, Search, User, ChevronDown, PlusCircle,
-  Layers, Sparkles, TrendingUp, Info
+  Layers, Sparkles, TrendingUp, BookOpen, Trophy, Target
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Proposals', href: '/proposals', icon: FileText },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Chi Siamo', href: '/chi-siamo', icon: Info },
+  { name: 'Erasmus+ Resources', href: '/resources', icon: BookOpen },
   { name: 'Settings', href: '/settings', icon: SettingsIcon },
 ];
 
@@ -21,9 +22,15 @@ export const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [userStats, setUserStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+
+  // Free tier limit
+  const FREE_TIER_LIMIT = 5;
 
   useEffect(() => {
     if (darkMode) {
@@ -32,6 +39,20 @@ export const Layout = () => {
       document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationOpen && !event.target.closest('.notification-dropdown')) {
+        setNotificationOpen(false);
+      }
+      if (userMenuOpen && !event.target.closest('.user-menu-dropdown')) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [notificationOpen, userMenuOpen]);
 
   const handleLogout = () => {
     logout();
@@ -105,10 +126,93 @@ export const Layout = () => {
               </motion.button>
 
               {/* Notifications */}
-              <button className="relative p-2 rounded-xl text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800">
-                <Bell className="h-6 w-6" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              </button>
+              <div className="relative notification-dropdown">
+                <button
+                  onClick={() => setNotificationOpen(!notificationOpen)}
+                  className="relative p-2 rounded-xl text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
+                  <Bell className="h-6 w-6" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                </button>
+
+                <AnimatePresence>
+                  {notificationOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-4"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                          Next Erasmus+ Deadline
+                        </h3>
+                        <button
+                          onClick={() => setNotificationOpen(false)}
+                          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-3 mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-shrink-0">
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                              <FileText className="w-6 h-6 text-white" />
+                            </div>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              KA220-ADU Adult Education
+                            </p>
+                            <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                              6 March 2025
+                            </p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                              12:00 PM (Brussels time)
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 text-xs text-gray-600 dark:text-gray-400">
+                        <div className="flex items-start space-x-2">
+                          <div className="w-1 h-1 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                          <p>Round 1 deadline for Cooperation Partnerships in Adult Education</p>
+                        </div>
+                        <div className="flex items-start space-x-2">
+                          <div className="w-1 h-1 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                          <p>Small-scale Partnerships: Same deadline</p>
+                        </div>
+                        <div className="flex items-start space-x-2">
+                          <div className="w-1 h-1 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
+                          <p>Budget: €120,000 - €400,000 per project</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <button
+                          onClick={() => {
+                            setNotificationOpen(false);
+                            navigate('/new-proposal');
+                          }}
+                          className="w-full px-3 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all"
+                        >
+                          Start New Application
+                        </button>
+                      </div>
+
+                      <div className="mt-3 text-xs text-center text-gray-500 dark:text-gray-400">
+                        <p>Other upcoming deadlines:</p>
+                        <p className="font-medium mt-1">
+                          October 2025 - Round 2
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
               {/* Dark Mode Toggle */}
               <button
@@ -139,7 +243,7 @@ export const Layout = () => {
               </button>
 
               {/* User Menu */}
-              <div className="relative">
+              <div className="relative user-menu-dropdown">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center space-x-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

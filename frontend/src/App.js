@@ -20,7 +20,7 @@ import ProposalsList from './components/ProposalsList.jsx';
 import Analytics from './components/Analytics.jsx';
 import Settings from './components/Settings.jsx';
 import Profile from './components/Profile.jsx';
-import ChiSiamo from './components/ChiSiamo.jsx';
+import ErasmusResources from './components/ErasmusResources.jsx';
 import { Progress, CircularProgress } from './components/ui/Progress';
 import { Card, CardContent } from './components/ui/Card';
 import { Sparkles, CheckCircle, FileText, Rocket } from 'lucide-react';
@@ -570,9 +570,9 @@ function App() {
               }
             />
             <Route
-              path="/chi-siamo"
+              path="/resources"
               element={
-                <ChiSiamo />
+                <ErasmusResources />
               }
             />
             <Route
