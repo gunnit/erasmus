@@ -287,6 +287,43 @@ const api = {
     }
   },
 
+  // Quality Score endpoints
+  calculateQualityScore: async (proposalId) => {
+    try {
+      const response = await axiosInstance.post(`/quality-score/calculate/${proposalId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Quality Score Error:', error);
+      toast.error('Failed to calculate quality score');
+      throw error;
+    }
+  },
+
+  previewQualityScore: async (answers, projectContext = {}) => {
+    try {
+      const response = await axiosInstance.post('/quality-score/preview', {
+        answers,
+        project_context: projectContext
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Quality Score Preview Error:', error);
+      throw error;
+    }
+  },
+
+  getQualityScore: async (proposalId, recalculate = false) => {
+    try {
+      const response = await axiosInstance.get(`/quality-score/${proposalId}`, {
+        params: { recalculate }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Get Quality Score Error:', error);
+      throw error;
+    }
+  },
+
   // Authentication endpoints
   login: async (username, password) => {
     try {

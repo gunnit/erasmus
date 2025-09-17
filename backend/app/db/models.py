@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, JSON, Enum, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, JSON, Enum, Boolean, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
@@ -44,6 +44,12 @@ class Proposal(Base):
 
     # Workplan data (optional - may not exist in older databases)
     workplan = Column(JSON, nullable=True, default=None)
+
+    # Quality scoring fields
+    quality_score = Column(Float, nullable=True)
+    section_scores = Column(JSON, nullable=True)
+    quality_feedback = Column(JSON, nullable=True)
+    score_calculated_at = Column(DateTime, nullable=True)
 
     # Metadata
     status = Column(String, default="draft")  # draft, submitted, approved, rejected

@@ -54,6 +54,25 @@ export const Layout = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [notificationOpen, userMenuOpen]);
 
+  // Fetch user stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (user) {
+        try {
+          setStatsLoading(true);
+          const response = await api.get('/dashboard/stats');
+          setUserStats(response.data.stats);
+        } catch (error) {
+          console.error('Failed to fetch user stats:', error);
+        } finally {
+          setStatsLoading(false);
+        }
+      }
+    };
+
+    fetchStats();
+  }, [user, location.pathname]); // Refetch when navigation changes
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -353,14 +372,71 @@ export const Layout = () => {
               <div className="absolute bottom-4 left-4 right-4">
                 <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-4 text-white"
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => navigate('/analytics')}
+                  className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-4 text-white cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <TrendingUp className="w-5 h-5" />
-                    <span className="text-xs bg-white/20 px-2 py-1 rounded-full">Pro</span>
+                    <Target className="w-5 h-5" />
+                    <span className="text-xs bg-white/20 px-2 py-1 rounded-full">Free Tier</span>
                   </div>
-                  <p className="text-sm font-medium">5 Proposals Created</p>
-                  <p className="text-xs opacity-80 mt-1">Unlimited with Pro</p>
+
+                  {statsLoading ? (
+                    <div className="space-y-2">
+                      <div className="h-4 bg-white/20 rounded animate-pulse"></div>
+                      <div className="h-2 bg-white/20 rounded animate-pulse"></div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mb-3">
+                        <p className="text-sm font-medium">
+                          {userStats?.totalProposals || 0}/{FREE_TIER_LIMIT} Proposals
+                        </p>
+                        <p className="text-xs opacity-80 mt-1">
+                          {FREE_TIER_LIMIT - (userStats?.totalProposals || 0) > 0
+                            ? `${FREE_TIER_LIMIT - (userStats?.totalProposals || 0)} remaining`
+                            : 'Limit reached - Upgrade to Pro'}
+                        </p>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="relative">
+                        <div className="w-full h-2 bg-white/20 rounded-full overflow-hidden">
+                          <motion.div
+                            className={cn(
+                              "h-full rounded-full transition-all",
+                              userStats?.totalProposals >= FREE_TIER_LIMIT
+                                ? "bg-gradient-to-r from-yellow-400 to-orange-500"
+                                : "bg-gradient-to-r from-green-400 to-emerald-500"
+                            )}
+                            initial={{ width: 0 }}
+                            animate={{
+                              width: `${Math.min(((userStats?.totalProposals || 0) / FREE_TIER_LIMIT) * 100, 100)}%`
+                            }}
+                            transition={{ duration: 0.5, delay: 0.2 }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Additional Stats */}
+                      <div className="mt-3 pt-3 border-t border-white/20">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center space-x-1">
+                            <Trophy className="w-3 h-3" />
+                            <span>Success Rate</span>
+                          </div>
+                          <span className="font-semibold">
+                            {userStats?.successRate || 0}%
+                          </span>
+                        </div>
+                        {userStats?.totalProposals >= FREE_TIER_LIMIT && (
+                          <button className="w-full mt-2 px-2 py-1 bg-white/20 hover:bg-white/30 rounded text-xs font-medium transition-colors">
+                            Upgrade to Pro →
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </motion.div>
               </div>
             </motion.aside>

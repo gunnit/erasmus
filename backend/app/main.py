@@ -10,6 +10,7 @@ from app.api import progressive_generator
 from app.api import simple_generator
 from app.api import single_question_generator
 from app.api import workplan_generator
+from app.api import quality_score
 from app.core.config import settings
 from app.db.database import engine, Base
 
@@ -19,14 +20,20 @@ load_dotenv()
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
-# Add workplan column if it doesn't exist (for existing databases)
+# Add workplan and quality scoring columns if they don't exist (for existing databases)
 from sqlalchemy import text
 try:
     with engine.connect() as conn:
+        # Add workplan column
         conn.execute(text("ALTER TABLE proposals ADD COLUMN IF NOT EXISTS workplan JSON"))
+        # Add quality scoring columns
+        conn.execute(text("ALTER TABLE proposals ADD COLUMN IF NOT EXISTS quality_score FLOAT"))
+        conn.execute(text("ALTER TABLE proposals ADD COLUMN IF NOT EXISTS section_scores JSON"))
+        conn.execute(text("ALTER TABLE proposals ADD COLUMN IF NOT EXISTS quality_feedback JSON"))
+        conn.execute(text("ALTER TABLE proposals ADD COLUMN IF NOT EXISTS score_calculated_at TIMESTAMP"))
         conn.commit()
 except Exception as e:
-    print(f"Note: Could not add workplan column (may already exist): {e}")
+    print(f"Note: Could not add new columns (may already exist): {e}")
 
 # Create FastAPI app
 app = FastAPI(
@@ -63,6 +70,7 @@ app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"]
 app.include_router(settings_api.router, prefix="/api/settings", tags=["settings"])
 app.include_router(profile.router, prefix="/api/profile", tags=["profile"])
 app.include_router(workplan_generator.router)
+app.include_router(quality_score.router, prefix="/api/quality-score", tags=["quality"])
 
 @app.get("/")
 async def root():

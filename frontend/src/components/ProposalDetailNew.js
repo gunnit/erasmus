@@ -20,9 +20,12 @@ import {
   AlertCircle,
   ArrowRight,
   Wand2,
-  Briefcase
+  Briefcase,
+  BarChart2,
+  Info
 } from 'lucide-react';
 import WorkplanViewer from './WorkplanViewer';
+import QualityScoreCard from './QualityScoreCard';
 
 const ProposalDetailNew = () => {
   const [proposal, setProposal] = useState(null);
@@ -30,6 +33,8 @@ const ProposalDetailNew = () => {
   const [deleting, setDeleting] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [qualityScore, setQualityScore] = useState(null);
+  const [calculatingScore, setCalculatingScore] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -42,11 +47,45 @@ const ProposalDetailNew = () => {
     try {
       const data = await api.getProposal(id);
       setProposal(data);
+
+      // Fetch quality score if available
+      if (data.quality_score !== null) {
+        fetchQualityScore(false);
+      }
     } catch (error) {
       toast.error('Failed to load proposal');
       navigate('/dashboard');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchQualityScore = async (recalculate = false) => {
+    try {
+      const score = await api.getQualityScore(id, recalculate);
+      setQualityScore(score);
+    } catch (error) {
+      console.error('Failed to fetch quality score:', error);
+    }
+  };
+
+  const handleCalculateScore = async () => {
+    setCalculatingScore(true);
+    try {
+      const score = await api.calculateQualityScore(id);
+      setQualityScore(score);
+
+      // Update proposal with new score
+      setProposal(prev => ({
+        ...prev,
+        quality_score: score.overall_score
+      }));
+
+      toast.success('Quality score calculated successfully');
+    } catch (error) {
+      toast.error('Failed to calculate quality score');
+    } finally {
+      setCalculatingScore(false);
     }
   };
 
@@ -306,6 +345,30 @@ const ProposalDetailNew = () => {
                   Workplan
                 </span>
               </button>
+              <button
+                onClick={() => setActiveTab('quality')}
+                className={`py-3 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'quality'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <BarChart2 className="h-4 w-4" />
+                  Quality Score
+                  {proposal?.quality_score && (
+                    <span className={`ml-1 px-2 py-0.5 text-xs rounded-full ${
+                      proposal.quality_score >= 75
+                        ? 'bg-green-100 text-green-800'
+                        : proposal.quality_score >= 60
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {Math.round(proposal.quality_score)}
+                    </span>
+                  )}
+                </span>
+              </button>
             </nav>
           </div>
         </div>
@@ -509,6 +572,119 @@ const ProposalDetailNew = () => {
                 toast.success('Workplan generated successfully!');
               }}
             />
+          </div>
+        ) : activeTab === 'quality' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Quality Score Card */}
+            <div className="lg:col-span-2">
+              {qualityScore ? (
+                <QualityScoreCard
+                  score={qualityScore}
+                  loading={calculatingScore}
+                />
+              ) : (
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="text-center">
+                    <BarChart2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      Quality Score Not Available
+                    </h3>
+                    <p className="text-gray-500 mb-6">
+                      Calculate a quality score to see how your proposal performs against Erasmus+ evaluation criteria
+                    </p>
+                    <button
+                      onClick={handleCalculateScore}
+                      disabled={calculatingScore || !proposal?.answers}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      {calculatingScore ? (
+                        <>
+                          <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                          Calculating...
+                        </>
+                      ) : (
+                        <>
+                          <BarChart2 className="h-4 w-4 mr-2" />
+                          Calculate Quality Score
+                        </>
+                      )}
+                    </button>
+                    {!proposal?.answers && (
+                      <p className="text-red-500 text-sm mt-4">
+                        Answers must be generated before calculating the quality score
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Actions and Info */}
+            <div className="space-y-4">
+              {/* Recalculate Button */}
+              {qualityScore && (
+                <div className="bg-white rounded-lg shadow p-4">
+                  <h3 className="text-sm font-medium text-gray-900 mb-3">Actions</h3>
+                  <button
+                    onClick={handleCalculateScore}
+                    disabled={calculatingScore}
+                    className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    {calculatingScore ? (
+                      <>
+                        <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                        Recalculating...
+                      </>
+                    ) : (
+                      <>
+                        <BarChart2 className="h-4 w-4 mr-2" />
+                        Recalculate Score
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Scoring Info */}
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="text-sm font-medium text-gray-900 mb-3">Scoring Information</h3>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <span className="text-gray-500">Version:</span>
+                    <span className="ml-2 text-gray-900">1.0</span>
+                  </div>
+                  {qualityScore?.calculated_at && (
+                    <div>
+                      <span className="text-gray-500">Last Calculated:</span>
+                      <span className="ml-2 text-gray-900">
+                        {new Date(qualityScore.calculated_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-gray-500">Passing Score:</span>
+                    <span className="ml-2 text-gray-900">60/100</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Help */}
+              <div className="bg-blue-50 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-blue-900 mb-2">
+                  <Info className="h-4 w-4 inline mr-1" />
+                  About Quality Scoring
+                </h3>
+                <p className="text-sm text-blue-800">
+                  The quality score evaluates your proposal against official Erasmus+ criteria:
+                </p>
+                <ul className="mt-2 space-y-1 text-sm text-blue-800">
+                  <li>• Relevance (30%)</li>
+                  <li>• Partnership (20%)</li>
+                  <li>• Impact (25%)</li>
+                  <li>• Management (25%)</li>
+                </ul>
+              </div>
+            </div>
           </div>
         ) : null}
       </div>
