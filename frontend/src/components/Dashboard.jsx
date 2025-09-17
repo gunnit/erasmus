@@ -26,6 +26,10 @@ const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [budgetMetrics, setBudgetMetrics] = useState(null);
+  const [priorityMetrics, setPriorityMetrics] = useState(null);
+  const [performanceMetrics, setPerformanceMetrics] = useState(null);
+  const [metricsLoading, setMetricsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,14 +38,21 @@ const Dashboard = () => {
 
   const fetchData = async () => {
     setLoading(true);
+    setMetricsLoading(true);
     try {
-      const [proposalsResponse, statsResponse] = await Promise.all([
+      const [proposalsResponse, statsResponse, budgetResponse, priorityResponse, performanceResponse] = await Promise.all([
         api.getProposals(0, 100),
-        api.getDashboardStats()
+        api.getDashboardStats(),
+        api.getBudgetMetrics(12),
+        api.getPriorityMetrics(),
+        api.getPerformanceMetrics(6)
       ]);
 
       console.log('Proposals response:', proposalsResponse);
       console.log('Stats response:', statsResponse);
+      console.log('Budget metrics:', budgetResponse);
+      console.log('Priority metrics:', priorityResponse);
+      console.log('Performance metrics:', performanceResponse);
 
       // Handle proposals data
       const proposalsData = proposalsResponse?.proposals || [];
@@ -58,6 +69,11 @@ const Dashboard = () => {
         averageDuration: 24,
         totalPartners: 0
       });
+
+      // Set metrics data
+      setBudgetMetrics(budgetResponse);
+      setPriorityMetrics(priorityResponse);
+      setPerformanceMetrics(performanceResponse);
     } catch (error) {
       console.error('Dashboard fetch error:', error);
       console.error('Error details:', error.response?.data);
@@ -81,6 +97,7 @@ const Dashboard = () => {
       });
     } finally {
       setLoading(false);
+      setMetricsLoading(false);
     }
   };
 
@@ -114,28 +131,28 @@ const Dashboard = () => {
     }
   };
 
-  // Chart data
-  const budgetData = [
-    { name: 'Q1', budget: 450000, spent: 320000 },
-    { name: 'Q2', budget: 600000, spent: 480000 },
-    { name: 'Q3', budget: 750000, spent: 620000 },
-    { name: 'Q4', budget: 600000, spent: 450000 }
+  // Get chart data from metrics or use defaults
+  const budgetData = budgetMetrics?.data || [
+    { name: 'Q1 2025', budget: 0, spent: 0 },
+    { name: 'Q2 2025', budget: 0, spent: 0 },
+    { name: 'Q3 2025', budget: 0, spent: 0 },
+    { name: 'Q4 2025', budget: 0, spent: 0 }
   ];
 
-  const priorityData = [
-    { name: 'Digital', value: 35, color: '#3B82F6' },
-    { name: 'Inclusion', value: 30, color: '#8B5CF6' },
-    { name: 'Climate', value: 20, color: '#10B981' },
-    { name: 'Democracy', value: 15, color: '#F59E0B' }
+  const priorityData = priorityMetrics?.data || [
+    { name: 'Digital', value: 0, color: '#3B82F6' },
+    { name: 'Inclusion', value: 0, color: '#8B5CF6' },
+    { name: 'Green', value: 0, color: '#10B981' },
+    { name: 'Democracy', value: 0, color: '#F59E0B' }
   ];
 
-  const performanceData = [
-    { month: 'Jan', proposals: 2, approved: 2 },
-    { month: 'Feb', proposals: 3, approved: 2 },
-    { month: 'Mar', proposals: 4, approved: 3 },
-    { month: 'Apr', proposals: 3, approved: 3 },
-    { month: 'May', proposals: 5, approved: 4 },
-    { month: 'Jun', proposals: 4, approved: 3 }
+  const performanceData = performanceMetrics?.data || [
+    { month: 'Jan', proposals: 0, approved: 0 },
+    { month: 'Feb', proposals: 0, approved: 0 },
+    { month: 'Mar', proposals: 0, approved: 0 },
+    { month: 'Apr', proposals: 0, approved: 0 },
+    { month: 'May', proposals: 0, approved: 0 },
+    { month: 'Jun', proposals: 0, approved: 0 }
   ];
 
   const filteredProposals = Array.isArray(proposals) 
@@ -267,6 +284,11 @@ const Dashboard = () => {
             <CardDescription>Quarterly budget allocation and spending</CardDescription>
           </CardHeader>
           <CardContent>
+            {metricsLoading ? (
+              <div className="flex items-center justify-center h-[300px]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              </div>
+            ) : (
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={budgetData}>
                 <defs>
@@ -309,6 +331,7 @@ const Dashboard = () => {
                 <Legend />
               </AreaChart>
             </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -319,6 +342,11 @@ const Dashboard = () => {
             <CardDescription>Distribution across EU priorities</CardDescription>
           </CardHeader>
           <CardContent>
+            {metricsLoading ? (
+              <div className="flex items-center justify-center h-[300px]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              </div>
+            ) : (
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -344,6 +372,8 @@ const Dashboard = () => {
                 />
               </PieChart>
             </ResponsiveContainer>
+            )}
+            {!metricsLoading && (
             <div className="mt-4 space-y-2">
               {priorityData.map((item) => (
                 <div key={item.name} className="flex items-center justify-between text-sm">
@@ -358,6 +388,7 @@ const Dashboard = () => {
                 </div>
               ))}
             </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>
@@ -370,6 +401,11 @@ const Dashboard = () => {
             <CardDescription>Monthly submission and approval trends</CardDescription>
           </CardHeader>
           <CardContent>
+            {metricsLoading ? (
+              <div className="flex items-center justify-center h-[250px]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              </div>
+            ) : (
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={performanceData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -402,6 +438,7 @@ const Dashboard = () => {
                 <Legend />
               </LineChart>
             </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </motion.div>

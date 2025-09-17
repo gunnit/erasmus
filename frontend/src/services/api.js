@@ -356,6 +356,36 @@ const api = {
     }
   },
 
+  getBudgetMetrics: async (months = 12) => {
+    try {
+      const response = await axiosInstance.get(`/dashboard/budget-metrics?months=${months}`);
+      return response.data;
+    } catch (error) {
+      console.error('Budget Metrics Error:', error);
+      throw error;
+    }
+  },
+
+  getPriorityMetrics: async () => {
+    try {
+      const response = await axiosInstance.get('/dashboard/priority-metrics');
+      return response.data;
+    } catch (error) {
+      console.error('Priority Metrics Error:', error);
+      throw error;
+    }
+  },
+
+  getPerformanceMetrics: async (months = 6) => {
+    try {
+      const response = await axiosInstance.get(`/dashboard/performance-metrics?months=${months}`);
+      return response.data;
+    } catch (error) {
+      console.error('Performance Metrics Error:', error);
+      throw error;
+    }
+  },
+
   // Proposal endpoints
   createProposal: async (proposalData) => {
     try {
