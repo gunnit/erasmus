@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Menu, X, Home, FileText, BarChart3, Settings as SettingsIcon, LogOut,
-  Moon, Sun, Bell, Search, User, ChevronDown, PlusCircle,
+  Moon, Sun, Bell, User, ChevronDown, PlusCircle,
   Layers, Sparkles, TrendingUp, BookOpen, Trophy, Target
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -125,17 +125,6 @@ export const Layout = () => {
               </Link>
             </div>
 
-            {/* Search Bar */}
-            <div className="hidden lg:flex flex-1 max-w-md mx-8">
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search proposals..."
-                  className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                />
-              </div>
-            </div>
 
             {/* Right side items */}
             <div className="flex items-center space-x-4">
