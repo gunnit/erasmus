@@ -173,10 +173,12 @@ const ErasmusResources = () => {
 
   // Key dates and deadlines
   const keyDates = [
-    { date: 'March 5, 2025', event: 'Round 1 Application Deadline', status: 'upcoming' },
-    { date: 'October 2025', event: 'Round 2 Application Deadline', status: 'future' },
-    { date: 'May-June 2025', event: 'Evaluation Period Round 1', status: 'future' },
-    { date: 'August 2025', event: 'Results Announcement Round 1', status: 'future' }
+    { date: 'March 5, 2025', event: 'Round 1 Application Deadline', status: 'past' },
+    { date: 'August 2025', event: 'Results Announcement Round 1', status: 'past' },
+    { date: 'October 1, 2025', event: 'Round 2 Application Deadline', status: 'upcoming' },
+    { date: 'December 2025 - January 2026', event: 'Evaluation Period Round 2', status: 'future' },
+    { date: 'February 2026', event: 'Results Announcement Round 2', status: 'future' },
+    { date: 'March 2026', event: 'Round 1 Application Deadline (Next Year)', status: 'future' }
   ];
 
   // EU Priorities for 2025

@@ -181,10 +181,10 @@ export const Layout = () => {
                               KA220-ADU Adult Education
                             </p>
                             <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                              {formatDeadlineDate('2025-03-06')}
+                              {formatDeadlineDate('2025-10-01')}
                             </p>
                             <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                              {formatBrusselsTime('2025-03-06T12:00:00')}
+                              {formatBrusselsTime('2025-10-01T12:00:00')}
                             </p>
                           </div>
                         </div>
@@ -193,7 +193,7 @@ export const Layout = () => {
                       <div className="space-y-2 text-xs text-gray-600 dark:text-gray-400">
                         <div className="flex items-start space-x-2">
                           <div className="w-1 h-1 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
-                          <p>Round 1 deadline for Cooperation Partnerships in Adult Education</p>
+                          <p>Round 2 deadline for Cooperation Partnerships in Adult Education</p>
                         </div>
                         <div className="flex items-start space-x-2">
                           <div className="w-1 h-1 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></div>
@@ -220,7 +220,7 @@ export const Layout = () => {
                       <div className="mt-3 text-xs text-center text-gray-500 dark:text-gray-400">
                         <p>Other upcoming deadlines:</p>
                         <p className="font-medium mt-1">
-                          October 2025 - Round 2
+                          March 2026 - Round 1 (Next Year)
                         </p>
                       </div>
                     </motion.div>
@@ -292,6 +292,12 @@ export const Layout = () => {
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
                         Settings
+                      </button>
+                      <button
+                        onClick={() => navigate('/pricing')}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        Pricing
                       </button>
                       <button
                         onClick={handleLogout}
