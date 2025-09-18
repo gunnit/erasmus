@@ -657,7 +657,10 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-xl transition-shadow cursor-pointer">
+        <Card
+          className="hover:shadow-xl transition-shadow cursor-pointer"
+          onClick={() => navigate('/resources')}
+        >
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
