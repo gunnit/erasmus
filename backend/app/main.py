@@ -12,6 +12,7 @@ from app.api import single_question_generator
 from app.api import workplan_generator
 from app.api import quality_score
 from app.api import payments
+from app.api import admin
 from app.core.config import settings
 from app.db.database import engine, Base
 
@@ -73,6 +74,7 @@ app.include_router(profile.router, prefix="/api/profile", tags=["profile"])
 app.include_router(workplan_generator.router)
 app.include_router(quality_score.router, prefix="/api/quality-score", tags=["quality"])
 app.include_router(payments.router, prefix="/api", tags=["payments"])
+app.include_router(admin.router, prefix="/api", tags=["admin"])
 
 @app.get("/")
 async def root():
