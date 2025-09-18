@@ -79,7 +79,7 @@ const SubscriptionStatus = ({ className }) => {
         </div>
 
         <p className="text-gray-600 mb-6">
-          Get started with a subscription to generate Erasmus+ proposals with AI assistance.
+          Get started with a subscription to generate Erasmus+ proposals with AI. You can still create and save draft proposals.
         </p>
 
         <button
@@ -116,12 +116,12 @@ const SubscriptionStatus = ({ className }) => {
         <FiCheckCircle className="text-green-500 text-2xl" />
       </div>
 
-      {/* Proposals Usage */}
+      {/* AI Generation Credits */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center text-gray-700">
             <FiFileText className="mr-2" />
-            <span className="font-medium">Proposals</span>
+            <span className="font-medium">AI Generation Credits</span>
           </div>
           <span className="text-sm font-semibold text-gray-900">
             {subscription.proposals_remaining} / {subscription.proposals_limit} remaining
@@ -139,7 +139,7 @@ const SubscriptionStatus = ({ className }) => {
 
         {subscription.proposals_remaining <= 2 && subscription.proposals_remaining > 0 && (
           <p className="text-xs text-orange-600 mt-1">
-            ⚠️ Only {subscription.proposals_remaining} proposal{subscription.proposals_remaining > 1 ? 's' : ''} left
+            ⚠️ Only {subscription.proposals_remaining} AI generation{subscription.proposals_remaining > 1 ? 's' : ''} left
           </p>
         )}
       </div>

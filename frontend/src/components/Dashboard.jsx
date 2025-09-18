@@ -293,24 +293,22 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               <Button
-                onClick={() => {
-                  if (!subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0) {
-                    toast.error('You need an active subscription to create proposals');
-                    navigate('/pricing');
-                  } else {
-                    navigate('/new-proposal');
-                  }
-                }}
+                onClick={() => navigate('/new-proposal')}
                 className="w-full justify-start"
                 variant="outline"
                 icon={Plus}
               >
-                {!subscriptionStatus?.has_subscription
-                  ? 'Get Subscription to Create Proposals'
-                  : subscriptionStatus?.proposals_remaining <= 0
-                  ? 'Upgrade Plan to Create More Proposals'
-                  : `Create New Proposal (${subscriptionStatus?.proposals_remaining} remaining)`}
+                Create New Proposal
               </Button>
+              {subscriptionStatus && (
+                <div className="text-xs text-gray-600 mt-1 ml-10">
+                  {!subscriptionStatus.has_subscription
+                    ? 'Draft only - Get a plan to generate with AI'
+                    : subscriptionStatus.proposals_remaining <= 0
+                    ? 'No AI credits left - Upgrade for more'
+                    : `${subscriptionStatus.proposals_remaining} AI generations remaining`}
+                </div>
+              )}
               <Button
                 onClick={() => navigate('/proposals')}
                 className="w-full justify-start"
