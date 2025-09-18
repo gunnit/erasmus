@@ -103,11 +103,14 @@ class PayPalService:
             json=order_data
         )
 
-        if response.status_code != 201:
+        logger.info(f"PayPal order response status: {response.status_code}")
+
+        if response.status_code not in [200, 201]:
             logger.error(f"Failed to create PayPal order: {response.text}")
             raise Exception("Failed to create PayPal order")
 
         order = response.json()
+        logger.info(f"PayPal order created: {order}")
 
         # Get the approval link for the user
         approval_link = None
@@ -115,6 +118,10 @@ class PayPalService:
             if link["rel"] == "payer-action":
                 approval_link = link["href"]
                 break
+
+        if not approval_link:
+            logger.error(f"No approval link found in PayPal response: {order}")
+            raise Exception("Failed to create PayPal order")
 
         return {
             "order_id": order["id"],
