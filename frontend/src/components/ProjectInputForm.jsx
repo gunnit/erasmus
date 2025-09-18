@@ -856,7 +856,7 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
               icon={Sparkles}
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
             >
-              Generate Application
+              Generate Full Application with AI
             </Button>
           </div>
         ) : (

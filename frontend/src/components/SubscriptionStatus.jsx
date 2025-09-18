@@ -121,12 +121,16 @@ const SubscriptionStatus = ({ className }) => {
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center text-gray-700">
             <FiFileText className="mr-2" />
-            <span className="font-medium">AI Generation Credits</span>
+            <span className="font-medium">Full Application Generations</span>
           </div>
           <span className="text-sm font-semibold text-gray-900">
             {subscription.proposals_remaining} / {subscription.proposals_limit} remaining
           </span>
         </div>
+
+        <p className="text-xs text-gray-500 mt-1 mb-2">
+          Each generation creates complete answers for all 27 application questions
+        </p>
 
         <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
           <motion.div
@@ -139,7 +143,7 @@ const SubscriptionStatus = ({ className }) => {
 
         {subscription.proposals_remaining <= 2 && subscription.proposals_remaining > 0 && (
           <p className="text-xs text-orange-600 mt-1">
-            ⚠️ Only {subscription.proposals_remaining} AI generation{subscription.proposals_remaining > 1 ? 's' : ''} left
+            ⚠️ Only {subscription.proposals_remaining} full application generation{subscription.proposals_remaining > 1 ? 's' : ''} left
           </p>
         )}
       </div>

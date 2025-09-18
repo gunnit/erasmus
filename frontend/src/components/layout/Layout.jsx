@@ -398,14 +398,14 @@ export const Layout = () => {
                     <>
                       <div className="mb-3">
                         <p className="text-sm font-medium">
-                          {userStats?.subscription?.proposals_remaining || 0}/{userStats?.subscription?.proposals_limit || 0} AI Credits
+                          {userStats?.subscription?.proposals_remaining || 0}/{userStats?.subscription?.proposals_limit || 0} Generations
                         </p>
                         <p className="text-xs opacity-80 mt-1">
                           {userStats?.subscription?.proposals_remaining > 0
-                            ? `${userStats?.subscription?.proposals_remaining} generations remaining`
+                            ? `${userStats?.subscription?.proposals_remaining} full applications`
                             : userStats?.subscription?.has_subscription
-                              ? 'Credits exhausted - Upgrade plan'
-                              : 'No active subscription'}
+                              ? 'No generations left'
+                              : 'Get a plan to generate'}
                         </p>
                       </div>
 

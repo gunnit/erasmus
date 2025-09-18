@@ -303,10 +303,10 @@ const Dashboard = () => {
               {subscriptionStatus && (
                 <div className="text-xs text-gray-600 mt-1 ml-10">
                   {!subscriptionStatus.has_subscription
-                    ? 'Draft only - Get a plan to generate with AI'
+                    ? 'Create draft - Purchase plan to generate full application with AI'
                     : subscriptionStatus.proposals_remaining <= 0
-                    ? 'No AI credits left - Upgrade for more'
-                    : `${subscriptionStatus.proposals_remaining} AI generations remaining`}
+                    ? 'No generations left - Can still create/edit drafts manually'
+                    : `${subscriptionStatus.proposals_remaining} full AI application${subscriptionStatus.proposals_remaining > 1 ? 's' : ''} remaining`}
                 </div>
               )}
               <Button
