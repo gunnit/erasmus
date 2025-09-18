@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { FiCheck, FiX, FiZap, FiAward } from 'react-icons/fi';
@@ -11,6 +11,7 @@ const PricingPlans = () => {
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     fetchPricingPlans();
@@ -75,6 +76,20 @@ const PricingPlans = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4">
       <div className="max-w-7xl mx-auto">
+        {/* Welcome message for new registrations */}
+        {location.state?.fromRegistration && (
+          <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                Welcome to Erasmus+ AI Assistant! 🎉
+              </h3>
+              <p className="text-blue-700">
+                {location.state?.message || 'Please select a plan to start creating proposals.'}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">

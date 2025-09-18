@@ -27,23 +27,29 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
     }
-    
+
     setLoading(true);
-    
+
     const { confirmPassword, ...userData } = formData;
     const result = await register(userData);
-    
+
     if (result.success) {
-      navigate('/dashboard');
+      // Redirect to pricing page to select a plan after registration
+      navigate('/pricing', {
+        state: {
+          message: 'Welcome! Please select a plan to start creating proposals.',
+          fromRegistration: true
+        }
+      });
     } else {
       setError(typeof result.error === 'string' ? result.error : 'Registration failed');
     }
-    
+
     setLoading(false);
   };
 

@@ -9,6 +9,7 @@ from app.db.database import get_db
 from app.db.models import User, Proposal
 from app.schemas.proposal import ProposalCreate, ProposalUpdate, Proposal as ProposalSchema, ProposalList
 from app.api.dependencies import get_current_user
+from app.core.subscription_deps import require_valid_subscription
 from app.services.pdf_generator import ProposalPDFGenerator
 
 router = APIRouter(prefix="/proposals", tags=["proposals"])
@@ -16,7 +17,7 @@ router = APIRouter(prefix="/proposals", tags=["proposals"])
 @router.post("/", response_model=ProposalSchema)
 async def create_proposal(
     proposal_data: ProposalCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_valid_subscription),
     db: Session = Depends(get_db)
 ):
     db_proposal = Proposal(

@@ -32,6 +32,7 @@ const Dashboard = () => {
   const [priorityMetrics, setPriorityMetrics] = useState(null);
   const [performanceMetrics, setPerformanceMetrics] = useState(null);
   const [metricsLoading, setMetricsLoading] = useState(true);
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,12 +43,13 @@ const Dashboard = () => {
     setLoading(true);
     setMetricsLoading(true);
     try {
-      const [proposalsResponse, statsResponse, budgetResponse, priorityResponse, performanceResponse] = await Promise.all([
+      const [proposalsResponse, statsResponse, budgetResponse, priorityResponse, performanceResponse, subscriptionResponse] = await Promise.all([
         api.getProposals(0, 100),
         api.getDashboardStats(),
         api.getBudgetMetrics(12),
         api.getPriorityMetrics(),
-        api.getPerformanceMetrics(6)
+        api.getPerformanceMetrics(6),
+        api.get('/payments/subscription-status').catch(() => ({ data: null }))
       ]);
 
       console.log('Proposals response:', proposalsResponse);
@@ -76,6 +78,7 @@ const Dashboard = () => {
       setBudgetMetrics(budgetResponse);
       setPriorityMetrics(priorityResponse);
       setPerformanceMetrics(performanceResponse);
+      setSubscriptionStatus(subscriptionResponse?.data);
     } catch (error) {
       console.error('Dashboard fetch error:', error);
       console.error('Error details:', error.response?.data);
@@ -290,12 +293,23 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               <Button
-                onClick={() => navigate('/new-proposal')}
+                onClick={() => {
+                  if (!subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0) {
+                    toast.error('You need an active subscription to create proposals');
+                    navigate('/pricing');
+                  } else {
+                    navigate('/new-proposal');
+                  }
+                }}
                 className="w-full justify-start"
                 variant="outline"
                 icon={Plus}
               >
-                Create New Proposal
+                {!subscriptionStatus?.has_subscription
+                  ? 'Get Subscription to Create Proposals'
+                  : subscriptionStatus?.proposals_remaining <= 0
+                  ? 'Upgrade Plan to Create More Proposals'
+                  : `Create New Proposal (${subscriptionStatus?.proposals_remaining} remaining)`}
               </Button>
               <Button
                 onClick={() => navigate('/proposals')}

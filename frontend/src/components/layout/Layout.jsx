@@ -30,8 +30,6 @@ export const Layout = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  // Free tier limit
-  const FREE_TIER_LIMIT = 5;
 
   useEffect(() => {
     if (darkMode) {
@@ -55,14 +53,21 @@ export const Layout = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [notificationOpen, userMenuOpen]);
 
-  // Fetch user stats
+  // Fetch user stats and subscription status
   useEffect(() => {
     const fetchStats = async () => {
       if (user) {
         try {
           setStatsLoading(true);
-          const response = await api.get('/dashboard/stats');
-          setUserStats(response.data.stats);
+          const [statsResponse, subscriptionResponse] = await Promise.all([
+            api.get('/dashboard/stats').catch(() => ({ data: { stats: {} } })),
+            api.get('/payments/subscription-status').catch(() => ({ data: null }))
+          ]);
+
+          setUserStats({
+            ...statsResponse.data.stats,
+            subscription: subscriptionResponse.data
+          });
         } catch (error) {
           console.error('Failed to fetch user stats:', error);
         } finally {
@@ -379,7 +384,9 @@ export const Layout = () => {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <Target className="w-5 h-5" />
-                    <span className="text-xs bg-white/20 px-2 py-1 rounded-full">Free Tier</span>
+                    <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
+                      {userStats?.subscription?.plan_type ? userStats.subscription.plan_type.charAt(0).toUpperCase() + userStats.subscription.plan_type.slice(1) : 'No Plan'}
+                    </span>
                   </div>
 
                   {statsLoading ? (
@@ -391,12 +398,14 @@ export const Layout = () => {
                     <>
                       <div className="mb-3">
                         <p className="text-sm font-medium">
-                          {userStats?.totalProposals || 0}/{FREE_TIER_LIMIT} Proposals
+                          {userStats?.subscription?.proposals_remaining || 0}/{userStats?.subscription?.proposals_limit || 0} Proposals
                         </p>
                         <p className="text-xs opacity-80 mt-1">
-                          {FREE_TIER_LIMIT - (userStats?.totalProposals || 0) > 0
-                            ? `${FREE_TIER_LIMIT - (userStats?.totalProposals || 0)} remaining`
-                            : 'Limit reached - Upgrade to Pro'}
+                          {userStats?.subscription?.proposals_remaining > 0
+                            ? `${userStats?.subscription?.proposals_remaining} remaining`
+                            : userStats?.subscription?.has_subscription
+                              ? 'Limit reached - Upgrade plan'
+                              : 'No active subscription'}
                         </p>
                       </div>
 
@@ -406,13 +415,15 @@ export const Layout = () => {
                           <motion.div
                             className={cn(
                               "h-full rounded-full transition-all",
-                              userStats?.totalProposals >= FREE_TIER_LIMIT
+                              userStats?.subscription?.proposals_remaining <= 0
                                 ? "bg-gradient-to-r from-yellow-400 to-orange-500"
                                 : "bg-gradient-to-r from-green-400 to-emerald-500"
                             )}
                             initial={{ width: 0 }}
                             animate={{
-                              width: `${Math.min(((userStats?.totalProposals || 0) / FREE_TIER_LIMIT) * 100, 100)}%`
+                              width: userStats?.subscription?.proposals_limit > 0
+                                ? `${Math.min((((userStats?.subscription?.proposals_limit || 0) - (userStats?.subscription?.proposals_remaining || 0)) / (userStats?.subscription?.proposals_limit || 1)) * 100, 100)}%`
+                                : '0%'
                             }}
                             transition={{ duration: 0.5, delay: 0.2 }}
                           />
@@ -430,9 +441,11 @@ export const Layout = () => {
                             {userStats?.successRate || 0}%
                           </span>
                         </div>
-                        {userStats?.totalProposals >= FREE_TIER_LIMIT && (
-                          <button className="w-full mt-2 px-2 py-1 bg-white/20 hover:bg-white/30 rounded text-xs font-medium transition-colors">
-                            Upgrade to Pro →
+                        {(!userStats?.subscription?.has_subscription || userStats?.subscription?.proposals_remaining <= 0) && (
+                          <button
+                            onClick={() => navigate('/pricing')}
+                            className="w-full mt-2 px-2 py-1 bg-white/20 hover:bg-white/30 rounded text-xs font-medium transition-colors">
+                            {userStats?.subscription?.has_subscription ? 'Upgrade Plan' : 'Get Started'} →
                           </button>
                         )}
                       </div>
