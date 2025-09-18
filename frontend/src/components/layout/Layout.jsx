@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Menu, X, Home, FileText, BarChart3, Settings as SettingsIcon, LogOut,
+  Menu, X, Home, FileText, Settings as SettingsIcon, LogOut,
   Moon, Sun, Bell, User, ChevronDown, PlusCircle,
   Layers, Sparkles, TrendingUp, BookOpen, Trophy, Target
 } from 'lucide-react';
@@ -14,7 +14,6 @@ import { formatDeadlineDate, formatBrusselsTime } from '../../utils/dateUtils';
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Proposals', href: '/proposals', icon: FileText },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Erasmus+ Resources', href: '/resources', icon: BookOpen },
   { name: 'Settings', href: '/settings', icon: SettingsIcon },
 ];
@@ -374,7 +373,7 @@ export const Layout = () => {
                 <motion.div
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => navigate('/analytics')}
+                  onClick={() => navigate('/pricing')}
                   className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-4 text-white cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-2">
