@@ -124,7 +124,7 @@ const LandingPage = () => {
             </div>
 
             <div className="mt-8 text-sm text-gray-500">
-              No credit card required • €29 for your first proposal • Cancel anytime
+              No credit card required • €49 for your first proposal • Cancel anytime
             </div>
           </motion.div>
         </div>
@@ -452,13 +452,13 @@ const LandingPage = () => {
             <div className="bg-white rounded-xl p-8 shadow-lg">
               <h3 className="text-2xl font-bold text-gray-900 mb-2">Starter</h3>
               <div className="text-4xl font-bold text-blue-600 mb-4">
-                €29
+                €49
                 <span className="text-lg text-gray-500 font-normal">/30 days</span>
               </div>
               <ul className="space-y-3 mb-6 text-left">
                 <li className="flex items-center">
                   <FiCheck className="text-green-500 mr-2" />
-                  <span>1 Complete Application</span>
+                  <span>3 Complete Applications</span>
                 </li>
                 <li className="flex items-center">
                   <FiCheck className="text-green-500 mr-2" />
@@ -483,13 +483,13 @@ const LandingPage = () => {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-2">Professional</h3>
               <div className="text-4xl font-bold text-purple-600 mb-4">
-                €199
+                €149
                 <span className="text-lg text-gray-500 font-normal">/90 days</span>
               </div>
               <ul className="space-y-3 mb-6 text-left">
                 <li className="flex items-center">
                   <FiCheck className="text-green-500 mr-2" />
-                  <span>10 Applications</span>
+                  <span>15 Applications</span>
                 </li>
                 <li className="flex items-center">
                   <FiCheck className="text-green-500 mr-2" />
@@ -604,7 +604,7 @@ const LandingPage = () => {
             </button>
 
             <div className="mt-4 text-sm text-blue-100">
-              No credit card required • €29 for your first proposal • Cancel anytime
+              No credit card required • €49 for your first proposal • Cancel anytime
             </div>
           </div>
 
