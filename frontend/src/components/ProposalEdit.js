@@ -88,21 +88,19 @@ const ProposalEdit = () => {
     setIsGeneratingDescription(true);
 
     try {
-      const response = await api.post('/form/enhance-description', {
-        title: formData.title,
-        initial_description: formData.project_idea || '',
-        context: {
-          priorities: formData.priorities,
-          target_groups: formData.target_groups
-        }
-      });
+      const response = await api.generateProjectDescription(
+        formData.title,
+        formData.project_idea || ''
+      );
 
-      if (response.data.enhanced_description) {
+      if (response.success && response.description) {
         setFormData(prev => ({
           ...prev,
-          project_idea: response.data.enhanced_description
+          project_idea: response.description
         }));
         toast.success('Description enhanced with AI!');
+      } else {
+        toast.error('Failed to generate description');
       }
     } catch (error) {
       console.error('Error generating description:', error);
