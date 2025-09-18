@@ -184,7 +184,7 @@ async def get_form_questions():
 @router.post("/generate-description")
 async def generate_project_description(
     request: Dict,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_valid_subscription)
 ):
     """
     Generate or enhance a project description using AI

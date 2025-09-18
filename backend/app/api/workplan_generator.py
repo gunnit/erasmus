@@ -7,6 +7,7 @@ from datetime import datetime
 from app.db.database import get_db
 from app.db.models import User, Proposal
 from app.api.dependencies import get_current_user
+from app.core.subscription_deps import require_valid_subscription
 from app.services.workplan_service import WorkplanService
 from app.schemas.workplan import WorkplanCreate, WorkplanResponse, WorkplanUpdate
 
@@ -20,7 +21,7 @@ router = APIRouter(
 @router.post("/generate", response_model=WorkplanResponse)
 async def generate_workplan(
     data: WorkplanCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_valid_subscription),
     db: Session = Depends(get_db)
 ):
     """

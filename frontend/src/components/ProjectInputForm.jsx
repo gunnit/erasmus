@@ -41,6 +41,7 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
   const [saveTimeout, setSaveTimeout] = useState(null);
   const [saveStatus, setSaveStatus] = useState('idle'); // idle, saving, saved, error
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [formData, setFormData] = useState(initialData || {
     title: '',
     project_idea: '',
@@ -67,6 +68,20 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
     { id: 'priorities', title: 'EU Priorities', icon: Target },
     { id: 'details', title: 'Final Details', icon: CheckCircle }
   ];
+
+  // Fetch subscription status on mount
+  useEffect(() => {
+    const fetchSubscriptionStatus = async () => {
+      try {
+        const response = await api.get('/payments/subscription-status');
+        setSubscriptionStatus(response.data);
+      } catch (error) {
+        console.error('Error fetching subscription:', error);
+        setSubscriptionStatus(null);
+      }
+    };
+    fetchSubscriptionStatus();
+  }, []);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -248,6 +263,12 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
       return;
     }
 
+    // Check subscription status first
+    if (!subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0) {
+      toast.error('No AI generation credits available. Please upgrade your plan.');
+      return;
+    }
+
     setIsGeneratingDescription(true);
     try {
       const response = await api.generateProjectDescription(
@@ -307,13 +328,19 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                   variant="secondary"
                   size="sm"
                   onClick={handleGenerateDescription}
-                  disabled={isGeneratingDescription || (!formData.title && !formData.project_idea)}
+                  disabled={isGeneratingDescription || (!formData.title && !formData.project_idea) || !subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0}
                   className="flex items-center gap-2"
+                  title={!subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0 ? 'No AI generation credits available' : ''}
                 >
                   {isGeneratingDescription ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Generating...
+                    </>
+                  ) : !subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0 ? (
+                    <>
+                      <Wand2 className="w-4 h-4" />
+                      No Credits
                     </>
                   ) : (
                     <>

@@ -7,6 +7,7 @@ from datetime import datetime
 
 from app.services.openai_service import OpenAIService
 from app.api.dependencies import get_current_user
+from app.core.subscription_deps import require_valid_subscription
 from app.db.models import User
 from app.db.database import get_db
 from sqlalchemy.orm import Session
@@ -38,7 +39,7 @@ with open(form_questions_path, 'r') as f:
 @router.post("/generate-single-answer", response_model=GenerateSingleAnswerResponse)
 async def generate_single_answer(
     request: GenerateSingleAnswerRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_valid_subscription),
     db: Session = Depends(get_db)
 ):
     """

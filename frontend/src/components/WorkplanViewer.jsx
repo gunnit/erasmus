@@ -20,11 +20,13 @@ const WorkplanViewer = ({ proposalId, proposalData, onWorkplanGenerated }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [editedWorkplan, setEditedWorkplan] = useState(null);
   const [showTimeline, setShowTimeline] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
 
   useEffect(() => {
     if (proposalId) {
       fetchWorkplan();
     }
+    fetchSubscriptionStatus();
   }, [proposalId]);
 
   const fetchWorkplan = async () => {
@@ -47,7 +49,22 @@ const WorkplanViewer = ({ proposalId, proposalData, onWorkplanGenerated }) => {
     }
   };
 
+  const fetchSubscriptionStatus = async () => {
+    try {
+      const response = await api.get('/payments/subscription-status');
+      setSubscriptionStatus(response.data);
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+      setSubscriptionStatus(null);
+    }
+  };
+
   const handleGenerateWorkplan = async () => {
+    // Check subscription status first
+    if (!subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0) {
+      toast.error('No AI generation credits available. Please upgrade your plan.');
+      return;
+    }
     try {
       setGenerating(true);
       const response = await api.post('/form/workplan/generate', {
@@ -378,11 +395,13 @@ const WorkplanViewer = ({ proposalId, proposalData, onWorkplanGenerated }) => {
           </p>
           <Button
             onClick={handleGenerateWorkplan}
-            disabled={!proposalId}
+            disabled={!proposalId || !subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0}
             className="mx-auto"
           >
             <Wand2 className="h-4 w-4 mr-2" />
-            Generate Workplan
+            {!subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0
+              ? 'No AI Credits'
+              : 'Generate Workplan'}
           </Button>
         </div>
       </Card>
@@ -419,10 +438,13 @@ const WorkplanViewer = ({ proposalId, proposalData, onWorkplanGenerated }) => {
           <Button
             variant="outline"
             onClick={handleGenerateWorkplan}
-            disabled={generating}
+            disabled={generating || !subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0}
+            title={!subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0 ? 'No AI generation credits available' : ''}
           >
             <Wand2 className="h-4 w-4 mr-2" />
-            Regenerate
+            {!subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0
+              ? 'No Credits'
+              : 'Regenerate'}
           </Button>
           {editMode ? (
             <>

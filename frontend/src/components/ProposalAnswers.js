@@ -23,6 +23,7 @@ const ProposalAnswers = () => {
   const [additionalContext, setAdditionalContext] = useState({});
   const [editedAnswers, setEditedAnswers] = useState({});
   const [savingAnswer, setSavingAnswer] = useState(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -30,6 +31,7 @@ const ProposalAnswers = () => {
   useEffect(() => {
     fetchProposal();
     loadAllSectionQuestions();
+    fetchSubscriptionStatus();
   }, [id]);
 
   const fetchProposal = async () => {
@@ -48,6 +50,16 @@ const ProposalAnswers = () => {
     }
   };
 
+  const fetchSubscriptionStatus = async () => {
+    try {
+      const response = await api.get('/payments/subscription-status');
+      setSubscriptionStatus(response.data);
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+      setSubscriptionStatus(null);
+    }
+  };
+
   const loadAllSectionQuestions = async () => {
     try {
       const questions = {};
@@ -63,6 +75,13 @@ const ProposalAnswers = () => {
 
   const handleGenerateAnswer = async (sectionKey, questionId, questionField) => {
     if (!proposal) return;
+
+    // Check subscription status first
+    if (!subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0) {
+      toast.error('No AI generation credits available. Please upgrade your plan.');
+      navigate('/pricing');
+      return;
+    }
 
     setGeneratingQuestion(`${sectionKey}_${questionId}`);
 
@@ -227,13 +246,19 @@ const ProposalAnswers = () => {
         <div className="flex gap-2">
           <button
             onClick={() => handleGenerateAnswer(sectionKey, questionId, questionField)}
-            disabled={isGenerating || isSaving}
+            disabled={isGenerating || isSaving || !subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            title={!subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0 ? 'No AI generation credits available' : ''}
           >
             {isGenerating ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Generating...
+              </>
+            ) : !subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0 ? (
+              <>
+                <Wand2 className="h-4 w-4" />
+                No Credits
               </>
             ) : (
               <>
