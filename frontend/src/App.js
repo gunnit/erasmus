@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard.jsx';
+import LandingPage from './components/LandingPage.jsx';
+import HomeRouter from './components/HomeRouter.jsx';
 import ProposalDetail from './components/ProposalDetail';
 import ProposalDetailNew from './components/ProposalDetailNew';
 import ProposalAnswers from './components/ProposalAnswers';
@@ -505,16 +507,17 @@ function App() {
           }}
         />
         <Routes>
+          <Route path="/" element={<HomeRouter />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route element={<Layout />}>
-            <Route 
-              path="/dashboard" 
+            <Route
+              path="/dashboard"
               element={
                 <ProtectedRoute>
                   <Dashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
             <Route 
               path="/proposals" 
@@ -621,14 +624,6 @@ function App() {
                   <ProposalCreator />
                 </ProtectedRoute>
               }
-            />
-            <Route 
-              path="/" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
             />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
