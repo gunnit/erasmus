@@ -102,22 +102,13 @@ const ProposalsList = () => {
       className="space-y-6"
     >
       {/* Header */}
-      <motion.div variants={fadeInVariants} className="flex justify-between items-center">
+      <motion.div variants={fadeInVariants}>
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
             Your Proposals
           </h1>
           <p className="text-gray-600 mt-1">Manage and track all your Erasmus+ applications</p>
         </div>
-        <Button
-          onClick={() => navigate('/new-proposal')}
-          variant="primary"
-          size="lg"
-          className="flex items-center space-x-2"
-        >
-          <Plus className="w-5 h-5" />
-          <span>New Proposal</span>
-        </Button>
       </motion.div>
 
       {/* Filters and Search */}
