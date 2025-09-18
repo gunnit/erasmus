@@ -13,6 +13,45 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
+@router.post("/run-subscription-migration-emergency")
+async def run_subscription_migration_emergency(
+    db: Session = Depends(get_db)
+):
+    """Emergency migration endpoint - no auth required for initial setup"""
+    try:
+        # Only run if columns don't exist
+        columns_check = db.execute(text("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'users'
+            AND column_name = 'subscription_plan'
+        """))
+        if columns_check.scalar():
+            return {"message": "Migration already applied", "status": "columns_exist"}
+
+        # Add subscription fields to users table
+        logger.info("Adding subscription fields to users table...")
+        db.execute(text("""
+            ALTER TABLE users
+            ADD COLUMN IF NOT EXISTS subscription_plan VARCHAR,
+            ADD COLUMN IF NOT EXISTS proposals_remaining INTEGER DEFAULT 0,
+            ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMP,
+            ADD COLUMN IF NOT EXISTS subscription_started_at TIMESTAMP
+        """))
+
+        db.commit()
+
+        return {
+            "success": True,
+            "message": "User subscription columns added successfully",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Emergency migration failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Migration failed: {str(e)}")
+
 @router.post("/run-subscription-migration")
 async def run_subscription_migration(
     db: Session = Depends(get_db),
