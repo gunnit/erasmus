@@ -45,8 +45,9 @@ const PaymentCheckout = () => {
 
     // Load PayPal SDK
     const script = document.createElement('script');
-    // You'll need to replace this with your actual PayPal client ID
-    script.src = `https://www.paypal.com/sdk/js?client-id=${process.env.REACT_APP_PAYPAL_CLIENT_ID || 'YOUR_SANDBOX_CLIENT_ID'}&currency=EUR`;
+    // Using the sandbox client ID from environment variable
+    const clientId = process.env.REACT_APP_PAYPAL_CLIENT_ID || 'AfCc-UkfUFA4q-hKiTKLkyN5DgRX4by1JB1vEditwNmChL-cuPelm2u-eXDCt1wAXOkyCrMz1fWdN59R';
+    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=EUR`;
     script.async = true;
     script.onload = () => setPaypalReady(true);
     script.onerror = () => setError('Failed to load PayPal. Please refresh and try again.');
