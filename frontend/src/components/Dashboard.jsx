@@ -10,7 +10,7 @@ import {
   FileText, TrendingUp, Clock, CheckCircle, AlertCircle,
   Plus, ArrowRight, Calendar, Euro, Users, Target,
   Download, Edit3, Trash2, Eye, Filter, Search,
-  Award, Briefcase, Globe, Sparkles
+  Award, Briefcase, Globe, Sparkles, ChevronDown
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/Card';
@@ -160,7 +160,7 @@ const Dashboard = () => {
     { month: 'Jun', proposals: 0, approved: 0 }
   ];
 
-  const filteredProposals = Array.isArray(proposals) 
+  const filteredProposals = Array.isArray(proposals)
     ? proposals.filter(proposal => {
         const matchesFilter = filter === 'all' || proposal.status === filter;
         const matchesSearch = proposal.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -185,6 +185,23 @@ const Dashboard = () => {
     );
   }
 
+  // Determine primary action based on user state
+  const getPrimaryAction = () => {
+    if (!subscriptionStatus?.has_subscription) {
+      return { text: 'Start Free Draft', subtext: 'Upgrade for AI Generation' };
+    }
+    if (subscriptionStatus?.proposals_remaining <= 0) {
+      return { text: 'Create Manual Draft', subtext: 'No AI generations left' };
+    }
+    const inProgressProposal = proposals.find(p => p.status === 'draft' || p.status === 'pending');
+    if (inProgressProposal) {
+      return { text: 'Continue Working', subtext: inProgressProposal.title, proposalId: inProgressProposal.id };
+    }
+    return { text: 'Start New Application', subtext: `${subscriptionStatus.proposals_remaining} AI generations available` };
+  };
+
+  const primaryAction = getPrimaryAction();
+
   return (
     <motion.div
       initial="hidden"
@@ -192,146 +209,285 @@ const Dashboard = () => {
       variants={staggerContainer}
       className="space-y-8"
     >
-      {/* Header */}
-      <motion.div variants={fadeInVariants} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-            Dashboard
-          </h1>
-          <p className="text-gray-600 mt-1">Manage your Erasmus+ proposals</p>
+      {/* Header with Subscription Status and Primary Action */}
+      <motion.div variants={fadeInVariants} className="space-y-6">
+        {/* Title Section */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+              Dashboard
+            </h1>
+            <p className="text-gray-600 mt-1">Manage your Erasmus+ proposals</p>
+          </div>
         </div>
-        <Button
-          onClick={() => navigate('/new-proposal')}
-          size="lg"
-          icon={Plus}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-        >
-          New Proposal
-        </Button>
-      </motion.div>
 
-      {/* Stats Cards */}
-      <motion.div variants={fadeInVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-full -mr-16 -mt-16" />
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Proposals</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalProposals}</p>
-                <p className="text-xs text-green-600 mt-2 flex items-center">
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                  +20% from last month
-                </p>
-              </div>
-              <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl">
-                <FileText className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-full -mr-16 -mt-16" />
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Success Rate</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.successRate}%</p>
-                <Progress value={stats?.successRate} max={100} size="sm" variant="success" className="mt-2" />
-              </div>
-              <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl">
-                <Award className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full -mr-16 -mt-16" />
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Budget</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">€{(stats?.totalBudget / 1000000).toFixed(1)}M</p>
-                <p className="text-xs text-gray-500 mt-2">Across all projects</p>
-              </div>
-              <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
-                <Euro className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/10 to-red-500/10 rounded-full -mr-16 -mt-16" />
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Partners</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalPartners}</p>
-                <p className="text-xs text-gray-500 mt-2">From 12 countries</p>
-              </div>
-              <div className="p-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* Subscription Status */}
-      <motion.div variants={fadeInVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
+        {/* Priority Action Zone - Subscription Status + Primary CTA */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Subscription Status - Now at top priority */}
           <SubscriptionStatus />
-        </div>
-        <div className="lg:col-span-2">
+
+          {/* Primary Action Card */}
           <Card className="h-full">
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Start working on your proposals</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                onClick={() => navigate('/new-proposal')}
-                className="w-full justify-start"
-                variant="outline"
-                icon={Plus}
-              >
-                Create New Proposal
-              </Button>
-              {subscriptionStatus && (
-                <div className="text-xs text-gray-600 mt-1 ml-10">
-                  {!subscriptionStatus.has_subscription
-                    ? 'Create draft - Purchase plan to generate full application with AI'
-                    : subscriptionStatus.proposals_remaining <= 0
-                    ? 'No generations left - Can still create/edit drafts manually'
-                    : `${subscriptionStatus.proposals_remaining} full AI application${subscriptionStatus.proposals_remaining > 1 ? 's' : ''} remaining`}
-                </div>
-              )}
-              <Button
-                onClick={() => navigate('/proposals')}
-                className="w-full justify-start"
-                variant="outline"
-                icon={FileText}
-              >
-                View All Proposals
-              </Button>
-              <Button
-                onClick={() => navigate('/resources')}
-                className="w-full justify-start"
-                variant="outline"
-                icon={Sparkles}
-              >
-                Learning Resources
-              </Button>
+            <CardContent className="p-6 flex flex-col justify-center h-full">
+              <div className="space-y-4">
+                <Button
+                  onClick={() => {
+                    if (primaryAction.proposalId) {
+                      navigate(`/proposals/${primaryAction.proposalId}`);
+                    } else {
+                      navigate('/new-proposal');
+                    }
+                  }}
+                  size="lg"
+                  icon={primaryAction.proposalId ? ArrowRight : Plus}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                >
+                  {primaryAction.text}
+                </Button>
+                {primaryAction.subtext && (
+                  <p className="text-sm text-gray-600 text-center">
+                    {primaryAction.subtext}
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
       </motion.div>
 
-      {/* Charts Row */}
-      <motion.div variants={fadeInVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Active Work Section - Proposals Table (moved up) */}
+      {proposals.length > 0 ? (
+        <motion.div variants={fadeInVariants}>
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <CardTitle>Your Proposals</CardTitle>
+                  <CardDescription>{filteredProposals.length} total proposals</CardDescription>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search proposals..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                  </div>
+                  <select
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                    className="px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="draft">Draft</option>
+                    <option value="pending">In Progress</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Title</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Status</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Completion</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Budget</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Last Modified</th>
+                      <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredProposals.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="text-center py-8 text-gray-500">
+                          No proposals found matching your search
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredProposals.slice(0, 10).map((proposal, index) => {
+                        const StatusIcon = getStatusIcon(proposal.status);
+                        // Calculate completion percentage based on filled answers
+                        const totalQuestions = 27;
+                        const filledAnswers = proposal.answers ? Object.values(proposal.answers).filter(a => a && a.length > 0).length : 0;
+                        const completionPercentage = Math.round((filledAnswers / totalQuestions) * 100);
+
+                        return (
+                          <motion.tr
+                            key={proposal.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                          >
+                            <td className="py-4 px-4">
+                              <div>
+                                <p className="font-medium text-gray-900">{proposal.title}</p>
+                                <p className="text-sm text-gray-500 mt-1">
+                                  {proposal.partner_organizations?.length || 0} partners
+                                </p>
+                              </div>
+                            </td>
+                            <td className="py-4 px-4">
+                              <div className="flex items-center">
+                                <div className={cn(
+                                  "p-1 rounded-lg bg-gradient-to-r",
+                                  getStatusColor(proposal.status)
+                                )}>
+                                  <StatusIcon className="w-4 h-4 text-white" />
+                                </div>
+                                <span className="ml-2 text-sm font-medium capitalize">
+                                  {proposal.status === 'draft' ? 'Draft' : proposal.status}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-4 px-4">
+                              <div className="flex items-center space-x-2">
+                                <Progress value={completionPercentage} max={100} size="sm" className="w-20" />
+                                <span className="text-sm text-gray-600">{completionPercentage}%</span>
+                              </div>
+                            </td>
+                            <td className="py-4 px-4">
+                              <p className="text-sm font-medium">€{proposal.budget?.toLocaleString()}</p>
+                            </td>
+                            <td className="py-4 px-4">
+                              <p className="text-sm text-gray-500">
+                                {formatDateWithFullMonth(proposal.updated_at || proposal.created_at)}
+                              </p>
+                            </td>
+                            <td className="py-4 px-4">
+                              <div className="flex items-center justify-end space-x-2">
+                                <button
+                                  onClick={() => navigate(`/proposals/${proposal.id}`)}
+                                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                  <Eye className="w-4 h-4 text-gray-600" />
+                                </button>
+                                <button
+                                  onClick={() => navigate(`/proposals/${proposal.id}/edit`)}
+                                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                  <Edit3 className="w-4 h-4 text-gray-600" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(proposal.id)}
+                                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4 text-red-500" />
+                                </button>
+                              </div>
+                            </td>
+                          </motion.tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {filteredProposals.length > 10 && (
+                <div className="mt-4 text-center">
+                  <Button
+                    onClick={() => navigate('/proposals')}
+                    variant="outline"
+                    size="sm"
+                  >
+                    View All {filteredProposals.length} Proposals
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      ) : (
+        /* Empty State */
+        <motion.div variants={fadeInVariants}>
+          <Card>
+            <CardContent className="py-16 text-center">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mb-4">
+                <FileText className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Proposals Yet</h3>
+              <p className="text-gray-600 mb-6">Start your first Erasmus+ grant application in just 30 minutes</p>
+              <Button
+                onClick={() => navigate('/new-proposal')}
+                size="lg"
+                icon={Plus}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              >
+                Create Your First Proposal
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Simplified Stats Cards - Only show real data */}
+      {proposals.length > 0 && (
+        <motion.div variants={fadeInVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Total Proposals</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalProposals || 0}</p>
+                </div>
+                <div className="p-3 bg-gray-100 rounded-xl">
+                  <FileText className="w-6 h-6 text-gray-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {stats?.totalBudget > 0 && (
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Total Budget</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">€{(stats.totalBudget / 1000000).toFixed(1)}M</p>
+                  </div>
+                  <div className="p-3 bg-gray-100 rounded-xl">
+                    <Euro className="w-6 h-6 text-gray-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {stats?.averageDuration > 0 && (
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Average Duration</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">{stats.averageDuration}</p>
+                    <p className="text-xs text-gray-500 mt-1">months</p>
+                  </div>
+                  <div className="p-3 bg-gray-100 rounded-xl">
+                    <Clock className="w-6 h-6 text-gray-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </motion.div>
+      )}
+
+      {/* Charts Section - Collapsed by default, only show if meaningful data */}
+      {proposals.length > 3 && (
+        <motion.div variants={fadeInVariants}>
+          <details className="group">
+            <summary className="cursor-pointer py-4 flex items-center justify-between text-gray-700 hover:text-gray-900">
+              <h2 className="text-lg font-semibold">Analytics & Insights</h2>
+              <ChevronDown className="w-5 h-5 transform transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
         {/* Budget Overview */}
         <Card className="lg:col-span-2">
           <CardHeader>
@@ -359,28 +515,28 @@ const Dashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                 <XAxis dataKey="name" stroke="#6B7280" />
                 <YAxis stroke="#6B7280" />
-                <Tooltip 
-                  contentStyle={{ 
+                <Tooltip
+                  contentStyle={{
                     backgroundColor: 'rgba(255, 255, 255, 0.95)',
                     border: 'none',
                     borderRadius: '8px',
                     boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                   }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="budget" 
-                  stroke="#3B82F6" 
-                  fillOpacity={1} 
-                  fill="url(#colorBudget)" 
+                <Area
+                  type="monotone"
+                  dataKey="budget"
+                  stroke="#3B82F6"
+                  fillOpacity={1}
+                  fill="url(#colorBudget)"
                   strokeWidth={2}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="spent" 
-                  stroke="#10B981" 
-                  fillOpacity={1} 
-                  fill="url(#colorSpent)" 
+                <Area
+                  type="monotone"
+                  dataKey="spent"
+                  stroke="#10B981"
+                  fillOpacity={1}
+                  fill="url(#colorSpent)"
                   strokeWidth={2}
                 />
                 <Legend />
@@ -417,8 +573,8 @@ const Dashboard = () => {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip 
-                  contentStyle={{ 
+                <Tooltip
+                  contentStyle={{
                     backgroundColor: 'rgba(255, 255, 255, 0.95)',
                     border: 'none',
                     borderRadius: '8px',
@@ -433,8 +589,8 @@ const Dashboard = () => {
               {priorityData.map((item) => (
                 <div key={item.name} className="flex items-center justify-between text-sm">
                   <div className="flex items-center">
-                    <div 
-                      className="w-3 h-3 rounded-full mr-2" 
+                    <div
+                      className="w-3 h-3 rounded-full mr-2"
                       style={{ backgroundColor: item.color }}
                     />
                     <span className="text-gray-600">{item.name}</span>
@@ -446,233 +602,35 @@ const Dashboard = () => {
             )}
           </CardContent>
         </Card>
-      </motion.div>
-
-      {/* Performance Chart */}
-      <motion.div variants={fadeInVariants}>
-        <Card>
-          <CardHeader>
-            <CardTitle>Proposal Performance</CardTitle>
-            <CardDescription>Monthly submission and approval trends</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {metricsLoading ? (
-              <div className="flex items-center justify-center h-[250px]">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-              </div>
-            ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={performanceData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="month" stroke="#6B7280" />
-                <YAxis stroke="#6B7280" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-                  }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="proposals" 
-                  stroke="#3B82F6" 
-                  strokeWidth={3}
-                  dot={{ fill: '#3B82F6', r: 5 }}
-                  activeDot={{ r: 7 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="approved" 
-                  stroke="#10B981" 
-                  strokeWidth={3}
-                  dot={{ fill: '#10B981', r: 5 }}
-                  activeDot={{ r: 7 }}
-                />
-                <Legend />
-              </LineChart>
-            </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* Proposals Table */}
-      <motion.div variants={fadeInVariants}>
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <CardTitle>Recent Proposals</CardTitle>
-                <CardDescription>Manage and track your proposals</CardDescription>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search proposals..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                </div>
-                <select
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  className="px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                >
-                  <option value="all">All Status</option>
-                  <option value="approved">Approved</option>
-                  <option value="pending">Pending</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-              </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Title</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Status</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Budget</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Duration</th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Created</th>
-                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProposals.length === 0 ? (
-                    <tr>
-                      <td colSpan="6" className="text-center py-8 text-gray-500">
-                        No proposals found
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredProposals.map((proposal, index) => {
-                      const StatusIcon = getStatusIcon(proposal.status);
-                      return (
-                        <motion.tr
-                          key={proposal.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.05 }}
-                          className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="py-4 px-4">
-                            <div>
-                              <p className="font-medium text-gray-900">{proposal.title}</p>
-                              <p className="text-sm text-gray-500 mt-1">
-                                {proposal.partner_organizations?.length || 0} partners
-                              </p>
-                            </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center">
-                              <div className={cn(
-                                "p-1 rounded-lg bg-gradient-to-r",
-                                getStatusColor(proposal.status)
-                              )}>
-                                <StatusIcon className="w-4 h-4 text-white" />
-                              </div>
-                              <span className="ml-2 text-sm font-medium capitalize">
-                                {proposal.status}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <p className="text-sm font-medium">€{proposal.budget?.toLocaleString()}</p>
-                          </td>
-                          <td className="py-4 px-4">
-                            <p className="text-sm">{proposal.duration_months} months</p>
-                          </td>
-                          <td className="py-4 px-4">
-                            <p className="text-sm text-gray-500">
-                              {formatDateWithFullMonth(proposal.created_at)}
-                            </p>
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center justify-end space-x-2">
-                              <button
-                                onClick={() => navigate(`/proposals/${proposal.id}`)}
-                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                              >
-                                <Eye className="w-4 h-4 text-gray-600" />
-                              </button>
-                              <button
-                                onClick={() => navigate(`/proposals/${proposal.id}/edit`)}
-                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                              >
-                                <Edit3 className="w-4 h-4 text-gray-600" />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(proposal.id)}
-                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4 text-red-500" />
-                              </button>
-                            </div>
-                          </td>
-                        </motion.tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+          </details>
+        </motion.div>
+      )}
 
-      {/* Quick Actions */}
-      <motion.div variants={fadeInVariants} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="hover:shadow-xl transition-shadow cursor-pointer" onClick={() => navigate('/new-proposal')}>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-gray-900">Create New Proposal</h3>
-                <p className="text-sm text-gray-500 mt-1">Start a new application</p>
-              </div>
-              <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl">
-                <Plus className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-xl transition-shadow cursor-pointer">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-gray-900">View Templates</h3>
-                <p className="text-sm text-gray-500 mt-1">Browse proposal templates</p>
-              </div>
-              <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
-                <FileText className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="hover:shadow-xl transition-shadow cursor-pointer"
-          onClick={() => navigate('/resources')}
-        >
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-gray-900">Learning Resources</h3>
-                <p className="text-sm text-gray-500 mt-1">Improve your applications</p>
-              </div>
-              <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl">
-                <Sparkles className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Quick Links - Simplified */}
+      <motion.div variants={fadeInVariants} className="border-t pt-6">
+        <div className="flex flex-wrap gap-4 justify-center text-sm">
+          <button
+            onClick={() => navigate('/proposals')}
+            className="text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            View All Proposals
+          </button>
+          <span className="text-gray-300">•</span>
+          <button
+            onClick={() => navigate('/resources')}
+            className="text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            Learning Resources
+          </button>
+          <span className="text-gray-300">•</span>
+          <button
+            onClick={() => navigate('/profile')}
+            className="text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            Account Settings
+          </button>
+        </div>
       </motion.div>
     </motion.div>
   );
