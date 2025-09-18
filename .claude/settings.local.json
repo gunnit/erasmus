@@ -28,7 +28,9 @@
       "mcp__context7__resolve-library-id",
       "mcp__context7__get-library-docs",
       "WebSearch",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "WebFetch(domain:www.teacheracademy.eu)",
+      "WebFetch(domain:erasmus-plus.ec.europa.eu)"
     ],
     "deny": [],
     "ask": []

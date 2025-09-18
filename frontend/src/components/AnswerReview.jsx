@@ -11,6 +11,7 @@ import { Button } from './ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/Card';
 import { Progress } from './ui/Progress';
 import { cn } from '../lib/utils';
+import MarkdownRenderer from './ui/MarkdownRenderer';
 
 const SECTION_ICONS = {
   project_summary: FileText,
@@ -528,9 +529,7 @@ const AnswerReview = ({ answers, projectData, onEdit, onExport }) => {
                                   </div>
                                 ) : (
                                   <div className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors">
-                                    <p className="text-gray-800 whitespace-pre-wrap leading-relaxed">
-                                      {answer.answer}
-                                    </p>
+                                    <MarkdownRenderer content={answer.answer} />
                                     {isOverLimit && (
                                       <div className="mt-2 flex items-center text-red-600 text-sm">
                                         <AlertCircle className="w-4 h-4 mr-1" />

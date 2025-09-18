@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { formatDateWithFullMonth } from '../utils/dateUtils';
+import MarkdownRenderer from './ui/MarkdownRenderer';
 
 const ProposalDetail = () => {
   const [proposal, setProposal] = useState(null);
@@ -127,8 +128,8 @@ const ProposalDetail = () => {
         <h4 className="text-lg font-semibold text-gray-800 mb-3">
           {formatQuestionTitle(question)}
         </h4>
-        <div className="text-gray-600 leading-relaxed whitespace-pre-wrap">
-          {answer}
+        <div className="text-gray-600 leading-relaxed">
+          <MarkdownRenderer content={answer} />
         </div>
         {answer && answer.length > 500 && (
           <div className="mt-2 text-sm text-gray-400">
@@ -369,11 +370,14 @@ const ProposalDetail = () => {
                 <div className="bg-white rounded-lg shadow p-6">
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">Executive Summary</h2>
                   <div className="prose max-w-none">
-                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                      {typeof proposal.answers.project_summary === 'object' 
-                        ? proposal.answers.project_summary.summary 
-                        : proposal.answers.project_summary}
-                    </p>
+                    <MarkdownRenderer
+                      content={
+                        typeof proposal.answers.project_summary === 'object'
+                          ? proposal.answers.project_summary.summary
+                          : proposal.answers.project_summary
+                      }
+                      className="text-gray-700"
+                    />
                   </div>
                 </div>
               )}
