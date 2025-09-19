@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { formatDateWithFullMonth } from '../utils/dateUtils';
+import { getPriorityByCode, getPriorityType } from '../config/erasmusPriorities';
 import {
   Loader2,
   FileText,
