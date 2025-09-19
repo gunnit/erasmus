@@ -725,7 +725,7 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                   <p className="text-sm text-gray-600 mb-2">Selected Priorities</p>
                   <div className="flex flex-wrap gap-2">
                     {formData.selected_priorities.map(code => {
-                      const priority = [...PRIORITIES.horizontal, ...PRIORITIES.sectorSpecific]
+                      const priority = [...PRIORITIES.horizontal, ...PRIORITIES.adultEducation]
                         .find(p => p.code === code);
                       return priority ? (
                         <span
