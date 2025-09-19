@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { formatDateWithFullMonth } from '../utils/dateUtils';
+// Import priority helper functions
 import { getPriorityByCode, getPriorityType } from '../config/erasmusPriorities';
 import {
   Loader2,
@@ -416,8 +417,9 @@ const ProposalDetailNew = () => {
                   {proposal.priorities && proposal.priorities.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {proposal.priorities.map((priorityCode, index) => {
-                        const priority = getPriorityByCode(priorityCode);
-                        const priorityType = getPriorityType(priorityCode);
+                        // Safely get priority details
+                        const priority = typeof getPriorityByCode === 'function' ? getPriorityByCode(priorityCode) : null;
+                        const priorityType = typeof getPriorityType === 'function' ? getPriorityType(priorityCode) : '';
                         return (
                           <span
                             key={index}
@@ -425,7 +427,7 @@ const ProposalDetailNew = () => {
                             title={priority?.description || ''}
                           >
                             {priority?.name || priorityCode}
-                            <span className="ml-1 text-xs opacity-75">({priorityType})</span>
+                            {priorityType && <span className="ml-1 text-xs opacity-75">({priorityType})</span>}
                           </span>
                         );
                       })}
