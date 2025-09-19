@@ -8,26 +8,17 @@ import {
   Wand2, Loader2, Save, ArrowLeft, Plus, Trash2,
   Target, Users, Globe, Calendar, Euro, Building2,
   CheckCircle, AlertCircle, Briefcase, MapPin,
-  Cloud, CloudOff, Info, Edit3, FileText
+  Cloud, CloudOff, Info, Edit3, FileText,
+  Leaf, Vote, TrendingUp, BookOpen, GraduationCap, Shield, Heart, ChevronRight
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input, Textarea } from './ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/Card';
 import { cn } from '../lib/utils';
+import { ERASMUS_PRIORITIES_2025, PRIORITY_RULES } from '../config/erasmusPriorities';
 
-const PRIORITIES = {
-  horizontal: [
-    { code: 'HP-01', name: 'Inclusion and Diversity', icon: Users, color: 'from-purple-500 to-pink-500', description: 'Social inclusion and outreach' },
-    { code: 'HP-02', name: 'Digital Transformation', icon: Globe, color: 'from-blue-500 to-cyan-500', description: 'Digital readiness and capacity' },
-    { code: 'HP-03', name: 'Environment and Climate', icon: Target, color: 'from-green-500 to-emerald-500', description: 'Fight against climate change' },
-    { code: 'HP-04', name: 'Democratic Participation', icon: CheckCircle, color: 'from-orange-500 to-red-500', description: 'Civic engagement' }
-  ],
-  sectorSpecific: [
-    { code: 'AE-01', name: 'Key Competences', icon: Briefcase, color: 'from-indigo-500 to-purple-500', description: 'High-quality learning for adults' },
-    { code: 'AE-02', name: 'Learning Pathways', icon: ArrowLeft, color: 'from-teal-500 to-blue-500', description: 'Upskilling and transitions' },
-    { code: 'AE-03', name: 'Professional Development', icon: Building2, color: 'from-rose-500 to-orange-500', description: 'Educator competences' }
-  ]
-};
+// Using priorities from centralized configuration
+const PRIORITIES = ERASMUS_PRIORITIES_2025;
 
 const ORGANIZATION_TYPES = [
   { value: 'NGO', label: 'Non-Governmental Organization' },
@@ -658,10 +649,13 @@ const ProposalEdit = () => {
                     <Info className="w-5 h-5 text-blue-600 mt-0.5" />
                     <div>
                       <p className="text-sm text-blue-900 font-medium">
-                        Selected: {formData.selected_priorities.length}/3 priorities
+                        {PRIORITY_RULES.requirementText}
                       </p>
                       <p className="text-xs text-blue-700 mt-1">
-                        Choose priorities that best match your project objectives and expected outcomes
+                        Selected: {formData.selected_priorities.length}/{PRIORITY_RULES.maxSelection} priorities
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        {PRIORITY_RULES.evaluationNote}
                       </p>
                     </div>
                   </div>
@@ -669,7 +663,8 @@ const ProposalEdit = () => {
 
                 <div>
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                    Horizontal Priorities
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full mr-2">4 priorities</span>
+                    Horizontal Priorities (Apply to All Sectors)
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {PRIORITIES.horizontal.map((priority) => {
@@ -714,10 +709,11 @@ const ProposalEdit = () => {
 
                 <div>
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                    Adult Education Priorities
+                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full mr-2">8 priorities</span>
+                    Adult Education Sector-Specific Priorities
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {PRIORITIES.sectorSpecific.map((priority) => {
+                    {PRIORITIES.adultEducation.map((priority) => {
                       const Icon = priority.icon;
                       const isSelected = formData.selected_priorities.includes(priority.code);
 

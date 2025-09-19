@@ -414,14 +414,20 @@ const ProposalDetailNew = () => {
                   </h2>
                   {proposal.priorities && proposal.priorities.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
-                      {proposal.priorities.map((priority, index) => (
-                        <span
-                          key={index}
-                          className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm"
-                        >
-                          {priority}
-                        </span>
-                      ))}
+                      {proposal.priorities.map((priorityCode, index) => {
+                        const priority = getPriorityByCode(priorityCode);
+                        const priorityType = getPriorityType(priorityCode);
+                        return (
+                          <span
+                            key={index}
+                            className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm"
+                            title={priority?.description || ''}
+                          >
+                            {priority?.name || priorityCode}
+                            <span className="ml-1 text-xs opacity-75">({priorityType})</span>
+                          </span>
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="text-gray-500 text-sm">No priorities selected</p>

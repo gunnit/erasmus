@@ -5,6 +5,7 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import { formatDateWithFullMonth } from '../utils/dateUtils';
 import MarkdownRenderer from './ui/MarkdownRenderer';
+import { getPriorityByCode, getPriorityType } from '../config/erasmusPriorities';
 
 const ProposalDetail = () => {
   const [proposal, setProposal] = useState(null);
@@ -320,11 +321,16 @@ const ProposalDetail = () => {
                     <div>
                       <h3 className="text-sm font-medium text-gray-500">EU Priorities</h3>
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {proposal.priorities?.map((priority, index) => (
-                          <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                            {priority}
-                          </span>
-                        )) || <span className="text-gray-400">None specified</span>}
+                        {proposal.priorities?.map((priorityCode, index) => {
+                          const priority = getPriorityByCode(priorityCode);
+                          const priorityType = getPriorityType(priorityCode);
+                          return (
+                            <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm" title={priority?.description || ''}>
+                              {priority?.name || priorityCode}
+                              <span className="ml-1 text-xs opacity-75">({priorityType})</span>
+                            </span>
+                          );
+                        }) || <span className="text-gray-400">None specified</span>}
                       </div>
                     </div>
                     

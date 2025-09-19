@@ -5,27 +5,18 @@ import {
   Target, Users, Globe, Calendar, Euro, Building2,
   Plus, Trash2, ChevronRight, Info, Sparkles,
   CheckCircle, AlertCircle, Briefcase, MapPin, Save, Cloud, CloudOff,
-  Loader2, Wand2
+  Loader2, Wand2, Leaf, Vote, TrendingUp, BookOpen,
+  GraduationCap, Shield, Heart
 } from 'lucide-react';
 import api from '../services/api';
 import { Button } from './ui/Button';
 import { Input, Textarea } from './ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/Card';
 import { cn } from '../lib/utils';
+import { ERASMUS_PRIORITIES_2025, PRIORITY_RULES } from '../config/erasmusPriorities';
 
-const PRIORITIES = {
-  horizontal: [
-    { code: 'HP-01', name: 'Inclusion and Diversity', icon: Users, color: 'from-purple-500 to-pink-500', description: 'Social inclusion and outreach' },
-    { code: 'HP-02', name: 'Digital Transformation', icon: Globe, color: 'from-blue-500 to-cyan-500', description: 'Digital readiness and capacity' },
-    { code: 'HP-03', name: 'Environment and Climate', icon: Target, color: 'from-green-500 to-emerald-500', description: 'Fight against climate change' },
-    { code: 'HP-04', name: 'Democratic Participation', icon: CheckCircle, color: 'from-orange-500 to-red-500', description: 'Civic engagement' }
-  ],
-  sectorSpecific: [
-    { code: 'AE-01', name: 'Key Competences', icon: Briefcase, color: 'from-indigo-500 to-purple-500', description: 'High-quality learning for adults' },
-    { code: 'AE-02', name: 'Learning Pathways', icon: ChevronRight, color: 'from-teal-500 to-blue-500', description: 'Upskilling and transitions' },
-    { code: 'AE-03', name: 'Professional Development', icon: Building2, color: 'from-rose-500 to-orange-500', description: 'Educator competences' }
-  ]
-};
+// Using priorities from centralized configuration
+const PRIORITIES = ERASMUS_PRIORITIES_2025;
 
 const ORGANIZATION_TYPES = [
   { value: 'NGO', label: 'Non-Governmental Organization' },
@@ -559,10 +550,13 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                 <Info className="w-5 h-5 text-blue-600 mt-0.5" />
                 <div>
                   <p className="text-sm text-blue-900 font-medium">
-                    Select 1-3 EU priorities that align with your project
+                    {PRIORITY_RULES.requirementText}
                   </p>
                   <p className="text-xs text-blue-700 mt-1">
-                    Choose priorities that best match your project objectives and expected outcomes
+                    Selected: {formData.selected_priorities.length}/{PRIORITY_RULES.maxSelection} priorities
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    {PRIORITY_RULES.evaluationNote}
                   </p>
                 </div>
               </div>
@@ -571,7 +565,8 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Horizontal Priorities
+                  <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full mr-2">4 priorities</span>
+                  Horizontal Priorities (Apply to All Sectors)
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {PRIORITIES.horizontal.map((priority) => {
@@ -601,6 +596,7 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                           <div className="flex-1">
                             <h4 className="font-medium text-gray-900">{priority.name}</h4>
                             <p className="text-sm text-gray-600 mt-1">{priority.description}</p>
+                            <p className="text-xs text-gray-500 mt-1">{priority.code}</p>
                           </div>
                           {isSelected && (
                             <CheckCircle className="w-5 h-5 text-blue-500" />
@@ -614,10 +610,11 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
 
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Sector-Specific Priorities (Adult Education)
+                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full mr-2">8 priorities</span>
+                  Adult Education Sector-Specific Priorities
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {PRIORITIES.sectorSpecific.map((priority) => {
+                  {PRIORITIES.adultEducation.map((priority) => {
                     const Icon = priority.icon;
                     const isSelected = formData.selected_priorities.includes(priority.code);
                     
@@ -644,6 +641,7 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                           <div className="flex-1">
                             <h4 className="font-medium text-gray-900">{priority.name}</h4>
                             <p className="text-sm text-gray-600 mt-1">{priority.description}</p>
+                            <p className="text-xs text-gray-500 mt-1">{priority.code}</p>
                           </div>
                           {isSelected && (
                             <CheckCircle className="w-5 h-5 text-blue-500" />

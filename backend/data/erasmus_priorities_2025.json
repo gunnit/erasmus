@@ -1,0 +1,117 @@
+{
+  "horizontal_priorities": [
+    {
+      "code": "HP-01",
+      "name": "Inclusion and Diversity",
+      "description": "Promoting equal opportunities and access for people with fewer opportunities",
+      "details": "This priority addresses physical, mental, educational, cultural, social, economic, and geographical barriers that prevent participation in society and accessing opportunities offered by the Erasmus+ Programme.",
+      "evaluation_weight": "high",
+      "keywords": ["inclusion", "diversity", "equal opportunities", "fewer opportunities", "accessibility"]
+    },
+    {
+      "code": "HP-02",
+      "name": "Digital Transformation",
+      "description": "Supporting digital readiness, resilience, and capacity",
+      "details": "Supporting the development of a high-performing digital education ecosystem and enhancing digital literacy and skills across society. Aims to help citizens of all ages acquire the digital skills and competences they need to live, learn, work, and exercise their rights.",
+      "evaluation_weight": "high",
+      "keywords": ["digital", "technology", "online learning", "digital skills", "digital competences"]
+    },
+    {
+      "code": "HP-03",
+      "name": "Environment and Fight Against Climate Change",
+      "description": "Supporting green transition and sustainability",
+      "details": "Raising awareness about global warming and developing skills in sustainability-relevant sectors. Prioritizing projects aimed at changing consumption habits and lifestyles, developing green sectorial skills strategies.",
+      "evaluation_weight": "high",
+      "keywords": ["environment", "climate", "sustainability", "green", "ecological"]
+    },
+    {
+      "code": "HP-04",
+      "name": "Participation in Democratic Life, Common Values and Civic Engagement",
+      "description": "Active citizenship and civic engagement",
+      "details": "Promoting citizens' right to participate in democratic life and encouraging active involvement at local, national and European levels. Supporting development of critical thinking, media literacy, civic and intercultural skills.",
+      "evaluation_weight": "high",
+      "keywords": ["democracy", "civic engagement", "participation", "common values", "citizenship"]
+    }
+  ],
+  "adult_education_priorities": [
+    {
+      "code": "AE-01",
+      "name": "Increasing Take-up and Inclusiveness",
+      "description": "Empowering adults to participate in training and reducing skills gaps",
+      "details": "Empowering adults to participate in training, reducing skills gaps and labor market shortages, building on individual learning accounts and enabling frameworks.",
+      "evaluation_weight": "high",
+      "keywords": ["participation", "skills gaps", "labor market", "individual learning accounts"]
+    },
+    {
+      "code": "AE-02",
+      "name": "Improving Learning Availability and Accessibility",
+      "description": "Creating flexible learning offers adapted to adult needs",
+      "details": "Creating and developing flexible learning offers adapted to the learning needs of adults, developing digital and blended learning opportunities, supporting validation of skills through micro-credentials.",
+      "evaluation_weight": "high",
+      "keywords": ["flexible learning", "accessibility", "digital learning", "blended learning", "micro-credentials"]
+    },
+    {
+      "code": "AE-03",
+      "name": "Promoting Local Learning Environments",
+      "description": "Supporting community learning centers and local initiatives",
+      "details": "Supporting local learning centers, libraries, civil society to promote social inclusion and civic engagement. Exploiting digital technologies for community learning and offering lifelong and life-wide learning opportunities.",
+      "evaluation_weight": "medium",
+      "keywords": ["local learning", "community", "libraries", "social inclusion", "local centers"]
+    },
+    {
+      "code": "AE-04",
+      "name": "Creating Upskilling Pathways",
+      "description": "Enhancing key competences for adults with low skill levels",
+      "details": "Promoting new adult education opportunities particularly for adults with low level of skills, knowledge and competences. Creating pathways allowing adult learners to enhance key competences and progress towards higher qualifications.",
+      "evaluation_weight": "high",
+      "keywords": ["upskilling", "key competences", "low skills", "progression", "qualifications"]
+    },
+    {
+      "code": "AE-05",
+      "name": "Improving Educator Competences",
+      "description": "Developing competences of educators and adult education staff",
+      "details": "Developing staff competences that lead to overall improvements in provision, targeting and effectiveness of adult education. Supporting innovative teaching methods and strengthening motivational and advisory roles.",
+      "evaluation_weight": "high",
+      "keywords": ["educator development", "staff competences", "teaching methods", "professional development"]
+    },
+    {
+      "code": "AE-06",
+      "name": "Intergenerational Learning",
+      "description": "Creating learning opportunities across age groups",
+      "details": "Creating learning opportunities that bring together different age groups, building understanding of European values, strengthening European identity and social cohesion between generations.",
+      "evaluation_weight": "medium",
+      "keywords": ["intergenerational", "age groups", "social cohesion", "European values"]
+    },
+    {
+      "code": "AE-07",
+      "name": "Quality Assurance",
+      "description": "Developing quality assurance mechanisms for adult education",
+      "details": "Developing better quality assurance mechanisms for adult learning policies and provision, creating monitoring methodologies to measure effectiveness and track progress of adult learners.",
+      "evaluation_weight": "medium",
+      "keywords": ["quality assurance", "monitoring", "effectiveness", "tracking", "evaluation"]
+    },
+    {
+      "code": "AE-08",
+      "name": "Supporting Ukrainian Refugees",
+      "description": "Inclusive approaches for refugee integration and support",
+      "details": "Implementing inclusive pedagogical approaches, providing language learning facilities, supporting psycho-social well-being of learners and staff affected by the refugee crisis.",
+      "evaluation_weight": "high",
+      "keywords": ["refugees", "Ukraine", "inclusion", "language learning", "psycho-social support"]
+    }
+  ],
+  "selection_rules": {
+    "minimum_priorities": 1,
+    "maximum_priorities": 3,
+    "requirement": "Projects must address at least one horizontal priority OR one sector-specific priority",
+    "evaluation_note": "Priority alignment directly impacts evaluation scoring and funding eligibility",
+    "national_context": "National Agencies may give more consideration to priorities particularly relevant in their national context"
+  },
+  "metadata": {
+    "version": "2025",
+    "last_updated": "2025-01-19",
+    "source": "Erasmus+ Programme Guide 2025",
+    "applicable_to": ["KA220-ADU", "KA210-ADU"],
+    "total_horizontal_priorities": 4,
+    "total_adult_education_priorities": 8
+  }
+}
