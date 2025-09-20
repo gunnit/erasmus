@@ -7,7 +7,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard.jsx';
-import LandingPage from './components/LandingPage.jsx';
 import HomeRouter from './components/HomeRouter.jsx';
 import ProposalDetail from './components/ProposalDetail';
 import ProposalDetailNew from './components/ProposalDetailNew';
