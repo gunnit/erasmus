@@ -86,7 +86,8 @@ class Proposal(Base):
     score_calculated_at = Column(DateTime, nullable=True)
 
     # Metadata
-    status = Column(String, default="draft")  # draft, submitted, approved, rejected
+    status = Column(String, default="draft")  # draft, working, complete, submitted
+    credit_used = Column(Boolean, default=False)  # Track if proposal credit has been deducted
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     submitted_at = Column(DateTime)

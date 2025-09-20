@@ -616,7 +616,13 @@ async def generate_all_sections_progressively(session_id: str):
                 # Use one proposal credit after successful generation
                 user = db.query(User).filter_by(id=session.user_id).first()
                 if user:
-                    await use_proposal_credit(user, db)
+                    success = await use_proposal_credit(user, db)
+                    if success:
+                        # Mark in session that credit was used (for reference)
+                        # Note: The actual proposal will be created/updated in frontend with credit_used = True
+                        logger.info(f"Proposal credit deducted for session {session_id} (progressive generation complete)")
+                    else:
+                        logger.warning(f"Failed to deduct credit for session {session_id} (insufficient credits)")
             elif session.failed_sections:
                 logger.error(f"Generation partially failed for session {session_id}, failed sections: {session.failed_sections}")
                 session.status = GenerationStatus.FAILED

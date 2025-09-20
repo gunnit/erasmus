@@ -153,7 +153,7 @@ Maximum {question_details.get('character_limit', 2000)} characters."""
                 proposal.answers[request.section][request.question_field] = answer
 
                 # Update status based on answer count
-                update_proposal_status_from_answers(proposal, db)
+                await update_proposal_status_from_answers(proposal, db, current_user)
 
         return GenerateSingleAnswerResponse(
             question_id=request.question_id,

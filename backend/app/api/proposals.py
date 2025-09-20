@@ -5,11 +5,16 @@ from typing import List, Dict, Any
 from datetime import datetime
 import os
 import tempfile
+import asyncio
+import logging
 from app.db.database import get_db
 from app.db.models import User, Proposal, Partner, PartnerType
 from app.schemas.proposal import ProposalCreate, ProposalUpdate, Proposal as ProposalSchema, ProposalList
 from app.api.dependencies import get_current_user
 from app.services.pdf_generator import ProposalPDFGenerator
+from app.core.subscription_deps import use_proposal_credit
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/proposals", tags=["proposals"])
 
@@ -35,15 +40,31 @@ def determine_proposal_status(answer_count: int) -> str:
     else:
         return "working"
 
-def update_proposal_status_from_answers(proposal: Proposal, db: Session) -> None:
-    """Update proposal status based on the number of answered questions"""
+async def update_proposal_status_from_answers(proposal: Proposal, db: Session, current_user: User = None) -> None:
+    """Update proposal status based on the number of answered questions and handle credit deduction"""
     answer_count = count_answered_questions(proposal.answers)
     new_status = determine_proposal_status(answer_count)
+    old_status = proposal.status
 
     if proposal.status != new_status and proposal.status != "submitted":
         # Don't change status if it's already submitted
         proposal.status = new_status
         proposal.updated_at = datetime.utcnow()
+
+        # If status changes to "complete" and credit hasn't been used, deduct one credit
+        if new_status == "complete" and old_status != "complete" and not proposal.credit_used:
+            if current_user:
+                try:
+                    success = await use_proposal_credit(current_user, db)
+                    if success:
+                        proposal.credit_used = True
+                        logger.info(f"Proposal credit deducted for proposal {proposal.id} (status changed to complete)")
+                    else:
+                        logger.warning(f"Failed to deduct credit for proposal {proposal.id} (insufficient credits or no subscription)")
+                except Exception as e:
+                    logger.error(f"Error deducting credit for proposal {proposal.id}: {str(e)}")
+                    # Don't block the status update if credit deduction fails
+
         db.commit()
 
 @router.post("/", response_model=ProposalSchema)
@@ -56,6 +77,10 @@ async def create_proposal(
     answer_count = count_answered_questions(proposal_data.answers)
     initial_status = determine_proposal_status(answer_count)
 
+    # If proposal is being created with complete status after progressive generation,
+    # mark credit as used (credit was already deducted during generation)
+    credit_used = initial_status == "complete"
+
     # Create the proposal
     db_proposal = Proposal(
         user_id=current_user.id,
@@ -67,7 +92,8 @@ async def create_proposal(
         duration_months=proposal_data.duration_months,
         budget=proposal_data.budget,
         answers=proposal_data.answers,
-        status=initial_status
+        status=initial_status,
+        credit_used=credit_used  # Mark credit as used if complete
     )
 
     db.add(db_proposal)
@@ -201,7 +227,7 @@ async def update_proposal(
 
     # Update status based on answers if answers were updated
     if 'answers' in update_data:
-        update_proposal_status_from_answers(proposal, db)
+        await update_proposal_status_from_answers(proposal, db, current_user)
     else:
         proposal.updated_at = datetime.utcnow()
         db.commit()
