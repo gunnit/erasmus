@@ -6,7 +6,7 @@ import {
   Plus, Trash2, ChevronRight, Info, Sparkles,
   CheckCircle, AlertCircle, Briefcase, MapPin, Save, Cloud, CloudOff,
   Loader2, Wand2, Leaf, Vote, TrendingUp, BookOpen,
-  GraduationCap, Shield, Heart, Search, Check
+  GraduationCap, Shield, Heart, Search, Check, Library, X, Filter
 } from 'lucide-react';
 import api from '../services/api';
 import { Button } from './ui/Button';
@@ -36,6 +36,13 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
   const [partnerSuggestions, setPartnerSuggestions] = useState([]);
   const [searchingPartners, setSearchingPartners] = useState(false);
   const [activePartnerSearch, setActivePartnerSearch] = useState(null);
+  const [showPartnerLibraryModal, setShowPartnerLibraryModal] = useState(false);
+  const [libraryPartners, setLibraryPartners] = useState([]);
+  const [loadingLibrary, setLoadingLibrary] = useState(false);
+  const [selectedLibraryPartners, setSelectedLibraryPartners] = useState([]);
+  const [librarySearchQuery, setLibrarySearchQuery] = useState('');
+  const [libraryFilterType, setLibraryFilterType] = useState('');
+  const [libraryFilterCountry, setLibraryFilterCountry] = useState('');
   const [formData, setFormData] = useState(initialData || {
     title: '',
     project_idea: '',
@@ -335,6 +342,73 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
     }
   };
 
+  // Partner Library Modal Functions
+  const fetchLibraryPartners = async () => {
+    setLoadingLibrary(true);
+    try {
+      const params = {
+        per_page: 50,
+        ...(librarySearchQuery && { search: librarySearchQuery }),
+        ...(libraryFilterType && { partner_type: libraryFilterType }),
+        ...(libraryFilterCountry && { country: libraryFilterCountry })
+      };
+
+      const response = await api.get('/partners/', { params });
+      setLibraryPartners(response.data.partners || []);
+    } catch (error) {
+      console.error('Failed to fetch library partners:', error);
+      toast.error('Failed to load partner library');
+    } finally {
+      setLoadingLibrary(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showPartnerLibraryModal) {
+      fetchLibraryPartners();
+    }
+  }, [showPartnerLibraryModal, librarySearchQuery, libraryFilterType, libraryFilterCountry]);
+
+  const togglePartnerSelection = (partner) => {
+    setSelectedLibraryPartners(prev => {
+      const isSelected = prev.some(p => p.id === partner.id);
+      if (isSelected) {
+        return prev.filter(p => p.id !== partner.id);
+      } else {
+        return [...prev, partner];
+      }
+    });
+  };
+
+  const addSelectedPartnersToForm = () => {
+    const newPartners = selectedLibraryPartners.map(partner => ({
+      name: partner.name,
+      type: partner.type.replace('_', ''),
+      country: partner.country || '',
+      role: partner.description || '',
+      library_id: partner.id
+    }));
+
+    const currentCount = formData.partner_organizations.length;
+    const availableSlots = 10 - currentCount;
+    const partnersToAdd = newPartners.slice(0, availableSlots);
+
+    if (partnersToAdd.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        partner_organizations: [...prev.partner_organizations, ...partnersToAdd]
+      }));
+      toast.success(`Added ${partnersToAdd.length} partner(s)`);
+
+      if (partnersToAdd.length < newPartners.length) {
+        toast.warning(`Only added ${partnersToAdd.length} partners (max 10 allowed)`);
+      }
+    }
+
+    setShowPartnerLibraryModal(false);
+    setSelectedLibraryPartners([]);
+  };
+
   const renderSectionContent = () => {
     switch (currentSection) {
       case 0:
@@ -504,14 +578,24 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                 <h3 className="text-lg font-semibold text-gray-900">
                   Partner Organizations ({formData.partner_organizations.length})
                 </h3>
-                <Button
-                  onClick={addPartner}
-                  variant="outline"
-                  size="sm"
-                  icon={Plus}
-                >
-                  Add Partner
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setShowPartnerLibraryModal(true)}
+                    variant="outline"
+                    size="sm"
+                    icon={Library}
+                  >
+                    Browse Library
+                  </Button>
+                  <Button
+                    onClick={addPartner}
+                    variant="outline"
+                    size="sm"
+                    icon={Plus}
+                  >
+                    Add Partner
+                  </Button>
+                </div>
               </div>
 
               <AnimatePresence>
@@ -982,6 +1066,179 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
           </Button>
         )}
       </div>
+
+      {/* Partner Library Modal */}
+      {showPartnerLibraryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden"
+          >
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Library className="w-6 h-6" />
+                  <h2 className="text-2xl font-bold">Partner Library</h2>
+                  {selectedLibraryPartners.length > 0 && (
+                    <span className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                      {selectedLibraryPartners.length} selected
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    setShowPartnerLibraryModal(false);
+                    setSelectedLibraryPartners([]);
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-lg transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Search and Filters */}
+            <div className="p-6 border-b border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Search partners..."
+                    value={librarySearchQuery}
+                    onChange={(e) => setLibrarySearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <select
+                  value={libraryFilterType}
+                  onChange={(e) => setLibraryFilterType(e.target.value)}
+                  className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">All Types</option>
+                  {ORGANIZATION_TYPES.map(type => (
+                    <option key={type.value} value={type.value}>{type.label}</option>
+                  ))}
+                </select>
+
+                <input
+                  type="text"
+                  placeholder="Filter by country..."
+                  value={libraryFilterCountry}
+                  onChange={(e) => setLibraryFilterCountry(e.target.value)}
+                  className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Partner List */}
+            <div className="p-6 overflow-y-auto" style={{ maxHeight: '400px' }}>
+              {loadingLibrary ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                </div>
+              ) : libraryPartners.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                  <p>No partners found in your library</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {libraryPartners.map((partner) => {
+                    const isSelected = selectedLibraryPartners.some(p => p.id === partner.id);
+                    const isAlreadyInForm = formData.partner_organizations.some(
+                      p => p.library_id === partner.id
+                    );
+
+                    return (
+                      <div
+                        key={partner.id}
+                        onClick={() => !isAlreadyInForm && togglePartnerSelection(partner)}
+                        className={cn(
+                          "p-4 rounded-lg border-2 transition cursor-pointer",
+                          isAlreadyInForm
+                            ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
+                            : isSelected
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                        )}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900">{partner.name}</h3>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {partner.type.replace('_', ' ')} • {partner.country}
+                            </p>
+                            {partner.description && (
+                              <p className="text-xs text-gray-500 mt-2 line-clamp-2">
+                                {partner.description}
+                              </p>
+                            )}
+                            {partner.affinity_score && (
+                              <div className="mt-2">
+                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                                  Affinity: {partner.affinity_score}%
+                                </span>
+                              </div>
+                            )}
+                            {isAlreadyInForm && (
+                              <p className="text-xs text-gray-400 mt-2">Already in proposal</p>
+                            )}
+                          </div>
+                          {!isAlreadyInForm && (
+                            <div className={cn(
+                              "w-5 h-5 rounded border-2 ml-3 flex-shrink-0",
+                              isSelected
+                                ? "bg-blue-500 border-blue-500"
+                                : "border-gray-300"
+                            )}>
+                              {isSelected && (
+                                <Check className="w-3 h-3 text-white" />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-200 flex items-center justify-between">
+              <p className="text-sm text-gray-600">
+                {selectedLibraryPartners.length > 0
+                  ? `${selectedLibraryPartners.length} partner(s) selected`
+                  : "Select partners to add to your proposal"}
+              </p>
+              <div className="flex space-x-3">
+                <Button
+                  onClick={() => {
+                    setShowPartnerLibraryModal(false);
+                    setSelectedLibraryPartners([]);
+                  }}
+                  variant="outline"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={addSelectedPartnersToForm}
+                  variant="default"
+                  disabled={selectedLibraryPartners.length === 0}
+                  icon={Plus}
+                >
+                  Add {selectedLibraryPartners.length || ''} Partner{selectedLibraryPartners.length !== 1 ? 's' : ''}
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
