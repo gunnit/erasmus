@@ -8,9 +8,10 @@ from datetime import datetime
 from app.services.openai_service import OpenAIService
 from app.api.dependencies import get_current_user
 from app.core.subscription_deps import require_valid_subscription
-from app.db.models import User
+from app.db.models import User, Proposal
 from app.db.database import get_db
 from sqlalchemy.orm import Session
+from app.api.proposals import update_proposal_status_from_answers
 
 router = APIRouter()
 
@@ -135,6 +136,24 @@ Maximum {question_details.get('character_limit', 2000)} characters."""
         char_limit = question_details.get('character_limit', 2000)
 
         generation_time = (datetime.now() - start_time).total_seconds()
+
+        # Update proposal status if proposal_id is provided and is a valid integer
+        if request.proposal_id and request.proposal_id.isdigit():
+            proposal = db.query(Proposal).filter(
+                Proposal.id == int(request.proposal_id),
+                Proposal.user_id == current_user.id
+            ).first()
+
+            if proposal:
+                # Update the specific answer in the proposal
+                if not proposal.answers:
+                    proposal.answers = {}
+                if request.section not in proposal.answers:
+                    proposal.answers[request.section] = {}
+                proposal.answers[request.section][request.question_field] = answer
+
+                # Update status based on answer count
+                update_proposal_status_from_answers(proposal, db)
 
         return GenerateSingleAnswerResponse(
             question_id=request.question_id,

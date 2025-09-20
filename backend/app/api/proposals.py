@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict, Any
 from datetime import datetime
 import os
 import tempfile
@@ -13,12 +13,49 @@ from app.services.pdf_generator import ProposalPDFGenerator
 
 router = APIRouter(prefix="/proposals", tags=["proposals"])
 
+def count_answered_questions(answers: Dict[str, Any]) -> int:
+    """Count the number of non-empty answers in the proposal"""
+    if not answers:
+        return 0
+
+    count = 0
+    for section_name, section_data in answers.items():
+        if isinstance(section_data, dict):
+            for field, answer in section_data.items():
+                if answer and str(answer).strip():
+                    count += 1
+    return count
+
+def determine_proposal_status(answer_count: int) -> str:
+    """Determine proposal status based on the number of answered questions"""
+    if answer_count == 0:
+        return "draft"
+    elif answer_count >= 27:
+        return "complete"
+    else:
+        return "working"
+
+def update_proposal_status_from_answers(proposal: Proposal, db: Session) -> None:
+    """Update proposal status based on the number of answered questions"""
+    answer_count = count_answered_questions(proposal.answers)
+    new_status = determine_proposal_status(answer_count)
+
+    if proposal.status != new_status and proposal.status != "submitted":
+        # Don't change status if it's already submitted
+        proposal.status = new_status
+        proposal.updated_at = datetime.utcnow()
+        db.commit()
+
 @router.post("/", response_model=ProposalSchema)
 async def create_proposal(
     proposal_data: ProposalCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    # Determine initial status based on answers
+    answer_count = count_answered_questions(proposal_data.answers)
+    initial_status = determine_proposal_status(answer_count)
+
     # Create the proposal
     db_proposal = Proposal(
         user_id=current_user.id,
@@ -30,7 +67,7 @@ async def create_proposal(
         duration_months=proposal_data.duration_months,
         budget=proposal_data.budget,
         answers=proposal_data.answers,
-        status="draft"
+        status=initial_status
     )
 
     db.add(db_proposal)
@@ -162,9 +199,13 @@ async def update_proposal(
     for field, value in update_data.items():
         setattr(proposal, field, value)
 
-    proposal.updated_at = datetime.utcnow()
+    # Update status based on answers if answers were updated
+    if 'answers' in update_data:
+        update_proposal_status_from_answers(proposal, db)
+    else:
+        proposal.updated_at = datetime.utcnow()
+        db.commit()
 
-    db.commit()
     db.refresh(proposal)
 
     return proposal

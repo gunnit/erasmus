@@ -120,18 +120,26 @@ const Dashboard = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
+      case 'submitted':
       case 'approved': return 'from-green-500 to-emerald-500';
+      case 'complete': return 'from-purple-500 to-purple-600';
+      case 'working':
       case 'pending': return 'from-yellow-500 to-orange-500';
       case 'rejected': return 'from-red-500 to-rose-500';
+      case 'draft':
       default: return 'from-gray-500 to-gray-600';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'approved': return CheckCircle;
+      case 'submitted':
+      case 'approved':
+      case 'complete': return CheckCircle;
+      case 'working':
       case 'pending': return Clock;
       case 'rejected': return AlertCircle;
+      case 'draft':
       default: return FileText;
     }
   };
@@ -343,7 +351,11 @@ const Dashboard = () => {
                                   <StatusIcon className="w-4 h-4 text-white" />
                                 </div>
                                 <span className="ml-2 text-sm font-medium capitalize">
-                                  {proposal.status === 'draft' ? 'Draft' : proposal.status}
+                                  {proposal.status === 'draft' ? 'Draft' :
+                                   proposal.status === 'working' ? 'In Progress' :
+                                   proposal.status === 'complete' ? 'Complete' :
+                                   proposal.status === 'submitted' ? 'Submitted' :
+                                   proposal.status}
                                 </span>
                               </div>
                             </td>

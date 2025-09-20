@@ -151,6 +151,9 @@ const ProposalDetailNew = () => {
     switch (status) {
       case 'submitted':
         return 'bg-green-100 text-green-800';
+      case 'complete':
+        return 'bg-purple-100 text-purple-800';
+      case 'working':
       case 'in_progress':
         return 'bg-blue-100 text-blue-800';
       case 'draft':
@@ -162,7 +165,9 @@ const ProposalDetailNew = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'submitted':
+      case 'complete':
         return CheckCircle;
+      case 'working':
       case 'in_progress':
         return Clock;
       case 'draft':
@@ -213,7 +218,11 @@ const ProposalDetailNew = () => {
               <div className="flex items-center gap-4 text-sm text-gray-500">
                 <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(proposal.status)}`}>
                   <StatusIcon className="h-4 w-4" />
-                  {proposal.status || 'Draft'}
+                  {proposal.status === 'complete' ? 'Complete' :
+                   proposal.status === 'working' ? 'In Progress' :
+                   proposal.status === 'draft' ? 'Draft' :
+                   proposal.status === 'submitted' ? 'Submitted' :
+                   proposal.status || 'Draft'}
                 </span>
                 <span className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
