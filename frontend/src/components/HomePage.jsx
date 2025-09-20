@@ -391,68 +391,48 @@ const HomePage = () => {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 bg-white">
-        <div className="mx-auto max-w-7xl px-4">
+      <section id="pricing" className="py-20 bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-200/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-200/20 rounded-full blur-3xl"></div>
+        <div className="mx-auto max-w-7xl px-4 relative">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Simple, Transparent Pricing
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              PRICING
             </h2>
-            <p className="text-xl text-gray-600">
-              Choose the plan that fits your organization's needs
-            </p>
+            <p className="text-2xl text-gray-600 font-light">Choose your GYG pack</p>
+            <div className="w-24 h-1 bg-gradient-to-r from-primary-600 to-blue-600 mx-auto rounded-full mt-8"></div>
           </div>
-
-          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {pricingPlans.map((plan, index) => (
-              <div
-                key={index}
-                className={`relative bg-white rounded-2xl border ${
-                  plan.popular
-                    ? 'border-blue-500 shadow-xl'
-                    : 'border-gray-200'
-                } p-6`}
-              >
+              <div key={index} className={`relative bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden transform hover:-translate-y-2 transition-all duration-300 ${plan.popular ? 'ring-4 ring-primary-500 ring-opacity-50' : ''}`}>
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                      Most Popular
-                    </div>
+                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-primary-600 to-blue-600 text-white text-center py-2 text-sm font-semibold">
+                    Most Popular
                   </div>
                 )}
-
-                <div className="text-center mb-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    {plan.name}
-                  </h3>
-                  <div className="flex items-baseline justify-center">
-                    <span className="text-4xl font-bold text-gray-900">€{plan.price}</span>
+                <div className={`p-8 text-center ${plan.popular ? 'pt-12' : ''}`}>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">{plan.name}</h3>
+                  <div className="mb-6">
+                    <span className="text-5xl font-bold bg-gradient-to-r from-primary-600 to-blue-600 bg-clip-text text-transparent">€{plan.price}</span>
                     <span className="text-gray-500 ml-2">+ VAT</span>
                   </div>
-                </div>
-
-                <p className="text-gray-600 text-center mb-6">
-                  {plan.description}
-                </p>
-
-                <ul className="space-y-3 mb-6">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-700 text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Link
-                  to="/register"
-                  className={`block w-full py-3 rounded-lg font-medium text-center transition-all duration-200 ${
+                  <p className="text-gray-600 mb-8 text-lg">{plan.description}</p>
+                  <ul className="space-y-4 mb-8">
+                    {plan.features.map((feature, featureIndex) => (
+                      <li key={featureIndex} className="flex items-center text-gray-700">
+                        <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <button className={`w-full py-4 rounded-xl font-semibold transition-all duration-300 ${
                     plan.popular
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      ? 'bg-gradient-to-r from-primary-600 to-blue-600 text-white hover:from-primary-700 hover:to-blue-700 shadow-lg hover:shadow-xl'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Get Started
-                </Link>
+                  }`}>
+                    Choose Plan
+                  </button>
+                </div>
               </div>
             ))}
           </div>
