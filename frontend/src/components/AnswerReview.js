@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
+import MarkdownRenderer from './ui/MarkdownRenderer';
 
 const AnswerReview = ({ answers, projectData, onEdit, onExport }) => {
   const [editingField, setEditingField] = useState(null);
@@ -138,7 +139,7 @@ const AnswerReview = ({ answers, projectData, onEdit, onExport }) => {
                         onClick={() => setEditingField(`${sectionKey}-${index}`)}
                         className="p-3 bg-gray-50 rounded cursor-pointer hover:bg-gray-100 transition-colors"
                       >
-                        <p className="text-gray-800 whitespace-pre-wrap">{answer.answer}</p>
+                        <MarkdownRenderer content={answer.answer} />
                         <p className="mt-2 text-xs text-gray-500">Click to edit</p>
                       </div>
                     )}

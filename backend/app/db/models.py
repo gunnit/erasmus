@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, JSON, Enum, Boolean, Float, Numeric
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, JSON, Enum, Boolean, Float, Numeric, Table
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
@@ -22,6 +22,20 @@ class PaymentStatus(enum.Enum):
     FAILED = "failed"
     REFUNDED = "refunded"
 
+class PartnerType(enum.Enum):
+    NGO = "ngo"
+    PUBLIC_INSTITUTION = "public_institution"
+    PRIVATE_COMPANY = "private_company"
+    EDUCATIONAL_INSTITUTION = "educational_institution"
+    RESEARCH_CENTER = "research_center"
+    SOCIAL_ENTERPRISE = "social_enterprise"
+
+# Association table for many-to-many relationship between Partners and Proposals
+partner_proposal = Table('partner_proposal', Base.metadata,
+    Column('partner_id', Integer, ForeignKey('partners.id'), primary_key=True),
+    Column('proposal_id', Integer, ForeignKey('proposals.id'), primary_key=True)
+)
+
 class User(Base):
     __tablename__ = "users"
 
@@ -44,6 +58,7 @@ class User(Base):
     proposals = relationship("Proposal", back_populates="owner", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="user", cascade="all, delete-orphan")
     subscription = relationship("Subscription", back_populates="user", uselist=False)
+    partners = relationship("Partner", back_populates="owner", cascade="all, delete-orphan")
 
 class Proposal(Base):
     __tablename__ = "proposals"
@@ -77,6 +92,7 @@ class Proposal(Base):
     submitted_at = Column(DateTime)
     
     owner = relationship("User", back_populates="proposals")
+    library_partners = relationship("Partner", secondary=partner_proposal, back_populates="proposals")
 
 class GenerationSession(Base):
     __tablename__ = "generation_sessions"
@@ -183,3 +199,34 @@ class Payment(Base):
     refunded_at = Column(DateTime, nullable=True)
 
     user = relationship("User", back_populates="payments")
+
+class Partner(Base):
+    __tablename__ = "partners"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    # Basic information
+    name = Column(String, nullable=False, index=True)
+    type = Column(Enum(PartnerType), nullable=False)
+    country = Column(String)
+    website = Column(String)
+    description = Column(Text)
+
+    # Extended information
+    expertise_areas = Column(JSON, default=lambda: [])
+    contact_info = Column(JSON, default=lambda: {})  # email, phone, address
+
+    # Affinity and crawling
+    affinity_score = Column(Float, nullable=True)  # 0-100
+    affinity_explanation = Column(Text, nullable=True)
+    crawled_data = Column(JSON, nullable=True)  # Cached web data
+    last_crawled = Column(DateTime, nullable=True)
+
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    owner = relationship("User", back_populates="partners")
+    proposals = relationship("Proposal", secondary=partner_proposal, back_populates="library_partners")

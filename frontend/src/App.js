@@ -26,6 +26,7 @@ import ErasmusResources from './components/ErasmusResources.jsx';
 import PricingPlans from './components/PricingPlans.jsx';
 import PaymentCheckout from './components/PaymentCheckout.jsx';
 import PaymentSuccess from './components/PaymentSuccess.jsx';
+import { Partners } from './components/Partners.jsx';
 import { Progress, CircularProgress } from './components/ui/Progress';
 import { Card, CardContent } from './components/ui/Card';
 import { Sparkles, CheckCircle, FileText, Rocket } from 'lucide-react';
@@ -551,21 +552,29 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route 
-              path="/analytics" 
+            <Route
+              path="/analytics"
               element={
                 <ProtectedRoute>
                   <Analytics />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/settings" 
+            <Route
+              path="/partners"
+              element={
+                <ProtectedRoute>
+                  <Partners />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
               element={
                 <ProtectedRoute>
                   <Settings />
                 </ProtectedRoute>
-              } 
+              }
             />
             <Route
               path="/profile"

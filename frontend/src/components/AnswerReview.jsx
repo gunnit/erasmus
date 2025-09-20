@@ -653,9 +653,7 @@ const AnswerReview = ({ answers, projectData, onEdit, onExport }) => {
                 </button>
               </div>
               <div className="prose max-w-none">
-                <p className="whitespace-pre-wrap text-gray-800 leading-relaxed">
-                  {fullscreenAnswer.answer}
-                </p>
+                <MarkdownRenderer content={fullscreenAnswer.answer} />
               </div>
               <div className="mt-6 flex justify-between items-center">
                 <span className="text-sm text-gray-600">

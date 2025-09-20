@@ -4,7 +4,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Menu, X, Home, FileText, Settings as SettingsIcon, LogOut,
   Moon, Sun, Bell, User, ChevronDown, PlusCircle,
-  Layers, Sparkles, TrendingUp, BookOpen, Trophy, Target
+  Layers, Sparkles, TrendingUp, BookOpen, Trophy, Target, Users
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
@@ -14,6 +14,7 @@ import { formatDeadlineDate, formatBrusselsTime } from '../../utils/dateUtils';
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Proposals', href: '/proposals', icon: FileText },
+  { name: 'Partners', href: '/partners', icon: Users },
   { name: 'Erasmus+ Resources', href: '/resources', icon: BookOpen },
   { name: 'Settings', href: '/settings', icon: SettingsIcon },
 ];
