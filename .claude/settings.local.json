@@ -30,7 +30,8 @@
       "WebSearch",
       "Bash(ls:*)",
       "WebFetch(domain:www.teacheracademy.eu)",
-      "WebFetch(domain:erasmus-plus.ec.europa.eu)"
+      "WebFetch(domain:erasmus-plus.ec.europa.eu)",
+      "WebFetch(domain:getyourgrant.eu)"
     ],
     "deny": [],
     "ask": []
