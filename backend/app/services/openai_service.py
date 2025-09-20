@@ -196,11 +196,8 @@ class OpenAIService:
             )
             
             answer = response.choices[0].message.content
-            
-            # Ensure answer fits character limit
-            if question.get("character_limit"):
-                answer = self._trim_to_limit(answer, question["character_limit"])
-            
+
+            # Return answer without trimming - let token limits control length
             return answer
             
         except Exception as e:

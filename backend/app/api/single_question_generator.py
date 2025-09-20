@@ -131,10 +131,8 @@ Maximum {question_details.get('character_limit', 2000)} characters."""
             temperature=0.7
         )
 
-        # Trim to character limit if needed
+        # Get character limit but don't trim - let token limits control length
         char_limit = question_details.get('character_limit', 2000)
-        if len(answer) > char_limit:
-            answer = answer[:char_limit-3] + "..."
 
         generation_time = (datetime.now() - start_time).total_seconds()
 
