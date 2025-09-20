@@ -137,7 +137,7 @@ const HomePage = () => {
             {/* Animated Badge */}
             <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 text-blue-700 text-sm font-medium mb-8 animate-pulse">
               <Sparkles className="w-4 h-4 mr-2" />
-              Powered by GPT-4 • Trusted by 1,250+ Organizations
+              Powered by GPT-5 • 1,250+ Proposals Generated
               <Shield className="w-4 h-4 ml-2" />
             </div>
 
@@ -448,7 +448,7 @@ const HomePage = () => {
 
             {/* Professional Plan */}
             <div className="group relative bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 border-2 border-purple-200 p-8 transform hover:-translate-y-2">
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
                 <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-1 rounded-full text-sm font-semibold shadow-lg">
                   MOST POPULAR
                 </div>
@@ -512,7 +512,7 @@ const HomePage = () => {
               Trusted Across Europe
             </h2>
             <p className="text-xl text-gray-600">
-              Join 1,250+ organizations winning with GYG
+              Join thousands of successful applicants using GYG
             </p>
           </div>
 
@@ -549,7 +549,7 @@ const HomePage = () => {
             Ready to Transform Your Grant Writing?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Join 1,250+ organizations already winning with GYG
+            Join thousands who have transformed their grant writing process
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
