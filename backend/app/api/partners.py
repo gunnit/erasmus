@@ -264,16 +264,23 @@ async def calculate_partner_affinity(
 
 @router.get("/search", response_model=List[PartnerResponse])
 def search_partners(
-    q: str,
+    q: str = Query(..., min_length=1),
     limit: int = Query(10, ge=1, le=50),
+    country: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Quick search for partners"""
-    partners = db.query(Partner).filter(
+    """Quick search for partners with optional country filter"""
+    query = db.query(Partner).filter(
         Partner.user_id == current_user.id,
         Partner.name.ilike(f"%{q}%") | Partner.description.ilike(f"%{q}%")
-    ).limit(limit).all()
+    )
+
+    # Apply country filter if provided
+    if country:
+        query = query.filter(Partner.country.ilike(f"%{country}%"))
+
+    partners = query.limit(limit).all()
 
     return partners
 

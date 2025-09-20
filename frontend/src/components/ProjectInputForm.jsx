@@ -6,7 +6,7 @@ import {
   Plus, Trash2, ChevronRight, Info, Sparkles,
   CheckCircle, AlertCircle, Briefcase, MapPin, Save, Cloud, CloudOff,
   Loader2, Wand2, Leaf, Vote, TrendingUp, BookOpen,
-  GraduationCap, Shield, Heart
+  GraduationCap, Shield, Heart, Search, Check
 } from 'lucide-react';
 import api from '../services/api';
 import { Button } from './ui/Button';
@@ -33,6 +33,9 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
   const [saveStatus, setSaveStatus] = useState('idle'); // idle, saving, saved, error
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+  const [partnerSuggestions, setPartnerSuggestions] = useState([]);
+  const [searchingPartners, setSearchingPartners] = useState(false);
+  const [activePartnerSearch, setActivePartnerSearch] = useState(null);
   const [formData, setFormData] = useState(initialData || {
     title: '',
     project_idea: '',
@@ -133,7 +136,7 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
     }
   };
 
-  const handlePartnerChange = (index, field, value) => {
+  const handlePartnerChange = async (index, field, value) => {
     const newPartners = [...formData.partner_organizations];
     newPartners[index] = {
       ...newPartners[index],
@@ -145,6 +148,30 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
     };
     setFormData(newData);
 
+    // Search for partner suggestions when typing name
+    if (field === 'name' && value.length > 2) {
+      setActivePartnerSearch(index);
+      setSearchingPartners(true);
+      try {
+        const response = await api.get('/partners/search', {
+          params: {
+            q: value,
+            limit: 5,
+            country: newPartners[index].country || undefined
+          }
+        });
+        setPartnerSuggestions(response.data);
+      } catch (error) {
+        console.error('Failed to search partners:', error);
+        setPartnerSuggestions([]);
+      } finally {
+        setSearchingPartners(false);
+      }
+    } else if (field === 'name' && value.length <= 2) {
+      setPartnerSuggestions([]);
+      setActivePartnerSearch(null);
+    }
+
     // Trigger auto-save
     if (onAutoSave && proposalId) {
       if (saveTimeout) clearTimeout(saveTimeout);
@@ -154,6 +181,25 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
       }, 1500);
       setSaveTimeout(timeout);
     }
+  };
+
+  const selectPartnerFromLibrary = (index, partner) => {
+    const newPartners = [...formData.partner_organizations];
+    newPartners[index] = {
+      name: partner.name,
+      type: partner.type.replace('_', ''),
+      country: partner.country || '',
+      role: partner.description || '',
+      library_id: partner.id  // Track the library partner ID
+    };
+    const newData = {
+      ...formData,
+      partner_organizations: newPartners
+    };
+    setFormData(newData);
+    setPartnerSuggestions([]);
+    setActivePartnerSearch(null);
+    toast.success(`Selected ${partner.name} from partner library`);
   };
 
   const addPartner = () => {
@@ -490,13 +536,54 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <Input
-                            label={`Partner ${index + 1} Name`}
-                            value={partner.name}
-                            onChange={(e) => handlePartnerChange(index, 'name', e.target.value)}
-                            icon={Building2}
-                          />
-                          
+                          <div className="relative">
+                            <Input
+                              label={`Partner ${index + 1} Name`}
+                              value={partner.name}
+                              onChange={(e) => handlePartnerChange(index, 'name', e.target.value)}
+                              icon={Building2}
+                            />
+
+                            {/* Partner suggestions dropdown */}
+                            {activePartnerSearch === index && partnerSuggestions.length > 0 && (
+                              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                {searchingPartners && (
+                                  <div className="p-3 text-sm text-gray-500 flex items-center">
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Searching...
+                                  </div>
+                                )}
+                                {!searchingPartners && partnerSuggestions.map((suggestion) => (
+                                  <button
+                                    key={suggestion.id}
+                                    type="button"
+                                    onClick={() => selectPartnerFromLibrary(index, suggestion)}
+                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <div className="font-medium text-gray-900">{suggestion.name}</div>
+                                        <div className="text-sm text-gray-500">
+                                          {suggestion.type.replace('_', ' ')} • {suggestion.country}
+                                        </div>
+                                        {suggestion.affinity_score && (
+                                          <div className="text-xs text-blue-600 mt-1">
+                                            Affinity: {suggestion.affinity_score}%
+                                          </div>
+                                        )}
+                                      </div>
+                                      <Check className="w-5 h-5 text-green-500 opacity-0 hover:opacity-100" />
+                                    </div>
+                                  </button>
+                                ))}
+                                <div className="p-2 bg-gray-50 text-xs text-gray-600 text-center">
+                                  <Search className="w-3 h-3 inline mr-1" />
+                                  From your partner library
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
                           <div className="space-y-2">
                             <label className="block text-sm font-medium text-gray-700">
                               Organization Type
@@ -520,7 +607,7 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                             onChange={(e) => handlePartnerChange(index, 'country', e.target.value)}
                             icon={Globe}
                           />
-                          
+
                           <Input
                             label="Role in Project"
                             value={partner.role}

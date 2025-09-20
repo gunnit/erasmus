@@ -2,6 +2,18 @@ from pydantic import BaseModel
 from typing import Optional, Dict, List, Any
 from datetime import datetime
 
+class PartnerSummary(BaseModel):
+    """Minimal partner info for proposal display"""
+    id: int
+    name: str
+    type: str
+    country: Optional[str] = None
+    description: Optional[str] = None
+    affinity_score: Optional[float] = None
+
+    class Config:
+        from_attributes = True
+
 class ProposalBase(BaseModel):
     title: str
     project_idea: Optional[str] = None
@@ -13,6 +25,7 @@ class ProposalBase(BaseModel):
 
 class ProposalCreate(ProposalBase):
     answers: Optional[Dict[str, Any]] = None
+    library_partner_ids: Optional[List[int]] = None  # IDs of existing partners to link
 
 class ProposalUpdate(BaseModel):
     """Schema for updating proposals - all fields are optional"""
@@ -25,6 +38,7 @@ class ProposalUpdate(BaseModel):
     budget: Optional[str] = None
     answers: Optional[Dict[str, Any]] = None
     status: Optional[str] = None
+    library_partner_ids: Optional[List[int]] = None  # IDs of partners to link/unlink
 
 class Proposal(ProposalBase):
     id: int
@@ -34,7 +48,8 @@ class Proposal(ProposalBase):
     created_at: datetime
     updated_at: datetime
     submitted_at: Optional[datetime] = None
-    
+    library_partners: Optional[List[PartnerSummary]] = []  # Linked partners from library
+
     class Config:
         from_attributes = True
 

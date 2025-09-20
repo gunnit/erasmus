@@ -469,22 +469,70 @@ const ProposalDetailNew = () => {
                     <Users className="h-5 w-5 text-gray-500" />
                     Partner Organizations
                   </h2>
-                  {proposal.partners && proposal.partners.length > 0 ? (
-                    <ul className="space-y-2">
-                      {proposal.partners.map((partner, index) => (
-                        <li key={index} className="flex items-start">
-                          <span className="text-gray-400 mr-2">•</span>
-                          <span className="text-gray-900 text-sm">
-                            {typeof partner === 'string'
-                              ? partner
-                              : `${partner?.name || 'Partner ' + (index + 1)}${partner?.country ? ' (' + partner.country + ')' : ''}${partner?.type ? ' - ' + partner.type : ''}`}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-gray-500 text-sm">No partner organizations added</p>
+
+                  {/* Library Partners (from partner library) */}
+                  {proposal.library_partners && proposal.library_partners.length > 0 && (
+                    <div className="mb-4">
+                      <h3 className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-1">
+                        <Award className="h-3 w-3" />
+                        From Partner Library
+                      </h3>
+                      <ul className="space-y-2">
+                        {proposal.library_partners.map((partner) => (
+                          <li key={partner.id} className="flex items-start">
+                            <span className="text-blue-400 mr-2">•</span>
+                            <div className="text-sm">
+                              <span className="font-medium text-gray-900">
+                                {partner.name}
+                                {partner.country && (
+                                  <span className="text-gray-600 ml-1">({partner.country})</span>
+                                )}
+                              </span>
+                              <span className="text-gray-500 ml-2">
+                                {partner.type?.replace('_', ' ')}
+                              </span>
+                              {partner.affinity_score && (
+                                <span className="ml-2 text-blue-600 text-xs">
+                                  Affinity: {partner.affinity_score}%
+                                </span>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
+
+                  {/* Legacy Partners (from JSON) */}
+                  {proposal.partners && proposal.partners.length > 0 ? (
+                    <div>
+                      {proposal.library_partners && proposal.library_partners.length > 0 && (
+                        <h3 className="text-sm font-medium text-gray-600 mb-2">Other Partners</h3>
+                      )}
+                      <ul className="space-y-2">
+                        {proposal.partners.map((partner, index) => {
+                          // Skip if this partner is already in library_partners
+                          const isInLibrary = proposal.library_partners?.some(
+                            lp => lp.name === (typeof partner === 'string' ? partner : partner?.name)
+                          );
+                          if (isInLibrary) return null;
+
+                          return (
+                            <li key={index} className="flex items-start">
+                              <span className="text-gray-400 mr-2">•</span>
+                              <span className="text-gray-900 text-sm">
+                                {typeof partner === 'string'
+                                  ? partner
+                                  : `${partner?.name || 'Partner ' + (index + 1)}${partner?.country ? ' (' + partner.country + ')' : ''}${partner?.type ? ' - ' + partner.type : ''}`}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  ) : !proposal.library_partners || proposal.library_partners.length === 0 ? (
+                    <p className="text-gray-500 text-sm">No partner organizations added</p>
+                  ) : null}
                 </div>
               </div>
             </div>

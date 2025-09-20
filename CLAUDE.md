@@ -36,7 +36,7 @@ npm start
 2. Frontend sends to `/api/form/generate-answers` or progressive generation endpoints
 3. Backend orchestrates AI generation via `ai_autofill_service.py`
 4. OpenAI generates ALL 27 answers with context awareness
-5. User reviews/edits in `AnswerReview.jsx` or `ProposalDetail.jsx`
+5. User reviews/edits in `AnswerReview.jsx` or `ProposalDetailNew.js`
 6. Proposal saved to database with authentication
 
 ### Backend Structure (`/backend/app/`)
@@ -45,7 +45,8 @@ npm start
 - `form_generator.py` - Main orchestrator for form generation, handles PDF export
 - `single_question_generator.py` - Generate individual answers with context
 - `progressive_generator.py` - Progressive generation with SSE streaming
-- `proposals.py` - CRUD operations for saved proposals
+- `proposals.py` - CRUD operations for saved proposals with partner library linking
+- `partners.py` - Partner library management with web crawling and affinity scoring
 - `auth.py` - JWT authentication endpoints
 - `dashboard.py` - Real-time statistics and metrics
 
@@ -53,18 +54,21 @@ npm start
 - `ai_autofill_service.py` - Core AI logic using OpenAI GPT
 - `prompts_config.py` - Question-specific prompt templates
 - `openai_service.py` - OpenAI API integration with `generate_completion()` method
+- `partner_affinity_service.py` - Calculate partner-project compatibility scores
+- `web_crawler_service.py` - Extract partner info from websites
 
 **Data Layer** (`db/`)
-- `models.py` - SQLAlchemy models (User, Proposal)
+- `models.py` - SQLAlchemy models (User, Proposal, Partner, GenerationSession, Subscription, Payment)
 - `database.py` - Database connection and session management
 
 ### Frontend Structure (`/frontend/src/`)
 
 **Components**
 - `App.js` - Main app controller with state management
-- `ProjectInputForm.jsx` - Multi-step form for project input
+- `ProjectInputForm.jsx` - Multi-step form with partner library search integration
 - `AnswerReview.jsx` - Review and edit generated answers
-- `ProposalDetail.jsx` / `ProposalDetailNew.jsx` - View/edit individual proposals with PDF export
+- `ProposalDetailNew.js` - View/edit proposals with library partner display
+- `Partners.jsx` - Partner library management interface
 - `Dashboard.jsx` - Real-time metrics and proposal management
 - `ProgressiveGenerationModal.jsx` - Real-time generation progress display
 
@@ -87,9 +91,15 @@ npm start
 - `GET /api/form/pdf/{id}` - Download generated PDF
 
 ### Proposals
-- `GET/POST /api/proposals/` - List/create proposals
+- `GET/POST /api/proposals/` - List/create proposals (auto-links partners)
 - `GET/PUT/DELETE /api/proposals/{id}` - Manage specific proposal
 - `POST /api/proposals/{id}/submit` - Submit proposal
+
+### Partners
+- `GET/POST /api/partners/` - List/create partners in library
+- `GET /api/partners/search` - Search partners for autocomplete
+- `POST /api/partners/{id}/crawl` - Crawl partner website for info
+- `POST /api/partners/{id}/calculate-affinity` - Calculate project compatibility
 
 ### User Management
 - `POST /api/auth/register` - User registration
@@ -143,8 +153,16 @@ The system generates answers for 27 questions across 6 sections:
 ## Database Schema
 
 ### SQLAlchemy Models
-- **User**: id, username, email, hashed_password, full_name, organization, created_at, is_active
-- **Proposal**: id, user_id, title, project_idea, priorities, target_groups, partners, duration_months, budget, answers (JSON), status, created_at, updated_at, submitted_at
+- **User**: id, username, email, hashed_password, full_name, organization, subscription info
+- **Proposal**: id, user_id, title, project_idea, priorities, target_groups, partners (JSON), library_partners (relation), answers, status
+- **Partner**: id, user_id, name, type, country, website, description, expertise_areas, affinity_score
+- **GenerationSession**: id, user_id, status, project_context, answers, progress tracking
+- **Subscription/Payment**: Subscription and payment tracking
+
+### Partner-Proposal Relationship
+- `partner_proposal` association table for many-to-many relationship
+- Partners auto-created in library when proposals are saved
+- Partners can be reused across multiple proposals
 
 ### Alembic Migrations
 - Located in `backend/alembic/versions/`
@@ -168,7 +186,11 @@ python test_proposal_save.py     # Test database persistence
 python test_progressive_generation.py  # Test progressive generation
 python test_parallel_generation.py     # Test parallel generation
 python test_error_handling.py    # Test error scenarios
+python test_partner_linking.py   # Test partner library integration
 python test_basic.py             # Basic API tests
+
+# Migration scripts
+python migrate_partners.py       # Migrate existing proposals to partner library
 ```
 
 ### Frontend Testing
@@ -269,6 +291,28 @@ The system uses Server-Sent Events (SSE) for real-time generation progress:
 - Callback chain break (onComplete not called)
 - Save API failure (auth/validation errors)
 
+## Partner Library Integration
+
+The system maintains a reusable partner library with advanced features:
+
+### Partner Management Flow
+1. **Auto-creation**: Partners entered in proposal forms are automatically added to library
+2. **Deduplication**: System checks for existing partners by name and country
+3. **Search Integration**: Real-time search suggestions when entering partner names
+4. **Web Crawling**: Extract partner info from websites (`WebCrawlerService`)
+5. **Affinity Scoring**: Calculate compatibility between partners and projects
+
+### Data Structure
+- Partners stored in `partners` table with rich metadata
+- Linked to proposals via `partner_proposal` association table
+- Both library partners and legacy JSON partners supported for backward compatibility
+
+### Key Files
+- `backend/app/api/partners.py` - Partner management endpoints
+- `backend/app/services/partner_affinity_service.py` - Compatibility scoring
+- `frontend/src/components/Partners.jsx` - Partner library UI
+- `frontend/src/components/ProjectInputForm.jsx` - Partner search integration
+
 ## Important Notes
 
 - Using OpenAI GPT-4 (not Anthropic Claude)
@@ -276,6 +320,7 @@ The system uses Server-Sent Events (SSE) for real-time generation progress:
 - All configuration is in `render.yaml`
 - Progressive generation uses SSE for real-time updates
 - Sessions stored in Redis (production) or memory (development)
+- Partners are automatically linked between proposals and library
 - Always work on Render front and backend when building - deploy and use Render MCP to check deployment logs
 - Do not use or test on localhost unless explicitly for development
-- you have to always deploy to render and check the logs if successeful , we do not do anything localy
+- You have to always deploy to render and check the logs if successful, we do not do anything locally
