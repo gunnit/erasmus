@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { formatDateWithFullMonth } from '../utils/dateUtils';
+import ReactMarkdown from 'react-markdown';
 // Import priority helper functions
 import { getPriorityByCode, getPriorityType } from '../config/erasmusPriorities';
 import {
@@ -385,7 +386,13 @@ const ProposalDetailNew = () => {
                   <div className="space-y-3">
                     <div>
                       <label className="text-sm text-gray-500">Project Idea</label>
-                      <p className="text-gray-900">{proposal.project_idea || 'Not specified'}</p>
+                      <div className="text-gray-900 prose prose-sm max-w-none">
+                        {proposal.project_idea ? (
+                          <ReactMarkdown>{proposal.project_idea}</ReactMarkdown>
+                        ) : (
+                          <p>Not specified</p>
+                        )}
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
