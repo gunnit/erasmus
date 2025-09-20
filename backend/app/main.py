@@ -34,6 +34,8 @@ try:
         conn.execute(text("ALTER TABLE proposals ADD COLUMN IF NOT EXISTS section_scores JSON"))
         conn.execute(text("ALTER TABLE proposals ADD COLUMN IF NOT EXISTS quality_feedback JSON"))
         conn.execute(text("ALTER TABLE proposals ADD COLUMN IF NOT EXISTS score_calculated_at TIMESTAMP"))
+        # Add credit_used column for tracking proposal credit deduction
+        conn.execute(text("ALTER TABLE proposals ADD COLUMN IF NOT EXISTS credit_used BOOLEAN DEFAULT false"))
         conn.commit()
 except Exception as e:
     print(f"Note: Could not add new columns (may already exist): {e}")
