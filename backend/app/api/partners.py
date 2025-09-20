@@ -5,7 +5,7 @@ from datetime import datetime
 
 from ..db.database import get_db
 from ..db.models import Partner, PartnerType, User, Proposal
-from ..core.auth import get_current_user
+from .dependencies import get_current_user
 from ..schemas.partner import PartnerCreate, PartnerUpdate, PartnerResponse, PartnerListResponse
 from ..services.web_crawler_service import WebCrawlerService
 from ..services.partner_affinity_service import PartnerAffinityService
