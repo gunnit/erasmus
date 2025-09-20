@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import LandingPage from './LandingPage';
+import HomePage from './HomePage';
 
 const HomeRouter = () => {
   const { user } = useAuth();
@@ -12,7 +12,7 @@ const HomeRouter = () => {
   }
 
   // If not authenticated, show landing page
-  return <LandingPage />;
+  return <HomePage />;
 };
 
 export default HomeRouter;
