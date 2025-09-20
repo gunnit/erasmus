@@ -102,15 +102,18 @@ Previously Generated Answers (for context and consistency):
 
 Additional Context from User:
 {request.additional_context if request.additional_context else 'None provided'}
+{('IMPORTANT: The user provided additional context above - incorporate it directly into your answer!' if request.additional_context else '')}
 
 IMPORTANT:
-1. Answer ONLY the specific question asked
-2. Stay within {question_details.get('character_limit', 2000)} characters
-3. Be specific, detailed, and directly address evaluation criteria
+1. Answer ONLY the specific question asked - be CONCISE and focused
+2. Target 70-80% of the {question_details.get('character_limit', 2000)} character limit
+3. Be specific but avoid unnecessary elaboration
 4. Reference project specifics and partners where relevant
 5. Maintain consistency with previously generated answers
 6. Use professional grant application language
-7. Include concrete examples and measurable outcomes where applicable"""
+7. Include concrete numbers and measurable outcomes
+8. Prioritize quality and clarity over length
+9. If additional context is provided above, USE IT directly in your answer"""
 
     user_prompt = f"""Generate a comprehensive answer for:
 
@@ -124,7 +127,7 @@ Maximum {question_details.get('character_limit', 2000)} characters."""
         answer = await openai_service.generate_completion(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
-            max_tokens=1000,
+            max_tokens=800,  # Reduced for more concise answers
             temperature=0.7
         )
 

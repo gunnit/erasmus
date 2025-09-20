@@ -191,7 +191,7 @@ class OpenAIService:
                         "content": prompt
                     }
                 ],
-                max_tokens=1000,
+                max_tokens=800,  # Reduced for more concise answers
                 temperature=0.7
             )
             

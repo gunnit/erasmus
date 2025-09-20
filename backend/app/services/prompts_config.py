@@ -28,7 +28,7 @@ Your writing style is:
 - Specific with concrete examples and measurable outcomes
 - Aligned with EU priorities and values
 - Evidence-based and data-driven when possible
-- Clear and concise while being comprehensive
+- Clear, concise, and focused - prioritizing quality over quantity
 
 You always:
 - Use active voice and positive language
@@ -217,16 +217,18 @@ TIPS FOR THIS ANSWER:
 SPECIFIC REQUIREMENTS FOR THIS ANSWER:
 {self._get_question_specific_requirements(question['field'])}
 
-Write a comprehensive, compelling answer that:
+Write a CONCISE yet compelling answer that:
 1. Directly addresses all parts of the question
-2. Uses specific examples and concrete details from the project
+2. Uses specific examples - be precise and avoid unnecessary elaboration
 3. Aligns with EU priorities and values
-4. Demonstrates measurable impact and outcomes
+4. Demonstrates measurable impact with concrete numbers
 5. Shows innovation and European added value
-6. Stays within the character limit
-7. Maximizes the evaluation score
+6. MUST stay well within the character limit - aim for 70-80% of the limit
+7. Maximizes evaluation score through quality, not quantity
+8. Avoids redundancy and repetitive phrases
+9. Uses clear, active voice and gets to the point quickly
 
-Generate the answer now:"""
+IMPORTANT: Generate a focused, concise answer that prioritizes clarity and impact over length:"""
         
         return prompt
     

@@ -351,49 +351,49 @@ class AIAutoFillService:
         field = question['field'].lower()
         character_limit = question.get('character_limit', 3000)
 
-        # Base parameters
+        # Base parameters - using // 4 for more concise answers
         params = {
             'temperature': 0.7,
-            'max_tokens': min(character_limit // 3, 2000)  # Rough token estimate
+            'max_tokens': min(character_limit // 4, 1200)  # More conservative token estimate for conciseness
         }
 
         # Question-specific optimizations
         if section_key == 'project_summary':
             # Summary questions need concise, clear answers
             params['temperature'] = 0.6
-            params['max_tokens'] = min(character_limit // 3, 1500)
+            params['max_tokens'] = min(character_limit // 4, 1000)
 
         elif section_key == 'relevance':
-            # Relevance questions need analytical, detailed answers
+            # Relevance questions need analytical, focused answers
             params['temperature'] = 0.7
-            params['max_tokens'] = min(character_limit // 3, 2000)
+            params['max_tokens'] = min(character_limit // 4, 1200)
 
         elif section_key == 'needs_analysis':
             # Needs analysis requires data-driven responses
             params['temperature'] = 0.5
-            params['max_tokens'] = min(character_limit // 3, 1800)
+            params['max_tokens'] = min(character_limit // 4, 1100)
 
         elif section_key == 'partnership':
             # Partnership questions need structured, clear answers
             params['temperature'] = 0.6
-            params['max_tokens'] = min(character_limit // 3, 1600)
+            params['max_tokens'] = min(character_limit // 4, 1000)
 
         elif section_key == 'impact':
-            # Impact questions can be more creative
+            # Impact questions need focused, measurable outcomes
             params['temperature'] = 0.8
-            params['max_tokens'] = min(character_limit // 3, 2000)
+            params['max_tokens'] = min(character_limit // 4, 1200)
 
         elif section_key == 'project_management':
             # Management questions need precise, structured answers
             params['temperature'] = 0.4
-            params['max_tokens'] = min(character_limit // 3, 1800)
+            params['max_tokens'] = min(character_limit // 4, 1100)
 
         # Field-specific overrides
         if 'innovation' in field or 'creative' in field:
             params['temperature'] = min(params['temperature'] + 0.2, 0.9)
         elif 'budget' in field or 'timeline' in field or 'milestone' in field:
             params['temperature'] = 0.3  # Very precise for numbers and dates
-            params['max_tokens'] = min(params['max_tokens'], 1200)
+            params['max_tokens'] = min(params['max_tokens'], 800)
         elif 'risk' in field or 'quality' in field:
             params['temperature'] = 0.5  # Balanced for risk assessment
         elif 'dissemination' in field or 'sustainability' in field:
@@ -401,9 +401,9 @@ class AIAutoFillService:
 
         # For shorter questions, use fewer tokens
         if character_limit < 1000:
-            params['max_tokens'] = min(params['max_tokens'], 500)
+            params['max_tokens'] = min(params['max_tokens'], 400)
         elif character_limit < 2000:
-            params['max_tokens'] = min(params['max_tokens'], 1000)
+            params['max_tokens'] = min(params['max_tokens'], 700)
 
         logger.debug(f"Parameters for {field} in {section_key}: temp={params['temperature']}, tokens={params['max_tokens']}")
         return params
