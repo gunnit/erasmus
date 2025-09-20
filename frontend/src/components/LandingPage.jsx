@@ -134,6 +134,60 @@ const LandingPage = () => {
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-200 rounded-full opacity-20 blur-3xl animate-pulse" />
       </motion.section>
 
+      {/* Video Explainer Section */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+        className="py-16 bg-gradient-to-br from-blue-50 via-white to-purple-50"
+      >
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center bg-blue-100 text-blue-700 px-4 py-2 rounded-full mb-4">
+              <FiZap className="mr-2" />
+              <span className="font-semibold">Watch How It Works</span>
+            </div>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              See the Platform in Action
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Watch our 5-minute explainer video to understand how our AI-powered system
+              transforms weeks of work into just 30 minutes
+            </p>
+          </div>
+
+          <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="aspect-w-16 aspect-h-9">
+              <iframe
+                className="w-full h-full"
+                style={{ minHeight: '450px' }}
+                src="https://www.youtube.com/embed/fUCeDmkRbuw"
+                title="Erasmus+ AI Assistant Platform Explainer"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+          </div>
+
+          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => navigate('/register')}
+              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg transition transform hover:scale-105 flex items-center justify-center"
+            >
+              Try It Yourself <FiArrowRight className="ml-2" />
+            </button>
+            <button
+              onClick={() => document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' })}
+              className="px-8 py-3 bg-white text-blue-600 rounded-lg font-semibold border-2 border-blue-600 hover:bg-blue-50 transition flex items-center justify-center"
+            >
+              Learn More Details
+            </button>
+          </div>
+        </div>
+      </motion.section>
+
       {/* Stats Section */}
       <motion.section
         initial={{ opacity: 0 }}

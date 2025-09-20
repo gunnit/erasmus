@@ -4,7 +4,7 @@ import {
   BookOpen, FileText, Users, Award, Globe, Calendar,
   Target, Rocket, Search, Filter, Download, ExternalLink,
   Video, ChevronRight, Info, TrendingUp, CheckCircle,
-  Star, Lightbulb, FileCheck, School, Briefcase
+  Star, Lightbulb, FileCheck, School, Briefcase, Clock
 } from 'lucide-react';
 import { Card, CardContent } from './ui/Card';
 
@@ -26,6 +26,17 @@ const ErasmusResources = () => {
 
   // Main resources data
   const resources = [
+    {
+      id: 'platform-explainer',
+      category: 'webinars',
+      title: 'Platform Explainer Video',
+      description: 'Watch our comprehensive video tutorial to understand how the AI-powered system works and generates complete Erasmus+ applications in just 30 minutes.',
+      link: 'https://youtu.be/fUCeDmkRbuw',
+      type: 'video',
+      importance: 'essential',
+      featured: true,
+      duration: '5 minutes'
+    },
     {
       id: 1,
       category: 'guides',
@@ -298,8 +309,59 @@ const ErasmusResources = () => {
         </div>
       </motion.section>
 
-      {/* Quick Stats */}
+      {/* Featured Video Section */}
       <section className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto -mt-10 relative z-10">
+        <Card className="bg-gradient-to-r from-blue-600 to-indigo-600 shadow-xl">
+          <CardContent className="p-8">
+            <div className="grid md:grid-cols-2 gap-8 items-center">
+              <div className="text-white">
+                <div className="flex items-center gap-2 mb-4">
+                  <Video className="w-6 h-6" />
+                  <span className="text-sm font-semibold uppercase tracking-wider">Featured Tutorial</span>
+                </div>
+                <h2 className="text-3xl font-bold mb-4">
+                  Learn How Our Platform Works
+                </h2>
+                <p className="text-blue-100 mb-6">
+                  Watch our comprehensive 5-minute video tutorial to understand how our AI-powered system
+                  transforms the complex Erasmus+ application process into a simple 30-minute task.
+                </p>
+                <div className="flex flex-wrap gap-4">
+                  <a
+                    href="https://youtu.be/fUCeDmkRbuw"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors flex items-center gap-2"
+                  >
+                    <Video className="w-5 h-5" />
+                    Watch on YouTube
+                  </a>
+                  <div className="flex items-center gap-2 text-blue-100">
+                    <Clock className="w-5 h-5" />
+                    <span>5 minutes</span>
+                  </div>
+                </div>
+              </div>
+              <div className="relative bg-black/20 rounded-xl overflow-hidden">
+                <div className="aspect-w-16 aspect-h-9">
+                  <iframe
+                    className="w-full"
+                    style={{ minHeight: '280px' }}
+                    src="https://www.youtube.com/embed/fUCeDmkRbuw"
+                    title="Get Your Grant Platform Explainer"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Quick Stats */}
+      <section className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="bg-white shadow-lg">
             <CardContent className="p-6 text-center">
@@ -405,6 +467,12 @@ const ErasmusResources = () => {
                   {resource.version && (
                     <p className="text-sm text-gray-500 mb-2">
                       {resource.version} • Updated {resource.lastUpdated}
+                    </p>
+                  )}
+                  {resource.duration && (
+                    <p className="text-sm text-gray-500 mb-2 flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      {resource.duration}
                     </p>
                   )}
                   {resource.features && (
