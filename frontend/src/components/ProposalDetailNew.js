@@ -26,7 +26,13 @@ import {
   Wand2,
   Briefcase,
   BarChart2,
-  Info
+  Info,
+  ChevronRight,
+  Building2,
+  Globe2,
+  TrendingUp,
+  FileCheck,
+  Sparkles
 } from 'lucide-react';
 import WorkplanViewer from './WorkplanViewer';
 import QualityScoreCard from './QualityScoreCard';
@@ -150,15 +156,15 @@ const ProposalDetailNew = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'submitted':
-        return 'bg-green-100 text-green-800';
+        return 'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border border-green-200';
       case 'complete':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 border border-purple-200';
       case 'working':
       case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-700 border border-blue-200';
       case 'draft':
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 border border-gray-200';
     }
   };
 
@@ -201,53 +207,62 @@ const ProposalDetailNew = () => {
   const StatusIcon = getStatusIcon(proposal.status);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/20">
+      {/* Header with improved design */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex justify-between items-start">
             <div className="flex-1">
-              <div className="flex items-center mb-2">
-                <Link to="/proposals" className="text-gray-500 hover:text-gray-700 mr-2">
+              {/* Breadcrumb with improved styling */}
+              <nav className="flex items-center mb-3 text-sm">
+                <Link to="/proposals" className="text-gray-500 hover:text-blue-600 transition-colors flex items-center">
+                  <FileText className="h-3.5 w-3.5 mr-1" />
                   Proposals
                 </Link>
-                <span className="text-gray-500 mx-2">/</span>
-                <span className="text-gray-900">{proposal.title}</span>
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{proposal.title}</h1>
-              <div className="flex items-center gap-4 text-sm text-gray-500">
-                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(proposal.status)}`}>
-                  <StatusIcon className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 text-gray-400 mx-2" />
+                <span className="text-gray-900 font-medium">{proposal.title}</span>
+              </nav>
+
+              {/* Title and metadata with enhanced styling */}
+              <h1 className="text-2xl font-bold text-gray-900 mb-3 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                {proposal.title}
+              </h1>
+
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold ${getStatusColor(proposal.status)} shadow-sm`}>
+                  <StatusIcon className="h-3.5 w-3.5" />
                   {proposal.status === 'complete' ? 'Complete' :
                    proposal.status === 'working' ? 'In Progress' :
                    proposal.status === 'draft' ? 'Draft' :
                    proposal.status === 'submitted' ? 'Submitted' :
                    proposal.status || 'Draft'}
                 </span>
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  Created: {formatDate(proposal.created_at)}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  Updated: {formatDate(proposal.updated_at)}
-                </span>
+                <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {formatDate(proposal.created_at)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    {formatDate(proposal.updated_at)}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons with improved styling */}
             <div className="flex gap-2">
               <button
                 onClick={() => navigate(`/proposals/${id}/answers`)}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg hover:from-blue-700 hover:to-blue-600 transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm font-medium"
               >
-                <Wand2 className="h-4 w-4" />
+                <Sparkles className="h-4 w-4" />
                 Edit Answers
               </button>
               <button
                 onClick={handleExportPDF}
                 disabled={generatingPdf}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium transition-all hover:shadow-md"
               >
                 {generatingPdf ? (
                   <>
@@ -257,21 +272,21 @@ const ProposalDetailNew = () => {
                 ) : (
                   <>
                     <Download className="h-4 w-4" />
-                    Export PDF
+                    Export
                   </>
                 )}
               </button>
               <button
                 onClick={() => navigate(`/proposals/${id}/edit`)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2"
+                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-sm font-medium transition-all hover:shadow-md"
               >
                 <Edit3 className="h-4 w-4" />
-                Edit Details
+                Edit
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium transition-all hover:shadow-md"
               >
                 {deleting ? (
                   <>
@@ -290,87 +305,101 @@ const ProposalDetailNew = () => {
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Progress Card */}
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Application Progress</h2>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">Overall Completion</span>
-              <span className="text-lg font-bold text-blue-600">{progress}%</span>
+      {/* Main Content with improved layout */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Enhanced Progress Card */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-xl mb-6 overflow-hidden relative">
+          <div className="absolute inset-0 bg-black opacity-10"></div>
+          <div className="relative p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-white mb-1">Application Progress</h2>
+                <p className="text-blue-100 text-sm">
+                  {progress === 100 ? 'Your application is complete!' :
+                   progress === 0 ? 'Ready to start your application' :
+                   `${Math.round((progress / 100) * 27)} of 27 questions completed`}
+                </p>
+              </div>
+              <div className="text-right">
+                <span className="text-4xl font-bold text-white">{progress}%</span>
+                <p className="text-blue-100 text-xs mt-1">Complete</p>
+              </div>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div
-                className="bg-blue-500 h-3 rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
+
+            <div className="mb-6">
+              <div className="w-full bg-white/20 rounded-full h-4 backdrop-blur-sm">
+                <div
+                  className="bg-white h-4 rounded-full transition-all duration-500 shadow-sm flex items-center justify-end pr-2"
+                  style={{ width: `${progress}%` }}
+                >
+                  {progress > 0 && progress < 100 && (
+                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                  )}
+                </div>
+              </div>
             </div>
-            {progress < 100 && (
-              <p className="mt-3 text-sm text-gray-600">
-                Complete all 27 questions to finish your application
-              </p>
-            )}
-            <div className="mt-4 flex justify-center">
+
+            <div className="flex justify-center">
               <button
                 onClick={() => navigate(`/proposals/${id}/answers`)}
-                className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2 text-lg font-medium"
+                className="px-8 py-3.5 bg-white text-blue-600 rounded-xl hover:bg-blue-50 flex items-center gap-2 text-base font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
               >
-                {progress === 0 ? 'Start Generating Answers' : progress < 100 ? 'Continue Editing Answers' : 'Review Answers'}
+                <Sparkles className="h-5 w-5" />
+                {progress === 0 ? 'Start Generating Answers' : progress < 100 ? 'Continue Application' : 'Review Answers'}
                 <ArrowRight className="h-5 w-5" />
               </button>
             </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8 px-6">
+        {/* Enhanced Tabs */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
+          <div className="border-b border-gray-200 bg-gray-50/50">
+            <nav className="flex px-2 py-2">
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`py-3 px-1 border-b-2 font-medium text-sm ${
+                className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${
                   activeTab === 'overview'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
                 }`}
               >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center justify-center gap-2">
                   <FileText className="h-4 w-4" />
                   Overview
                 </span>
               </button>
               <button
                 onClick={() => setActiveTab('workplan')}
-                className={`py-3 px-1 border-b-2 font-medium text-sm ${
+                className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${
                   activeTab === 'workplan'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
                 }`}
               >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center justify-center gap-2">
                   <Briefcase className="h-4 w-4" />
                   Workplan
                 </span>
               </button>
               <button
                 onClick={() => setActiveTab('quality')}
-                className={`py-3 px-1 border-b-2 font-medium text-sm ${
+                className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition-all ${
                   activeTab === 'quality'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
                 }`}
               >
-                <span className="flex items-center gap-2">
-                  <BarChart2 className="h-4 w-4" />
+                <span className="flex items-center justify-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
                   Quality Score
                   {proposal?.quality_score && (
-                    <span className={`ml-1 px-2 py-0.5 text-xs rounded-full ${
+                    <span className={`ml-1 px-2 py-0.5 text-xs font-semibold rounded-full ${
                       proposal.quality_score >= 75
-                        ? 'bg-green-100 text-green-800'
+                        ? 'bg-green-100 text-green-700'
                         : proposal.quality_score >= 60
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-red-100 text-red-800'
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-red-100 text-red-700'
                     }`}>
                       {Math.round(proposal.quality_score)}
                     </span>
@@ -381,258 +410,358 @@ const ProposalDetailNew = () => {
           </div>
         </div>
 
-        {/* Tab Content */}
+        {/* Tab Content with enhanced styling */}
         {activeTab === 'overview' ? (
           <>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-2">
+                  <Clock className="h-8 w-8 text-blue-500" />
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</span>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">{proposal.duration_months || 24}</p>
+                <p className="text-sm text-gray-500">months</p>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-2">
+                  <DollarSign className="h-8 w-8 text-green-500" />
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</span>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">€{(Number(proposal.budget || 250000) / 1000).toFixed(0)}K</p>
+                <p className="text-sm text-gray-500">total funding</p>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-2">
+                  <Users className="h-8 w-8 text-purple-500" />
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Partners</span>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {(proposal.library_partners?.length || 0) + (proposal.partners?.length || 0)}
+                </p>
+                <p className="text-sm text-gray-500">organizations</p>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between mb-2">
+                  <Target className="h-8 w-8 text-orange-500" />
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Priorities</span>
+                </div>
+                <p className="text-2xl font-bold text-gray-900">{proposal.priorities?.length || 0}</p>
+                <p className="text-sm text-gray-500">selected</p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Project Information */}
-              <div className="bg-white rounded-lg shadow">
-                <div className="p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-gray-500" />
+              {/* Project Information with enhanced card */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-blue-600" />
                     Project Information
                   </h2>
-                  <div className="space-y-3">
+                </div>
+                <div className="p-6">
+                  <div className="space-y-4">
                     <div>
-                      <label className="text-sm text-gray-500">Project Idea</label>
-                      <div className="text-gray-900 prose prose-sm max-w-none">
+                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Project Idea</label>
+                      <div className="mt-2 text-gray-900 prose prose-sm max-w-none bg-gray-50 rounded-lg p-4">
                         {proposal.project_idea ? (
                           <ReactMarkdown>{proposal.project_idea}</ReactMarkdown>
                         ) : (
-                          <p>Not specified</p>
+                          <p className="text-gray-400 italic">No project idea specified</p>
                         )}
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-gray-500 flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Duration
-                        </label>
-                        <p className="text-gray-900">{proposal.duration_months || 24} months</p>
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-500 flex items-center gap-1">
-                          <DollarSign className="h-3 w-3" />
-                          Budget
-                        </label>
-                        <p className="text-gray-900">€{Number(proposal.budget || 250000).toLocaleString()}</p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Priorities */}
-              <div className="bg-white rounded-lg shadow">
-                <div className="p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Award className="h-5 w-5 text-gray-500" />
+              {/* Priorities with enhanced design */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <Award className="h-5 w-5 text-purple-600" />
                     Selected Priorities
                   </h2>
+                </div>
+                <div className="p-6">
                   {proposal.priorities && proposal.priorities.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="space-y-2">
                       {proposal.priorities.map((priorityCode, index) => {
-                        // Safely get priority details
                         const priority = typeof getPriorityByCode === 'function' ? getPriorityByCode(priorityCode) : null;
                         const priorityType = typeof getPriorityType === 'function' ? getPriorityType(priorityCode) : '';
                         return (
-                          <span
+                          <div
                             key={index}
-                            className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm"
+                            className="group px-4 py-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200 hover:from-purple-100 hover:to-pink-100 transition-all cursor-default"
                             title={priority?.description || ''}
                           >
-                            {priority?.name || priorityCode}
-                            {priorityType && <span className="ml-1 text-xs opacity-75">({priorityType})</span>}
-                          </span>
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-gray-900">
+                                {priority?.name || priorityCode}
+                              </span>
+                              {priorityType && (
+                                <span className="px-2 py-1 bg-white text-xs font-medium text-purple-600 rounded-full">
+                                  {priorityType}
+                                </span>
+                              )}
+                            </div>
+                            {priority?.description && (
+                              <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+                                {priority.description}
+                              </p>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
                   ) : (
-                    <p className="text-gray-500 text-sm">No priorities selected</p>
+                    <div className="text-center py-8">
+                      <Award className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500">No priorities selected</p>
+                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Target Groups */}
-              <div className="bg-white rounded-lg shadow">
-                <div className="p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Target className="h-5 w-5 text-gray-500" />
+              {/* Target Groups with enhanced design */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <Target className="h-5 w-5 text-green-600" />
                     Target Groups
                   </h2>
+                </div>
+                <div className="p-6">
                   {proposal.target_groups && proposal.target_groups.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {proposal.target_groups.map((group, index) => (
-                        <span
+                        <div
                           key={index}
-                          className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm"
+                          className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 hover:from-green-100 hover:to-emerald-100 transition-all"
                         >
-                          {typeof group === 'string' ? group : group?.name || `Target Group ${index + 1}`}
-                        </span>
+                          <div className="flex-shrink-0 w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                            {index + 1}
+                          </div>
+                          <span className="text-gray-900 font-medium">
+                            {typeof group === 'string' ? group : group?.name || `Target Group ${index + 1}`}
+                          </span>
+                        </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-gray-500 text-sm">No target groups specified</p>
+                    <div className="text-center py-8">
+                      <Target className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500">No target groups specified</p>
+                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Partners */}
-              <div className="bg-white rounded-lg shadow">
-                <div className="p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Users className="h-5 w-5 text-gray-500" />
+              {/* Partners with enhanced design */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                <div className="bg-gradient-to-r from-blue-50 to-cyan-50 px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <Users className="h-5 w-5 text-blue-600" />
                     Partner Organizations
                   </h2>
-
-                  {/* Library Partners (from partner library) */}
+                </div>
+                <div className="p-6">
+                  {/* Library Partners */}
                   {proposal.library_partners && proposal.library_partners.length > 0 && (
                     <div className="mb-4">
-                      <h3 className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-1">
-                        <Award className="h-3 w-3" />
+                      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
                         From Partner Library
                       </h3>
-                      <ul className="space-y-2">
+                      <div className="space-y-3">
                         {proposal.library_partners.map((partner) => (
-                          <li key={partner.id} className="flex items-start">
-                            <span className="text-blue-400 mr-2">•</span>
-                            <div className="text-sm">
-                              <span className="font-medium text-gray-900">
-                                {partner.name}
-                                {partner.country && (
-                                  <span className="text-gray-600 ml-1">({partner.country})</span>
-                                )}
-                              </span>
-                              <span className="text-gray-500 ml-2">
-                                {partner.type?.replace('_', ' ')}
-                              </span>
+                          <div key={partner.id} className="group p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200 hover:from-blue-100 hover:to-cyan-100 transition-all">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-gray-900">
+                                  {partner.name}
+                                </h4>
+                                <div className="flex items-center gap-3 mt-2 text-sm">
+                                  {partner.country && (
+                                    <span className="flex items-center gap-1 text-gray-600">
+                                      <Globe2 className="h-3.5 w-3.5" />
+                                      {partner.country}
+                                    </span>
+                                  )}
+                                  {partner.type && (
+                                    <span className="px-2 py-0.5 bg-white text-xs font-medium text-blue-600 rounded-full">
+                                      {partner.type.replace('_', ' ')}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                               {partner.affinity_score && (
-                                <span className="ml-2 text-blue-600 text-xs">
-                                  Affinity: {partner.affinity_score}%
-                                </span>
+                                <div className="flex-shrink-0 ml-4">
+                                  <div className="text-center">
+                                    <div className="text-2xl font-bold text-blue-600">
+                                      {partner.affinity_score}%
+                                    </div>
+                                    <div className="text-xs text-gray-500">Affinity</div>
+                                  </div>
+                                </div>
                               )}
                             </div>
-                          </li>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   )}
 
-                  {/* Legacy Partners (from JSON) */}
+                  {/* Legacy Partners */}
                   {proposal.partners && proposal.partners.length > 0 ? (
                     <div>
                       {proposal.library_partners && proposal.library_partners.length > 0 && (
-                        <h3 className="text-sm font-medium text-gray-600 mb-2">Other Partners</h3>
+                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Other Partners</h3>
                       )}
-                      <ul className="space-y-2">
+                      <div className="space-y-2">
                         {proposal.partners.map((partner, index) => {
-                          // Skip if this partner is already in library_partners
                           const isInLibrary = proposal.library_partners?.some(
                             lp => lp.name === (typeof partner === 'string' ? partner : partner?.name)
                           );
                           if (isInLibrary) return null;
 
                           return (
-                            <li key={index} className="flex items-start">
-                              <span className="text-gray-400 mr-2">•</span>
-                              <span className="text-gray-900 text-sm">
+                            <div key={index} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                              <span className="text-gray-900 font-medium">
                                 {typeof partner === 'string'
                                   ? partner
                                   : `${partner?.name || 'Partner ' + (index + 1)}${partner?.country ? ' (' + partner.country + ')' : ''}${partner?.type ? ' - ' + partner.type : ''}`}
                               </span>
-                            </li>
+                            </div>
                           );
                         })}
-                      </ul>
+                      </div>
                     </div>
                   ) : !proposal.library_partners || proposal.library_partners.length === 0 ? (
-                    <p className="text-gray-500 text-sm">No partner organizations added</p>
+                    <div className="text-center py-8">
+                      <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500">No partner organizations added</p>
+                    </div>
                   ) : null}
                 </div>
               </div>
             </div>
 
-            {/* Statistics */}
-            <div className="mt-6 bg-white rounded-lg shadow">
-              <div className="p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-gray-500" />
-                  Answer Statistics
+            {/* Statistics with enhanced design */}
+            <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-indigo-600" />
+                  Application Statistics
                 </h2>
+              </div>
+              <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <p className="text-3xl font-bold text-blue-600">
-                      {(() => {
-                        let count = 0;
-                        if (proposal.answers) {
-                          Object.values(proposal.answers).forEach(section => {
-                            if (typeof section === 'object') {
-                              count += Object.values(section).filter(a => a).length;
-                            }
-                          });
-                        }
-                        return count;
-                      })()}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">Answers Completed</p>
+                  <div className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200 hover:from-blue-100 hover:to-indigo-100 transition-all">
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-2">
+                        <FileCheck className="h-10 w-10 text-blue-500" />
+                      </div>
+                      <p className="text-4xl font-bold text-blue-600">
+                        {(() => {
+                          let count = 0;
+                          if (proposal.answers) {
+                            Object.values(proposal.answers).forEach(section => {
+                              if (typeof section === 'object') {
+                                count += Object.values(section).filter(a => a).length;
+                              }
+                            });
+                          }
+                          return count;
+                        })()}
+                      </p>
+                      <p className="text-sm font-medium text-blue-700 mt-2">Completed</p>
+                    </div>
+                    <div className="absolute -right-4 -bottom-4 opacity-10">
+                      <FileCheck className="h-32 w-32 text-blue-600" />
+                    </div>
                   </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <p className="text-3xl font-bold text-gray-600">
-                      {27 - (() => {
-                        let count = 0;
-                        if (proposal.answers) {
-                          Object.values(proposal.answers).forEach(section => {
-                            if (typeof section === 'object') {
-                              count += Object.values(section).filter(a => a).length;
-                            }
-                          });
-                        }
-                        return count;
-                      })()}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">Answers Remaining</p>
+
+                  <div className="group relative overflow-hidden bg-gradient-to-br from-orange-50 to-red-50 p-6 rounded-xl border border-orange-200 hover:from-orange-100 hover:to-red-100 transition-all">
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-2">
+                        <Clock className="h-10 w-10 text-orange-500" />
+                      </div>
+                      <p className="text-4xl font-bold text-orange-600">
+                        {27 - (() => {
+                          let count = 0;
+                          if (proposal.answers) {
+                            Object.values(proposal.answers).forEach(section => {
+                              if (typeof section === 'object') {
+                                count += Object.values(section).filter(a => a).length;
+                              }
+                            });
+                          }
+                          return count;
+                        })()}
+                      </p>
+                      <p className="text-sm font-medium text-orange-700 mt-2">Remaining</p>
+                    </div>
+                    <div className="absolute -right-4 -bottom-4 opacity-10">
+                      <Clock className="h-32 w-32 text-orange-600" />
+                    </div>
                   </div>
-                  <div className="text-center p-4 bg-gray-50 rounded-lg">
-                    <p className="text-3xl font-bold text-green-600">6</p>
-                    <p className="text-sm text-gray-600 mt-1">Total Sections</p>
+
+                  <div className="group relative overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200 hover:from-green-100 hover:to-emerald-100 transition-all">
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-2">
+                        <BarChart3 className="h-10 w-10 text-green-500" />
+                      </div>
+                      <p className="text-4xl font-bold text-green-600">6</p>
+                      <p className="text-sm font-medium text-green-700 mt-2">Sections</p>
+                    </div>
+                    <div className="absolute -right-4 -bottom-4 opacity-10">
+                      <BarChart3 className="h-32 w-32 text-green-600" />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="mt-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-blue-900 mb-2">Next Steps</h3>
-              <p className="text-blue-700 mb-4">
-                {progress === 0
-                  ? "Start generating AI-powered answers for your Erasmus+ application."
-                  : progress < 100
-                  ? "Continue working on your application to complete all required sections."
-                  : "Review your completed application and export it as a PDF."}
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => navigate(`/proposals/${id}/answers`)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                >
-                  <Wand2 className="h-4 w-4" />
-                  {progress === 0 ? 'Start Application' : 'Continue Application'}
-                </button>
-                {progress === 100 && (
+            {/* Next Steps with enhanced design */}
+            <div className="mt-6 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl p-8 text-white relative overflow-hidden">
+              <div className="absolute inset-0 bg-black opacity-10"></div>
+              <div className="relative z-10">
+                <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+                  <Sparkles className="h-6 w-6" />
+                  Next Steps
+                </h3>
+                <p className="text-blue-100 mb-6 text-base">
+                  {progress === 0
+                    ? "Ready to start? Let AI generate comprehensive answers for your Erasmus+ application in minutes."
+                    : progress < 100
+                    ? `You're ${progress}% complete! Continue working on your application to finish all required sections."
+                    : "Congratulations! Your application is complete. Review and export it as a PDF."}
+                </p>
+                <div className="flex gap-3">
                   <button
-                    onClick={handleExportPDF}
-                    className="px-4 py-2 bg-white text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 flex items-center gap-2"
+                    onClick={() => navigate(`/proposals/${id}/answers`)}
+                    className="px-6 py-3 bg-white text-blue-600 rounded-xl hover:bg-blue-50 flex items-center gap-2 font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
                   >
-                    <Download className="h-4 w-4" />
-                    Download PDF
+                    <Sparkles className="h-5 w-5" />
+                    {progress === 0 ? 'Start Application' : 'Continue Application'}
                   </button>
-                )}
+                  {progress === 100 && (
+                    <button
+                      onClick={handleExportPDF}
+                      className="px-6 py-3 bg-blue-700/30 backdrop-blur-sm text-white border border-white/30 rounded-xl hover:bg-blue-700/40 flex items-center gap-2 font-semibold transition-all"
+                    >
+                      <Download className="h-5 w-5" />
+                      Export PDF
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </>
         ) : activeTab === 'workplan' ? (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <WorkplanViewer
               proposalId={id}
               proposalData={proposal}
@@ -644,7 +773,7 @@ const ProposalDetailNew = () => {
           </div>
         ) : activeTab === 'quality' ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Quality Score Card */}
+            {/* Quality Score Card with enhanced design */}
             <div className="lg:col-span-2">
               {qualityScore ? (
                 <QualityScoreCard
@@ -652,35 +781,40 @@ const ProposalDetailNew = () => {
                   loading={calculatingScore}
                 />
               ) : (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="text-center">
-                    <BarChart2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      Quality Score Not Available
-                    </h3>
-                    <p className="text-gray-500 mb-6">
-                      Calculate a quality score to see how your proposal performs against Erasmus+ evaluation criteria
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">Quality Assessment</h3>
+                  </div>
+                  <div className="p-12 text-center">
+                    <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full mb-6">
+                      <TrendingUp className="h-10 w-10 text-indigo-600" />
+                    </div>
+                    <h4 className="text-xl font-semibold text-gray-900 mb-3">
+                      Quality Score Not Calculated
+                    </h4>
+                    <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                      Analyze your proposal against official Erasmus+ evaluation criteria to identify strengths and areas for improvement
                     </p>
                     <button
                       onClick={handleCalculateScore}
                       disabled={calculatingScore || !proposal?.answers}
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transform hover:scale-105"
                     >
                       {calculatingScore ? (
                         <>
-                          <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                          Calculating...
+                          <Loader2 className="animate-spin h-5 w-5 mr-2" />
+                          Calculating Score...
                         </>
                       ) : (
                         <>
-                          <BarChart2 className="h-4 w-4 mr-2" />
+                          <TrendingUp className="h-5 w-5 mr-2" />
                           Calculate Quality Score
                         </>
                       )}
                     </button>
                     {!proposal?.answers && (
-                      <p className="text-red-500 text-sm mt-4">
-                        Answers must be generated before calculating the quality score
+                      <p className="text-red-500 text-sm mt-6 bg-red-50 border border-red-200 rounded-lg px-4 py-2 inline-block">
+                        ⚠️ Answers must be generated before calculating the quality score
                       </p>
                     )}
                   </div>
@@ -688,70 +822,88 @@ const ProposalDetailNew = () => {
               )}
             </div>
 
-            {/* Actions and Info */}
+            {/* Actions and Info with enhanced design */}
             <div className="space-y-4">
               {/* Recalculate Button */}
               {qualityScore && (
-                <div className="bg-white rounded-lg shadow p-4">
-                  <h3 className="text-sm font-medium text-gray-900 mb-3">Actions</h3>
-                  <button
-                    onClick={handleCalculateScore}
-                    disabled={calculatingScore}
-                    className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  >
-                    {calculatingScore ? (
-                      <>
-                        <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                        Recalculating...
-                      </>
-                    ) : (
-                      <>
-                        <BarChart2 className="h-4 w-4 mr-2" />
-                        Recalculate Score
-                      </>
-                    )}
-                  </button>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                    <h3 className="text-sm font-semibold text-gray-700">Actions</h3>
+                  </div>
+                  <div className="p-4">
+                    <button
+                      onClick={handleCalculateScore}
+                      disabled={calculatingScore}
+                      className="w-full inline-flex justify-center items-center px-4 py-2.5 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 hover:shadow-md transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    >
+                      {calculatingScore ? (
+                        <>
+                          <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                          Recalculating...
+                        </>
+                      ) : (
+                        <>
+                          <TrendingUp className="h-4 w-4 mr-2" />
+                          Recalculate Score
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
 
               {/* Scoring Info */}
-              <div className="bg-white rounded-lg shadow p-4">
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Scoring Information</h3>
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <span className="text-gray-500">Version:</span>
-                    <span className="ml-2 text-gray-900">1.0</span>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b border-gray-200">
+                  <h3 className="text-sm font-semibold text-gray-700">Scoring Details</h3>
+                </div>
+                <div className="p-4 space-y-3">
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span className="text-sm text-gray-600">Version</span>
+                    <span className="text-sm font-medium text-gray-900">1.0</span>
                   </div>
                   {qualityScore?.calculated_at && (
-                    <div>
-                      <span className="text-gray-500">Last Calculated:</span>
-                      <span className="ml-2 text-gray-900">
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                      <span className="text-sm text-gray-600">Last Updated</span>
+                      <span className="text-sm font-medium text-gray-900">
                         {formatDateWithFullMonth(qualityScore.calculated_at)}
                       </span>
                     </div>
                   )}
-                  <div>
-                    <span className="text-gray-500">Passing Score:</span>
-                    <span className="ml-2 text-gray-900">60/100</span>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-sm text-gray-600">Pass Threshold</span>
+                    <span className="text-sm font-medium text-green-600">60/100</span>
                   </div>
                 </div>
               </div>
 
               {/* Help */}
-              <div className="bg-blue-50 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-blue-900 mb-2">
-                  <Info className="h-4 w-4 inline mr-1" />
-                  About Quality Scoring
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-200">
+                <h3 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                  <Info className="h-4 w-4" />
+                  Evaluation Criteria
                 </h3>
-                <p className="text-sm text-blue-800">
-                  The quality score evaluates your proposal against official Erasmus+ criteria:
+                <p className="text-sm text-blue-800 mb-3">
+                  Your proposal is assessed against official Erasmus+ standards:
                 </p>
-                <ul className="mt-2 space-y-1 text-sm text-blue-800">
-                  <li>• Relevance (30%)</li>
-                  <li>• Partnership (20%)</li>
-                  <li>• Impact (25%)</li>
-                  <li>• Management (25%)</li>
-                </ul>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between bg-white/60 backdrop-blur-sm rounded-lg px-3 py-2">
+                    <span className="text-sm font-medium text-blue-900">Relevance</span>
+                    <span className="text-sm font-bold text-blue-600">30%</span>
+                  </div>
+                  <div className="flex items-center justify-between bg-white/60 backdrop-blur-sm rounded-lg px-3 py-2">
+                    <span className="text-sm font-medium text-blue-900">Partnership</span>
+                    <span className="text-sm font-bold text-blue-600">20%</span>
+                  </div>
+                  <div className="flex items-center justify-between bg-white/60 backdrop-blur-sm rounded-lg px-3 py-2">
+                    <span className="text-sm font-medium text-blue-900">Impact</span>
+                    <span className="text-sm font-bold text-blue-600">25%</span>
+                  </div>
+                  <div className="flex items-center justify-between bg-white/60 backdrop-blur-sm rounded-lg px-3 py-2">
+                    <span className="text-sm font-medium text-blue-900">Management</span>
+                    <span className="text-sm font-bold text-blue-600">25%</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
