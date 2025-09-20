@@ -736,7 +736,7 @@ const ProposalDetailNew = () => {
                   {progress === 0
                     ? "Ready to start? Let AI generate comprehensive answers for your Erasmus+ application in minutes."
                     : progress < 100
-                    ? `You're ${progress}% complete! Continue working on your application to finish all required sections."
+                    ? `You're ${progress}% complete! Continue working on your application to finish all required sections.`
                     : "Congratulations! Your application is complete. Review and export it as a PDF."}
                 </p>
                 <div className="flex gap-3">
