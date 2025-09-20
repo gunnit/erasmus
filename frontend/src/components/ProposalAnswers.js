@@ -3,7 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { Loader2, Wand2, Save, FileText, ChevronRight, Info, Users, Target, Settings, ArrowLeft } from 'lucide-react';
+import { Loader2, Wand2, Save, FileText, ChevronRight, Info, Users, Target, Settings, ArrowLeft, Eye, Edit2 } from 'lucide-react';
+import MarkdownRenderer from './ui/MarkdownRenderer';
 
 const SECTIONS = [
   { key: 'project_summary', title: 'Project Summary', icon: FileText },
@@ -24,6 +25,7 @@ const ProposalAnswers = () => {
   const [editedAnswers, setEditedAnswers] = useState({});
   const [savingAnswer, setSavingAnswer] = useState(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+  const [previewMode, setPreviewMode] = useState({});  // Track preview mode per question
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -176,6 +178,7 @@ const ProposalAnswers = () => {
     const isSaving = savingAnswer === `${sectionKey}_${questionField}`;
     const answer = editedAnswers[sectionKey]?.[questionField] || '';
     const contextKey = `${sectionKey}_${questionId}`;
+    const isPreview = previewMode[contextKey] || false;
 
     return (
       <div key={questionId} className="bg-white rounded-lg border border-gray-200 p-6 mb-4">
@@ -208,18 +211,62 @@ const ProposalAnswers = () => {
           </div>
         </div>
 
-        {/* Answer Textarea */}
+        {/* Toggle Edit/Preview Mode */}
+        {answer && (
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPreviewMode(prev => ({ ...prev, [contextKey]: false }))}
+                className={`px-3 py-1 rounded-lg flex items-center gap-1 transition-colors ${
+                  !isPreview
+                    ? 'bg-blue-100 text-blue-700 font-medium'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <Edit2 className="h-4 w-4" />
+                Edit
+              </button>
+              <button
+                onClick={() => setPreviewMode(prev => ({ ...prev, [contextKey]: true }))}
+                className={`px-3 py-1 rounded-lg flex items-center gap-1 transition-colors ${
+                  isPreview
+                    ? 'bg-blue-100 text-blue-700 font-medium'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <Eye className="h-4 w-4" />
+                Preview
+              </button>
+            </div>
+            <div className="text-xs text-gray-500">
+              <span className="font-medium">Markdown supported:</span> **bold**, *italic*, - lists
+            </div>
+          </div>
+        )}
+
+        {/* Answer Display - Edit or Preview */}
         <div className="mb-4">
-          <textarea
-            value={answer}
-            onChange={(e) => handleAnswerEdit(sectionKey, questionField, e.target.value)}
-            placeholder={answer ? '' : 'No answer generated yet. Click "Generate Answer" to create one.'}
-            className="w-full min-h-[200px] p-3 border border-gray-300 rounded-lg resize-vertical focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isGenerating}
-          />
+          {isPreview && answer ? (
+            <div className="min-h-[200px] p-4 border border-gray-300 rounded-lg bg-gray-50">
+              <MarkdownRenderer content={answer} className="text-gray-800" />
+            </div>
+          ) : (
+            <textarea
+              value={answer}
+              onChange={(e) => handleAnswerEdit(sectionKey, questionField, e.target.value)}
+              placeholder={answer ? '' : 'No answer generated yet. Click "Generate Answer" to create one.'}
+              className="w-full min-h-[200px] p-3 border border-gray-300 rounded-lg resize-vertical focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+              disabled={isGenerating}
+            />
+          )}
           {answer && (
-            <div className="mt-1 text-sm text-gray-500 text-right">
-              {answer.length} / {question.character_limit} characters
+            <div className="mt-1 flex justify-between text-sm text-gray-500">
+              <div className="text-xs italic">
+                {!isPreview && 'Tip: Use **text** for bold, *text* for italic'}
+              </div>
+              <div className={answer.length > question.character_limit ? 'text-red-600 font-medium' : ''}>
+                {answer.length} / {question.character_limit} characters
+              </div>
             </div>
           )}
         </div>
