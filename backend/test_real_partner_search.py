@@ -43,8 +43,15 @@ async def test_firecrawl_search():
                 print(f"   Type: {partner['type']}")
                 print(f"   Country: {partner['country']}")
                 print(f"   Website: {partner['website']}")
+                print(f"   Search Result URL: {partner.get('search_result_url', 'N/A')[:80]}...")
                 print(f"   Verified: {partner.get('is_verified', False)}")
                 print(f"   Description: {partner['description'][:150]}...")
+
+                # Validate URL format
+                website = partner['website']
+                if website and website.startswith(('http://', 'https://')):
+                    if website.count('/') > 2 or len(website) < 15:
+                        print(f"   ⚠️ WARNING: Website URL may be incomplete or incorrect")
 
             return True
         else:

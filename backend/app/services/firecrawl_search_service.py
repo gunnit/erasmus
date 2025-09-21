@@ -53,11 +53,32 @@ class FirecrawlSearchService:
                     limit=num_results
                 )
 
-                if search_results and 'data' in search_results:
-                    for result in search_results['data']:
-                        partner = self._extract_partner_from_result(result, search_criteria)
-                        if partner and self._validate_partner(partner):
-                            partners.append(partner)
+                logger.info(f"Firecrawl API response structure: {type(search_results)}")
+
+                # Handle different response formats
+                results_list = []
+                if search_results:
+                    if isinstance(search_results, dict):
+                        if 'data' in search_results:
+                            # Check for v2 format (data.web) or v1 format (data as list)
+                            if isinstance(search_results['data'], dict):
+                                # v2 format - data is an object with 'web', 'images', etc.
+                                if 'web' in search_results['data']:
+                                    results_list = search_results['data']['web']
+                                    logger.info(f"Using v2 format, found {len(results_list)} web results")
+                            elif isinstance(search_results['data'], list):
+                                # v1 format - data is directly a list
+                                results_list = search_results['data']
+                                logger.info(f"Using v1 format, found {len(results_list)} results")
+                    elif isinstance(search_results, list):
+                        # Direct list response
+                        results_list = search_results
+                        logger.info(f"Direct list format, found {len(results_list)} results")
+
+                for result in results_list:
+                    partner = self._extract_partner_from_result(result, search_criteria)
+                    if partner and self._validate_partner(partner):
+                        partners.append(partner)
 
             except Exception as e:
                 logger.error(f"Error searching with Firecrawl: {str(e)}")
@@ -117,19 +138,37 @@ class FirecrawlSearchService:
         if custom_requirements:
             queries.append(f'{custom_requirements} organization Europe')
 
-        # Query 5: Search partner databases
-        queries.append('site:ec.europa.eu/programmes/erasmus-plus partner organization')
-        queries.append('site:epale.ec.europa.eu organization adult learning')
+        # Query 5: Search for specific known partner databases and networks
+        queries.append('Erasmus+ project results platform partners')
+        queries.append('EPALE adult learning organizations Europe')
+        queries.append('European adult education association members')
+
+        # Query 6: Direct organization searches
+        if not any('site:' in q for q in queries):
+            queries.append('European NGO adult education contact website')
+            queries.append('EU partner organizations education training contacts')
 
         return queries
 
     def _extract_partner_from_result(self, result: Dict, criteria: Dict) -> Optional[Dict]:
         """Extract partner information from search result"""
         try:
+            # Log the result structure for debugging
+            logger.debug(f"Processing result with keys: {result.keys() if isinstance(result, dict) else 'Not a dict'}")
+
             # Get basic info from search result
             url = result.get('url', '')
             title = result.get('title', '')
-            description = result.get('description', '') or result.get('snippet', '')
+            description = result.get('description', '') or result.get('snippet', '') or result.get('markdown', '')[:500]
+
+            # Also check metadata if available
+            if not title and 'metadata' in result:
+                metadata = result.get('metadata', {})
+                title = metadata.get('title', '')
+                if not description:
+                    description = metadata.get('description', '')
+
+            logger.info(f"Extracted - URL: {url[:50]}..., Title: {title[:50]}...")
 
             if not url or not title:
                 return None
@@ -148,24 +187,26 @@ class FirecrawlSearchService:
             # Extract expertise areas from description
             expertise_areas = self._extract_expertise_areas(description, criteria.get('expertise_areas', []))
 
-            # Clean and validate website URL
-            website = self._clean_website_url(url)
+            # Extract the actual organization website
+            website = self._extract_organization_website(url, description, result)
 
             # Build partner data
             partner = {
                 'name': org_name,
                 'type': partner_type,
                 'country': country,
-                'website': website,
+                'website': website,  # The actual organization website
                 'description': description[:500] if description else f"{org_name} is an organization involved in European education and training projects.",
                 'expertise_areas': expertise_areas,
                 'source': 'web_search',
                 'is_verified': True,
-                'search_result_url': url,
+                'search_result_url': url,  # Keep original search result URL for reference
                 'contact_info': {
                     'website': website
                 }
             }
+
+            logger.info(f"Created partner: {org_name} with website: {website}")
 
             return partner
 
@@ -291,19 +332,53 @@ class FirecrawlSearchService:
         # Limit to 5 expertise areas
         return expertise[:5] if expertise else ['Adult Education', 'European Cooperation']
 
-    def _clean_website_url(self, url: str) -> str:
-        """Clean and validate website URL"""
-        # Remove trailing slashes and fragments
-        url = re.sub(r'[#?].*$', '', url)
+    def _extract_organization_website(self, url: str, description: str, result: Dict) -> str:
+        """Extract the actual organization website from search result"""
+        # First, check if this is already a homepage
+        if self._is_homepage(url):
+            return self._clean_url(url)
+
+        # Check if the URL is from a directory or aggregator site
+        aggregator_domains = ['ec.europa.eu', 'epale.ec.europa.eu', 'erasmus-plus.ec.europa.eu',
+                             'wikipedia.org', 'linkedin.com', 'facebook.com']
+
+        for domain in aggregator_domains:
+            if domain in url:
+                # Try to extract the actual org website from description or content
+                website_match = re.search(r'(?:website|site|web)[:\s]*(https?://[^\s]+)', description, re.IGNORECASE)
+                if website_match:
+                    return self._clean_url(website_match.group(1))
+
+                # Look for domain patterns in description
+                domain_match = re.search(r'\b(?:www\.)?([a-z0-9-]+\.(?:org|eu|com|net|edu|gov)(?:\.[a-z]{2})?)', description, re.IGNORECASE)
+                if domain_match:
+                    domain = domain_match.group(0)
+                    if not domain.startswith('http'):
+                        domain = 'https://' + domain
+                    return self._clean_url(domain)
+
+        # Otherwise, extract the main domain from the URL
+        match = re.match(r'(https?://[^/]+)', url)
+        if match:
+            return self._clean_url(match.group(1))
+
+        return self._clean_url(url)
+
+    def _is_homepage(self, url: str) -> bool:
+        """Check if URL is likely a homepage"""
+        # Remove protocol and www
+        clean = re.sub(r'^https?://(www\.)?', '', url)
+        # Check if it's just domain or domain with simple paths
+        return bool(re.match(r'^[^/]+/?(?:index\.[a-z]+)?$', clean, re.IGNORECASE))
+
+    def _clean_url(self, url: str) -> str:
+        """Clean URL while preserving its validity"""
+        # Remove fragments and trailing slashes
+        url = re.sub(r'#.*$', '', url)
         url = url.rstrip('/')
-
-        # Extract main domain if it's a subpage
-        if url.count('/') > 2:
-            # Keep only the domain
-            match = re.match(r'(https?://[^/]+)', url)
-            if match:
-                url = match.group(1)
-
+        # Ensure it has a protocol
+        if not url.startswith(('http://', 'https://')):
+            url = 'https://' + url
         return url
 
     def _validate_partner(self, partner: Dict) -> bool:
