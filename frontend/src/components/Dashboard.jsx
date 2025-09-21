@@ -10,7 +10,8 @@ import {
   FileText, TrendingUp, Clock, CheckCircle, AlertCircle,
   Plus, ArrowRight, Calendar, Euro, Users, Target,
   Download, Edit3, Trash2, Eye, Filter, Search,
-  Award, Briefcase, Globe, Sparkles, ChevronDown
+  Award, Briefcase, Globe, Sparkles, ChevronDown,
+  ChevronRight, Building2
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/Card';
@@ -121,13 +122,15 @@ const Dashboard = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'submitted':
-      case 'approved': return 'from-green-500 to-emerald-500';
-      case 'complete': return 'from-purple-500 to-purple-600';
+        return 'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border border-green-200';
+      case 'complete':
+        return 'bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 border border-purple-200';
       case 'working':
-      case 'pending': return 'from-yellow-500 to-orange-500';
-      case 'rejected': return 'from-red-500 to-rose-500';
+      case 'in_progress':
+        return 'bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-700 border border-blue-200';
       case 'draft':
-      default: return 'from-gray-500 to-gray-600';
+      default:
+        return 'bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 border border-gray-200';
     }
   };
 
@@ -211,67 +214,86 @@ const Dashboard = () => {
   const primaryAction = getPrimaryAction();
 
   return (
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={staggerContainer}
-      className="space-y-8"
-    >
-      {/* Header with Subscription Status and Primary Action */}
-      <motion.div variants={fadeInVariants} className="space-y-6">
-        {/* Title Section */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-              Dashboard
-            </h1>
-            <p className="text-gray-600 mt-1">Manage your Erasmus+ proposals</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/20">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={staggerContainer}
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6"
+      >
+      {/* Header with enhanced design */}
+      <motion.div variants={fadeInVariants}>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                Dashboard
+              </h1>
+              <p className="text-gray-600 mt-1">Manage your Erasmus+ grant applications</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => navigate('/partners')}
+                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-sm font-medium transition-all hover:shadow-md"
+              >
+                <Users className="h-4 w-4" />
+                Partners
+              </button>
+              <button
+                onClick={() => navigate('/new-proposal')}
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg hover:from-blue-700 hover:to-blue-600 transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm font-medium"
+              >
+                <Plus className="h-4 w-4" />
+                New Proposal
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Priority Action Zone - Subscription Status + Primary CTA */}
+        {/* Priority Action Zone with enhanced design */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Subscription Status - Now at top priority */}
           <SubscriptionStatus />
 
-          {/* Primary Action Card */}
-          <Card className="h-full">
-            <CardContent className="p-6 flex flex-col justify-center h-full">
-              <div className="space-y-4">
-                <Button
-                  onClick={() => {
-                    if (primaryAction.proposalId) {
-                      navigate(`/proposals/${primaryAction.proposalId}`);
-                    } else {
-                      navigate('/new-proposal');
-                    }
-                  }}
-                  size="lg"
-                  icon={primaryAction.proposalId ? ArrowRight : Plus}
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                >
-                  {primaryAction.text}
-                </Button>
-                {primaryAction.subtext && (
-                  <p className="text-sm text-gray-600 text-center">
-                    {primaryAction.subtext}
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          {/* Primary Action Card with gradient */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-xl overflow-hidden relative">
+            <div className="absolute inset-0 bg-black opacity-10"></div>
+            <div className="relative p-8 flex flex-col justify-center h-full">
+              <h3 className="text-xl font-bold text-white mb-2">
+                {primaryAction.proposalId ? 'Continue Your Work' : 'Start New Application'}
+              </h3>
+              <p className="text-blue-100 mb-6 text-sm">
+                {primaryAction.subtext}
+              </p>
+              <button
+                onClick={() => {
+                  if (primaryAction.proposalId) {
+                    navigate(`/proposals/${primaryAction.proposalId}`);
+                  } else {
+                    navigate('/new-proposal');
+                  }
+                }}
+                className="px-6 py-3 bg-white text-blue-600 rounded-xl hover:bg-blue-50 flex items-center justify-center gap-2 font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+              >
+                {primaryAction.proposalId ? <ArrowRight className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+                {primaryAction.text}
+              </button>
+            </div>
+          </div>
         </div>
       </motion.div>
 
-      {/* Active Work Section - Proposals Table (moved up) */}
+      {/* Active Work Section with enhanced design */}
       {proposals.length > 0 ? (
         <motion.div variants={fadeInVariants}>
-          <Card>
-            <CardHeader>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                  <CardTitle>Your Proposals</CardTitle>
-                  <CardDescription>{filteredProposals.length} total proposals</CardDescription>
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-blue-600" />
+                    Your Proposals
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">{filteredProposals.length} total proposals</p>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="relative">
@@ -281,34 +303,34 @@ const Dashboard = () => {
                       placeholder="Search proposals..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      className="pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all"
                     />
                   </div>
                   <select
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
-                    className="px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all"
                   >
                     <option value="all">All Status</option>
                     <option value="draft">Draft</option>
-                    <option value="pending">In Progress</option>
-                    <option value="approved">Approved</option>
-                    <option value="rejected">Rejected</option>
+                    <option value="working">In Progress</option>
+                    <option value="complete">Complete</option>
+                    <option value="submitted">Submitted</option>
                   </select>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
+            </div>
+            <div className="p-6">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Title</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Status</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Completion</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Budget</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Last Modified</th>
-                      <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Actions</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Proposal</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Progress</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Budget</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Updated</th>
+                      <th className="text-right py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -343,26 +365,26 @@ const Dashboard = () => {
                               </div>
                             </td>
                             <td className="py-4 px-4">
-                              <div className="flex items-center">
-                                <div className={cn(
-                                  "p-1 rounded-lg bg-gradient-to-r",
-                                  getStatusColor(proposal.status)
-                                )}>
-                                  <StatusIcon className="w-4 h-4 text-white" />
-                                </div>
-                                <span className="ml-2 text-sm font-medium capitalize">
-                                  {proposal.status === 'draft' ? 'Draft' :
-                                   proposal.status === 'working' ? 'In Progress' :
-                                   proposal.status === 'complete' ? 'Complete' :
-                                   proposal.status === 'submitted' ? 'Submitted' :
-                                   proposal.status}
-                                </span>
-                              </div>
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold ${getStatusColor(proposal.status)} shadow-sm`}>
+                                <StatusIcon className="h-3.5 w-3.5" />
+                                {proposal.status === 'complete' ? 'Complete' :
+                                 proposal.status === 'working' ? 'In Progress' :
+                                 proposal.status === 'draft' ? 'Draft' :
+                                 proposal.status === 'submitted' ? 'Submitted' :
+                                 proposal.status || 'Draft'}
+                              </span>
                             </td>
                             <td className="py-4 px-4">
-                              <div className="flex items-center space-x-2">
-                                <Progress value={completionPercentage} max={100} size="sm" className="w-20" />
-                                <span className="text-sm text-gray-600">{completionPercentage}%</span>
+                              <div className="flex items-center gap-3">
+                                <div className="w-24">
+                                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                    <div
+                                      className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-300"
+                                      style={{ width: `${completionPercentage}%` }}
+                                    />
+                                  </div>
+                                </div>
+                                <span className="text-sm font-medium text-gray-700">{completionPercentage}%</span>
                               </div>
                             </td>
                             <td className="py-4 px-4">
@@ -377,21 +399,24 @@ const Dashboard = () => {
                               <div className="flex items-center justify-end space-x-2">
                                 <button
                                   onClick={() => navigate(`/proposals/${proposal.id}`)}
-                                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                  className="p-2 hover:bg-gray-100 rounded-lg transition-all hover:shadow-md group"
+                                  title="View"
                                 >
-                                  <Eye className="w-4 h-4 text-gray-600" />
+                                  <Eye className="w-4 h-4 text-gray-600 group-hover:text-blue-600" />
                                 </button>
                                 <button
                                   onClick={() => navigate(`/proposals/${proposal.id}/edit`)}
-                                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                  className="p-2 hover:bg-gray-100 rounded-lg transition-all hover:shadow-md group"
+                                  title="Edit"
                                 >
-                                  <Edit3 className="w-4 h-4 text-gray-600" />
+                                  <Edit3 className="w-4 h-4 text-gray-600 group-hover:text-blue-600" />
                                 </button>
                                 <button
                                   onClick={() => handleDelete(proposal.id)}
-                                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                  className="p-2 hover:bg-red-50 rounded-lg transition-all hover:shadow-md group"
+                                  title="Delete"
                                 >
-                                  <Trash2 className="w-4 h-4 text-red-500" />
+                                  <Trash2 className="w-4 h-4 text-red-500 group-hover:text-red-600" />
                                 </button>
                               </div>
                             </td>
@@ -403,90 +428,82 @@ const Dashboard = () => {
                 </table>
               </div>
               {filteredProposals.length > 10 && (
-                <div className="mt-4 text-center">
-                  <Button
+                <div className="mt-6 text-center">
+                  <button
                     onClick={() => navigate('/proposals')}
-                    variant="outline"
-                    size="sm"
+                    className="px-6 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all hover:shadow-md font-medium text-sm"
                   >
                     View All {filteredProposals.length} Proposals
-                  </Button>
+                  </button>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </motion.div>
       ) : (
-        /* Empty State */
+        /* Empty State with enhanced design */
         <motion.div variants={fadeInVariants}>
-          <Card>
-            <CardContent className="py-16 text-center">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mb-4">
-                <FileText className="w-8 h-8 text-white" />
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="py-16 text-center px-6">
+              <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mb-6">
+                <FileText className="w-10 h-10 text-blue-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Proposals Yet</h3>
-              <p className="text-gray-600 mb-6">Start your first Erasmus+ grant application in just 30 minutes</p>
-              <Button
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">No Proposals Yet</h3>
+              <p className="text-gray-600 mb-8 max-w-md mx-auto">Start your first Erasmus+ grant application in just 30 minutes with AI-powered assistance</p>
+              <button
                 onClick={() => navigate('/new-proposal')}
-                size="lg"
-                icon={Plus}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                className="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 flex items-center gap-2 mx-auto font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
               >
+                <Plus className="h-5 w-5" />
                 Create Your First Proposal
-              </Button>
-            </CardContent>
-          </Card>
+              </button>
+            </div>
+          </div>
         </motion.div>
       )}
 
-      {/* Simplified Stats Cards - Only show real data */}
+      {/* Enhanced Stats Cards */}
       {proposals.length > 0 && (
-        <motion.div variants={fadeInVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total Proposals</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalProposals || 0}</p>
-                </div>
-                <div className="p-3 bg-gray-100 rounded-xl">
-                  <FileText className="w-6 h-6 text-gray-600" />
-                </div>
+        <motion.div variants={fadeInVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Proposals</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{stats?.totalProposals || 0}</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
+                <FileText className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
 
           {stats?.totalBudget > 0 && (
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Total Budget</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1">€{(stats.totalBudget / 1000000).toFixed(1)}M</p>
-                  </div>
-                  <div className="p-3 bg-gray-100 rounded-xl">
-                    <Euro className="w-6 h-6 text-gray-600" />
-                  </div>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Budget</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-2">€{(stats.totalBudget / 1000000).toFixed(1)}M</p>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="p-3 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
+                  <Euro className="w-6 h-6 text-green-600" />
+                </div>
+              </div>
+            </div>
           )}
 
           {stats?.averageDuration > 0 && (
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Average Duration</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1">{stats.averageDuration}</p>
-                    <p className="text-xs text-gray-500 mt-1">months</p>
-                  </div>
-                  <div className="p-3 bg-gray-100 rounded-xl">
-                    <Clock className="w-6 h-6 text-gray-600" />
-                  </div>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Average Duration</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-2">{stats.averageDuration}</p>
+                  <p className="text-sm text-gray-600">months</p>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="p-3 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
+                  <Clock className="w-6 h-6 text-purple-600" />
+                </div>
+              </div>
+            </div>
           )}
         </motion.div>
       )}
@@ -619,32 +636,33 @@ const Dashboard = () => {
         </motion.div>
       )}
 
-      {/* Quick Links - Simplified */}
-      <motion.div variants={fadeInVariants} className="border-t pt-6">
+      {/* Quick Links with enhanced design */}
+      <motion.div variants={fadeInVariants} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex flex-wrap gap-4 justify-center text-sm">
           <button
             onClick={() => navigate('/proposals')}
-            className="text-gray-600 hover:text-gray-900 transition-colors"
+            className="px-4 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all font-medium"
           >
             View All Proposals
           </button>
-          <span className="text-gray-300">•</span>
+          <span className="text-gray-300 self-center">•</span>
           <button
-            onClick={() => navigate('/resources')}
-            className="text-gray-600 hover:text-gray-900 transition-colors"
+            onClick={() => navigate('/partners')}
+            className="px-4 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all font-medium"
           >
-            Learning Resources
+            Partner Library
           </button>
-          <span className="text-gray-300">•</span>
+          <span className="text-gray-300 self-center">•</span>
           <button
             onClick={() => navigate('/profile')}
-            className="text-gray-600 hover:text-gray-900 transition-colors"
+            className="px-4 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all font-medium"
           >
             Account Settings
           </button>
         </div>
       </motion.div>
     </motion.div>
+    </div>
   );
 };
 
