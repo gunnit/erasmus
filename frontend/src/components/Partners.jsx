@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Plus, Search, Filter, Globe, Building2, Mail, Phone,
@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import api from '../services/api';
+import { AIPartnerFinderModal } from './AIPartnerFinderModal';
+import { AuthContext } from '../context/AuthContext';
 
 const PARTNER_TYPES = [
   { value: 'NGO', label: 'NGO' },
@@ -18,12 +20,14 @@ const PARTNER_TYPES = [
 ];
 
 export const Partners = () => {
+  const { user } = useContext(AuthContext);
   const [partners, setPartners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterCountry, setFilterCountry] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAIFinderModal, setShowAIFinderModal] = useState(false);
   const [editingPartner, setEditingPartner] = useState(null);
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [crawling, setCrawling] = useState(false);
@@ -129,13 +133,22 @@ export const Partners = () => {
               </p>
             </div>
 
-            <button
-              onClick={handleAddPartner}
-              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg hover:from-blue-700 hover:to-blue-600 transition-all shadow-md hover:shadow-lg flex items-center gap-2 font-medium transform hover:scale-105"
-            >
-              <Plus className="h-4 w-4" />
-              Add Partner
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowAIFinderModal(true)}
+                className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2 font-medium transform hover:scale-105"
+              >
+                <Sparkles className="h-4 w-4" />
+                Find Partners with AI
+              </button>
+              <button
+                onClick={handleAddPartner}
+                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg hover:from-blue-700 hover:to-blue-600 transition-all shadow-md hover:shadow-lg flex items-center gap-2 font-medium transform hover:scale-105"
+              >
+                <Plus className="h-4 w-4" />
+                Add Partner
+              </button>
+            </div>
           </div>
 
           {/* Stats */}
@@ -217,13 +230,23 @@ export const Partners = () => {
                   : 'Start building your network by adding partner organizations'}
               </p>
               {!searchQuery && !filterType && !filterCountry && (
-                <button
-                  onClick={handleAddPartner}
-                  className="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 flex items-center gap-2 mx-auto font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-                >
-                  <Plus className="h-5 w-5" />
-                  Add First Partner
-                </button>
+                <div className="flex flex-col items-center gap-3">
+                  <button
+                    onClick={() => setShowAIFinderModal(true)}
+                    className="px-8 py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 flex items-center gap-2 font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+                  >
+                    <Sparkles className="h-5 w-5" />
+                    Find Partners with AI
+                  </button>
+                  <span className="text-gray-500">or</span>
+                  <button
+                    onClick={handleAddPartner}
+                    className="px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 flex items-center gap-2 font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+                  >
+                    <Plus className="h-5 w-5" />
+                    Add Partner Manually
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -423,6 +446,17 @@ export const Partners = () => {
         )}
       </AnimatePresence>
 
+      {/* AI Partner Finder Modal */}
+      <AIPartnerFinderModal
+        isOpen={showAIFinderModal}
+        onClose={() => setShowAIFinderModal(false)}
+        onPartnersSaved={(savedPartners) => {
+          showNotification(`Successfully added ${savedPartners.length} new partners`);
+          fetchPartners(); // Refresh the partners list
+        }}
+        userId={user?.id}
+      />
+
       {/* Notification */}
       <AnimatePresence>
         {notification && (
@@ -431,7 +465,7 @@ export const Partners = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             className={cn(
-              "fixed top-20 right-4 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3",
+              "fixed top-20 right-4 px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 z-50",
               notification.type === 'error'
                 ? "bg-red-500 text-white"
                 : "bg-green-500 text-white"

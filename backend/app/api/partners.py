@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
+from pydantic import BaseModel
 
 from ..db.database import get_db
 from ..db.models import Partner, PartnerType, User, Proposal
@@ -9,6 +10,7 @@ from .dependencies import get_current_user
 from ..schemas.partner import PartnerCreate, PartnerUpdate, PartnerResponse, PartnerListResponse
 from ..services.web_crawler_service import WebCrawlerService
 from ..services.partner_affinity_service import PartnerAffinityService
+from ..services.ai_partner_finder_service import AIPartnerFinderService
 
 router = APIRouter(prefix="/api/partners", tags=["partners"])
 
@@ -262,7 +264,7 @@ async def calculate_partner_affinity(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to calculate affinity: {str(e)}")
 
-@router.get("/search", response_model=List[PartnerResponse])
+@router.get("/search")
 def search_partners(
     q: str = Query(..., min_length=1),
     limit: int = Query(10, ge=1, le=50),
@@ -282,7 +284,8 @@ def search_partners(
 
     partners = query.limit(limit).all()
 
-    return partners
+    # Convert to response model
+    return [PartnerResponse.from_orm(partner) for partner in partners]
 
 @router.post("/batch-affinity")
 async def calculate_batch_affinity(
@@ -323,3 +326,223 @@ async def calculate_batch_affinity(
     db.commit()
 
     return {"results": results}
+
+# AI Partner Finding Models
+class AIPartnerSearchCriteria(BaseModel):
+    """Model for AI partner search criteria"""
+    partner_types: Optional[List[str]] = None
+    countries: Optional[List[str]] = None
+    expertise_areas: Optional[List[str]] = None
+    custom_requirements: Optional[str] = None
+    project_field: Optional[str] = "Adult Education"
+
+class AIPartnerSearchRequest(BaseModel):
+    """Request model for AI partner finding"""
+    search_mode: str  # "criteria" or "proposal"
+    criteria: Optional[AIPartnerSearchCriteria] = None
+    proposal_id: Optional[int] = None
+    num_partners: int = 5
+
+class SaveSuggestedPartnersRequest(BaseModel):
+    """Request model for saving AI-suggested partners"""
+    partners: List[Dict]
+
+@router.post("/ai-find")
+async def find_partners_with_ai(
+    request: AIPartnerSearchRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Find partners using AI based on criteria or proposal"""
+    ai_service = AIPartnerFinderService()
+
+    try:
+        if request.search_mode == "criteria":
+            if not request.criteria:
+                raise HTTPException(status_code=400, detail="Criteria required for criteria-based search")
+
+            # Convert criteria to dict
+            criteria_dict = request.criteria.dict()
+
+            # Generate partners based on criteria
+            partners = await ai_service.find_partners_by_criteria(
+                criteria=criteria_dict,
+                num_partners=request.num_partners
+            )
+
+        elif request.search_mode == "proposal":
+            if not request.proposal_id:
+                raise HTTPException(status_code=400, detail="Proposal ID required for proposal-based search")
+
+            # Fetch the proposal
+            proposal = db.query(Proposal).filter(
+                Proposal.id == request.proposal_id,
+                Proposal.user_id == current_user.id
+            ).first()
+
+            if not proposal:
+                raise HTTPException(status_code=404, detail="Proposal not found")
+
+            # Generate partners based on proposal
+            partners = await ai_service.find_partners_for_proposal(
+                proposal=proposal,
+                num_partners=request.num_partners
+            )
+
+        else:
+            raise HTTPException(status_code=400, detail="Invalid search mode. Use 'criteria' or 'proposal'")
+
+        return {
+            "success": True,
+            "partners": partners,
+            "total": len(partners),
+            "search_mode": request.search_mode
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate partner suggestions: {str(e)}")
+
+@router.post("/save-suggestions")
+async def save_suggested_partners(
+    request: SaveSuggestedPartnersRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Save AI-suggested partners to user's library"""
+    ai_service = AIPartnerFinderService()
+    saved_partners = []
+    skipped_partners = []
+
+    for partner_data in request.partners:
+        try:
+            # Validate partner data
+            if not ai_service.validate_partner_data(partner_data):
+                skipped_partners.append({
+                    "name": partner_data.get('name', 'Unknown'),
+                    "reason": "Invalid or incomplete data"
+                })
+                continue
+
+            # Check if partner already exists
+            existing_partner = db.query(Partner).filter(
+                Partner.user_id == current_user.id,
+                Partner.name == partner_data['name'],
+                Partner.country == partner_data.get('country')
+            ).first()
+
+            if existing_partner:
+                skipped_partners.append({
+                    "name": partner_data['name'],
+                    "reason": "Partner already exists in library"
+                })
+                continue
+
+            # Create new partner
+            try:
+                partner_type_enum = PartnerType[partner_data['type'].upper()]
+            except KeyError:
+                partner_type_enum = PartnerType.NGO  # Default to NGO
+
+            new_partner = Partner(
+                user_id=current_user.id,
+                name=partner_data['name'],
+                type=partner_type_enum,
+                country=partner_data.get('country'),
+                website=partner_data.get('website'),
+                description=partner_data.get('description'),
+                expertise_areas=partner_data.get('expertise_areas', []),
+                contact_info=partner_data.get('contact_info', {}),
+                affinity_score=partner_data.get('compatibility_score')
+            )
+
+            db.add(new_partner)
+            saved_partners.append({
+                "name": new_partner.name,
+                "id": None  # Will be set after commit
+            })
+
+        except Exception as e:
+            skipped_partners.append({
+                "name": partner_data.get('name', 'Unknown'),
+                "reason": f"Error: {str(e)}"
+            })
+
+    # Commit all partners at once
+    if saved_partners:
+        db.commit()
+
+        # Get the IDs of newly created partners
+        for partner_info in saved_partners:
+            partner = db.query(Partner).filter(
+                Partner.user_id == current_user.id,
+                Partner.name == partner_info['name']
+            ).order_by(Partner.created_at.desc()).first()
+            if partner:
+                partner_info['id'] = partner.id
+
+    return {
+        "success": True,
+        "saved_count": len(saved_partners),
+        "saved_partners": saved_partners,
+        "skipped_count": len(skipped_partners),
+        "skipped_partners": skipped_partners
+    }
+
+@router.post("/analyze-gaps")
+async def analyze_partnership_gaps(
+    proposal_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Analyze gaps in current partnership for a proposal"""
+    # Fetch the proposal
+    proposal = db.query(Proposal).filter(
+        Proposal.id == proposal_id,
+        Proposal.user_id == current_user.id
+    ).first()
+
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+
+    # Get existing partners (from library_partners relationship or JSON field)
+    existing_partners = proposal.library_partners
+    if not existing_partners and proposal.partners:
+        # Create temporary Partner objects from JSON data for analysis
+        existing_partners = []
+        for p in proposal.partners:
+            temp_partner = Partner(
+                name=p.get('name', ''),
+                type=PartnerType.NGO,  # Default type
+                country=p.get('country', ''),
+                expertise_areas=p.get('expertise_areas', [])
+            )
+            existing_partners.append(temp_partner)
+
+    # Create project context
+    project_context = {
+        'title': proposal.title,
+        'project_idea': proposal.project_idea,
+        'priorities': proposal.priorities,
+        'target_groups': proposal.target_groups
+    }
+
+    # Analyze gaps
+    ai_service = AIPartnerFinderService()
+    try:
+        analysis = await ai_service.analyze_partnership_gaps(
+            existing_partners=existing_partners,
+            project_context=project_context
+        )
+
+        return {
+            "success": True,
+            "proposal_id": proposal_id,
+            "proposal_title": proposal.title,
+            "current_partner_count": len(existing_partners),
+            "analysis": analysis
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to analyze partnership gaps: {str(e)}")
