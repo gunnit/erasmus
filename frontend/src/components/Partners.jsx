@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Plus, Search, Filter, Globe, Building2, Mail, Phone,
@@ -8,7 +8,7 @@ import {
 import { cn } from '../lib/utils';
 import api from '../services/api';
 import { AIPartnerFinderModal } from './AIPartnerFinderModal';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 const PARTNER_TYPES = [
   { value: 'NGO', label: 'NGO' },
@@ -20,7 +20,7 @@ const PARTNER_TYPES = [
 ];
 
 export const Partners = () => {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [partners, setPartners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
