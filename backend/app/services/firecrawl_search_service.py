@@ -40,45 +40,42 @@ class FirecrawlSearchService:
 
         partners = []
 
-        # Build search queries based on criteria
-        search_queries = self._build_search_queries(search_criteria)
+        # Use known partner directories instead of search
+        partner_directories = self._get_partner_directories(search_criteria)
 
-        for query in search_queries[:3]:  # Limit to 3 queries to avoid too many API calls
+        for directory_url in partner_directories[:5]:  # Limit to avoid too many API calls
             try:
-                logger.info(f"Searching for partners with query: {query}")
+                logger.info(f"Scraping partner directory: {directory_url}")
 
-                # Perform the search
-                search_results = self.app.search(
-                    query=query,
-                    limit=num_results
+                # Scrape the directory page
+                scraped_data = self.app.scrape_url(
+                    url=directory_url,
+                    params={'formats': ['markdown', 'links']}
                 )
 
-                logger.info(f"Firecrawl API response structure: {type(search_results)}")
+                logger.info(f"Scraped data type: {type(scraped_data)}")
 
-                # Handle different response formats
-                results_list = []
-                if search_results:
-                    if isinstance(search_results, dict):
-                        if 'data' in search_results:
-                            # Check for v2 format (data.web) or v1 format (data as list)
-                            if isinstance(search_results['data'], dict):
-                                # v2 format - data is an object with 'web', 'images', etc.
-                                if 'web' in search_results['data']:
-                                    results_list = search_results['data']['web']
-                                    logger.info(f"Using v2 format, found {len(results_list)} web results")
-                            elif isinstance(search_results['data'], list):
-                                # v1 format - data is directly a list
-                                results_list = search_results['data']
-                                logger.info(f"Using v1 format, found {len(results_list)} results")
-                    elif isinstance(search_results, list):
-                        # Direct list response
-                        results_list = search_results
-                        logger.info(f"Direct list format, found {len(results_list)} results")
+                # Extract partners from scraped content
+                if scraped_data and isinstance(scraped_data, dict):
+                    # Extract from markdown content
+                    if 'markdown' in scraped_data:
+                        extracted = self._extract_partners_from_content(
+                            scraped_data['markdown'],
+                            scraped_data.get('links', []),
+                            search_criteria
+                        )
+                        partners.extend(extracted)
 
-                for result in results_list:
-                    partner = self._extract_partner_from_result(result, search_criteria)
-                    if partner and self._validate_partner(partner):
-                        partners.append(partner)
+                    # Also check for data key (v1.4.0 format)
+                    elif 'data' in scraped_data:
+                        data = scraped_data['data']
+                        if isinstance(data, dict) and 'markdown' in data:
+                            extracted = self._extract_partners_from_content(
+                                data['markdown'],
+                                data.get('links', []),
+                                search_criteria
+                            )
+                            partners.extend(extracted)
 
             except Exception as e:
                 logger.error(f"Error searching with Firecrawl: {str(e)}")
@@ -90,65 +87,169 @@ class FirecrawlSearchService:
         # Limit to requested number
         return partners[:num_results]
 
-    def _build_search_queries(self, criteria: Dict) -> List[str]:
-        """Build effective search queries for finding real organizations"""
-        queries = []
+    def _get_partner_directories(self, criteria: Dict) -> List[str]:
+        """Get URLs of known partner directories to scrape"""
+        directories = [
+            # Erasmus+ official resources
+            "https://erasmus-plus.ec.europa.eu/projects",
+            "https://ec.europa.eu/programmes/erasmus-plus/projects_en",
 
-        # Extract criteria
-        partner_types = criteria.get('partner_types', [])
-        countries = criteria.get('countries', [])
-        expertise_areas = criteria.get('expertise_areas', [])
-        project_field = criteria.get('project_field', 'Adult Education')
-        custom_requirements = criteria.get('custom_requirements', '')
+            # EPALE - European Adult Learning
+            "https://epale.ec.europa.eu/en/organisations",
+            "https://epale.ec.europa.eu/en/partner-search",
 
-        # Build targeted queries for Erasmus+ partners
-        base_terms = [
-            "Erasmus+ partner organization",
-            "EU funded project partner",
-            "European education organization",
-            "adult education NGO Europe",
-            "vocational training organization EU"
+            # European networks
+            "https://eaea.org/our-members/",  # European Association for Education of Adults
+            "https://www.eucen.eu/members",  # European Universities Continuing Education Network
+
+            # Additional resources
+            "https://www.salto-youth.net/tools/otlas-partner-finding/",
+            "https://europa.eu/youth/solidarity/organisations_en"
         ]
 
-        # Query 1: General Erasmus+ partners with country
+        # Add country-specific directories if countries are specified
+        countries = criteria.get('countries', [])
         if countries:
-            country_str = ' OR '.join([f'"{country}"' for country in countries[:3]])
-            queries.append(f'Erasmus+ partner organizations ({country_str}) adult education')
-        else:
-            queries.append('Erasmus+ partner organizations Europe adult education')
+            for country in countries[:2]:
+                if country.lower() == 'germany':
+                    directories.append("https://www.na-bibb.de/erasmus-erwachsenenbildung/")
+                elif country.lower() == 'france':
+                    directories.append("https://agence.erasmusplus.fr/")
+                elif country.lower() == 'italy':
+                    directories.append("https://www.erasmusplus.it/")
 
-        # Query 2: Specific expertise areas
-        if expertise_areas:
-            expertise_str = ' '.join(expertise_areas[:2])
-            queries.append(f'{expertise_str} organization Europe education training')
+        return directories
 
-        # Query 3: Partner type specific
-        if partner_types:
-            for ptype in partner_types[:2]:
-                if ptype == 'NGO':
-                    queries.append('NGO adult education Europe Erasmus partnership')
-                elif ptype == 'EDUCATIONAL_INSTITUTION':
-                    queries.append('university college adult education Europe international cooperation')
-                elif ptype == 'PUBLIC_INSTITUTION':
-                    queries.append('public institution adult education Europe EU projects')
-                elif ptype == 'RESEARCH_CENTER':
-                    queries.append('research center education Europe EU funded projects')
+    def _extract_partners_from_content(
+        self,
+        markdown_content: str,
+        links: List[str],
+        criteria: Dict
+    ) -> List[Dict]:
+        """Extract partner organizations from scraped content"""
+        partners = []
 
-        # Query 4: Custom requirements
-        if custom_requirements:
-            queries.append(f'{custom_requirements} organization Europe')
+        if not markdown_content:
+            return partners
 
-        # Query 5: Search for specific known partner databases and networks
-        queries.append('Erasmus+ project results platform partners')
-        queries.append('EPALE adult learning organizations Europe')
-        queries.append('European adult education association members')
+        # Split content into sections/paragraphs
+        sections = markdown_content.split('\n\n')
 
-        # Query 6: Direct organization searches
-        if not any('site:' in q for q in queries):
-            queries.append('European NGO adult education contact website')
-            queries.append('EU partner organizations education training contacts')
+        for section in sections:
+            # Look for organization patterns
+            if self._looks_like_organization(section):
+                # Extract organization details
+                partner = self._extract_organization_details(section, links, criteria)
+                if partner and self._validate_partner(partner):
+                    partners.append(partner)
 
-        return queries
+        # Also try to extract from links directly
+        for link in links[:20]:  # Limit to avoid too many
+            if self._is_organization_website(link):
+                partner = self._create_partner_from_url(link, criteria)
+                if partner and self._validate_partner(partner):
+                    partners.append(partner)
+
+        return self._deduplicate_partners(partners)
+
+    def _looks_like_organization(self, text: str) -> bool:
+        """Check if text section likely describes an organization"""
+        org_indicators = [
+            'organization', 'organisation', 'association', 'institute',
+            'university', 'college', 'foundation', 'center', 'centre',
+            'ngo', 'company', 'partner', 'member'
+        ]
+
+        text_lower = text.lower()
+        return any(indicator in text_lower for indicator in org_indicators)
+
+    def _extract_organization_details(self, text: str, links: List[str], criteria: Dict) -> Optional[Dict]:
+        """Extract organization details from text section"""
+        # Try to extract organization name
+        name_match = re.search(r'^([A-Z][\w\s\-&]+)', text)
+        if not name_match:
+            return None
+
+        org_name = name_match.group(1).strip()
+
+        # Find associated website
+        website = None
+        for link in links:
+            if org_name.lower().replace(' ', '') in link.lower():
+                website = link
+                break
+
+        if not website:
+            # Try to extract website from text
+            url_match = re.search(r'(https?://[^\s]+)', text)
+            if url_match:
+                website = url_match.group(1)
+
+        if not website:
+            return None
+
+        # Build partner data
+        return {
+            'name': org_name,
+            'type': self._determine_partner_type('', text, website),
+            'country': self._extract_country(website, text, org_name),
+            'website': self._clean_url(website),
+            'description': text[:500] if len(text) > 50 else f"{org_name} - European partner organization",
+            'expertise_areas': self._extract_expertise_areas(text, criteria.get('expertise_areas', [])),
+            'source': 'directory_scraping',
+            'is_verified': True,
+            'contact_info': {'website': self._clean_url(website)}
+        }
+
+    def _is_organization_website(self, url: str) -> bool:
+        """Check if URL is likely an organization website"""
+        # Exclude social media and generic platforms
+        exclude_domains = [
+            'facebook.com', 'twitter.com', 'linkedin.com', 'youtube.com',
+            'wikipedia.org', 'google.com', 'ec.europa.eu', 'europa.eu'
+        ]
+
+        return not any(domain in url.lower() for domain in exclude_domains)
+
+    def _create_partner_from_url(self, url: str, criteria: Dict) -> Optional[Dict]:
+        """Create partner data from just a URL"""
+        # Extract organization name from domain
+        domain_match = re.search(r'(?:https?://)?(?:www\.)?([^/]+)', url)
+        if not domain_match:
+            return None
+
+        domain = domain_match.group(1)
+        # Remove TLD and clean
+        org_name = re.sub(r'\.(com|org|eu|edu|net|gov|int).*$', '', domain)
+        org_name = org_name.replace('-', ' ').replace('_', ' ').title()
+
+        return {
+            'name': org_name,
+            'type': 'NGO',  # Default type
+            'country': self._extract_country_from_domain(domain),
+            'website': self._clean_url(url),
+            'description': f"{org_name} - Organization identified from partner directories",
+            'expertise_areas': ['Adult Education', 'European Cooperation'],
+            'source': 'directory_link',
+            'is_verified': True,
+            'contact_info': {'website': self._clean_url(url)}
+        }
+
+    def _extract_country_from_domain(self, domain: str) -> str:
+        """Extract country from domain TLD"""
+        country_tlds = {
+            '.de': 'Germany', '.fr': 'France', '.it': 'Italy', '.es': 'Spain',
+            '.pt': 'Portugal', '.nl': 'Netherlands', '.be': 'Belgium', '.at': 'Austria',
+            '.pl': 'Poland', '.cz': 'Czech Republic', '.sk': 'Slovakia', '.hu': 'Hungary',
+            '.ro': 'Romania', '.bg': 'Bulgaria', '.gr': 'Greece', '.se': 'Sweden',
+            '.dk': 'Denmark', '.fi': 'Finland', '.no': 'Norway', '.ie': 'Ireland'
+        }
+
+        for tld, country in country_tlds.items():
+            if tld in domain.lower():
+                return country
+
+        return 'Europe'
 
     def _extract_partner_from_result(self, result: Dict, criteria: Dict) -> Optional[Dict]:
         """Extract partner information from search result"""
