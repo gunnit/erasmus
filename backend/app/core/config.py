@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     OPENAI_MODEL: str = "gpt-4-turbo"  # Updated model name
 
+    # Firecrawl API for web search and crawling
+    FIRECRAWL_API_KEY: Optional[str] = None
+
     # Database - configured for Render PostgreSQL
     DATABASE_URL: Optional[str] = "sqlite:///./erasmus_forms.db"
 

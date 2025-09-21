@@ -2,16 +2,18 @@ from typing import Dict, List, Optional
 import json
 import logging
 from app.services.openai_service import OpenAIService
+from app.services.firecrawl_search_service import FirecrawlSearchService
 from app.db.models import Partner, PartnerType, Proposal
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
 class AIPartnerFinderService:
-    """Service for AI-powered partner discovery and matching"""
+    """Service for AI-powered partner discovery and matching using real data"""
 
     def __init__(self):
         self.openai_service = OpenAIService()
+        self.search_service = FirecrawlSearchService()
 
     async def find_partners_by_criteria(
         self,
@@ -19,7 +21,7 @@ class AIPartnerFinderService:
         num_partners: int = 5
     ) -> List[Dict]:
         """
-        Find partners based on custom search criteria
+        Find REAL partners based on custom search criteria using web search
 
         Args:
             criteria: Dict containing search parameters like:
@@ -28,17 +30,32 @@ class AIPartnerFinderService:
                 - expertise_areas: List of required expertise
                 - custom_requirements: Free text requirements
                 - project_field: Field of the project
-            num_partners: Number of partners to generate (1-10)
+            num_partners: Number of partners to find (1-10)
 
         Returns:
-            List of partner dictionaries with all details
+            List of partner dictionaries with real organization details
         """
 
-        system_prompt = """You are an expert in European grant partnerships and Erasmus+ projects.
-        Generate realistic partner organizations that would be suitable for Erasmus+ KA220-ADU projects.
-        Focus on creating diverse, complementary partners that meet EU funding requirements."""
+        # First, search for real organizations
+        logger.info("Searching for real partner organizations")
+        real_partners = await self.search_service.search_partners(
+            search_criteria=criteria,
+            num_results=num_partners * 2  # Search for more to have options
+        )
 
-        user_prompt = f"""Generate {num_partners} partner organizations based on these criteria:
+        if not real_partners:
+            logger.warning("No real partners found via web search, falling back to AI suggestions")
+            return await self._generate_ai_partner_suggestions(criteria, num_partners)
+
+        # Use AI to analyze and rank the real partners
+        system_prompt = """You are an expert in European grant partnerships and Erasmus+ projects.
+        Analyze these REAL organizations and evaluate their suitability for Erasmus+ KA220-ADU projects.
+        Rank them based on their alignment with the criteria and potential contribution to the project."""
+
+        user_prompt = f"""Analyze these real organizations found through web search:
+
+ORGANIZATIONS FOUND:
+{json.dumps(real_partners, indent=2)}
 
 SEARCH CRITERIA:
 - Partner Types: {criteria.get('partner_types', ['Any type'])}
@@ -47,38 +64,40 @@ SEARCH CRITERIA:
 - Custom Requirements: {criteria.get('custom_requirements', 'None specified')}
 - Project Field: {criteria.get('project_field', 'Adult Education')}
 
-For each partner, provide:
-1. Organization name (realistic, avoid generic names)
-2. Type (NGO, PUBLIC_INSTITUTION, PRIVATE_COMPANY, EDUCATIONAL_INSTITUTION, RESEARCH_CENTER, or SOCIAL_ENTERPRISE)
-3. Country (EU member state or program country)
-4. Website (realistic format, e.g., www.org-name.country-code)
-5. Description (100-150 words, specific to their expertise and role)
-6. Expertise areas (3-5 specific areas relevant to the criteria)
-7. Why they're a good match (brief explanation)
-8. Contact info (realistic email format using organization domain)
+For each organization:
+1. Evaluate their suitability for Erasmus+ KA220-ADU projects
+2. Score their compatibility (0-100) based on:
+   - Alignment with search criteria
+   - Relevance to adult education
+   - European/international experience
+   - Complementarity with other partners
+3. Enhance their description with relevant details
+4. Identify their key expertise areas
+5. Explain why they're a good match
+
+Select the top {num_partners} organizations and return them with enhanced information.
 
 IMPORTANT:
-- Create diverse partners from different countries
-- Ensure complementary expertise across partners
-- Make organizations sound real and credible
-- Consider Erasmus+ partnership requirements
-- Include at least one organization from each specified country if possible
+- These are REAL organizations - do not change their names or websites
+- You can enhance descriptions but keep them factual
+- Focus on their actual capabilities and experience
+- Rank by true compatibility with the project needs
 
 Return as JSON array with this structure:
 [
   {{
-    "name": "Organization Name",
-    "type": "NGO",
-    "country": "Germany",
-    "website": "www.example.de",
-    "description": "Detailed description...",
-    "expertise_areas": ["Digital literacy", "Adult education", "Social inclusion"],
-    "match_reason": "Why this partner matches the criteria",
+    "name": "[Keep original name]",
+    "type": "[Determined type]",
+    "country": "[Keep original country]",
+    "website": "[Keep original website]",
+    "description": "[Enhanced description based on real information]",
+    "expertise_areas": ["Based on actual expertise"],
+    "match_reason": "Why this real organization matches the criteria",
     "contact_info": {{
-      "email": "contact@example.de",
-      "phone": "+49 30 12345678"
+      "website": "[Original website]"
     }},
-    "compatibility_score": 85
+    "compatibility_score": 85,
+    "is_verified": true
   }}
 ]"""
 
@@ -129,20 +148,90 @@ Return as JSON array with this structure:
             logger.error(f"Error generating partners by criteria: {str(e)}")
             raise
 
+    async def _generate_ai_partner_suggestions(
+        self,
+        criteria: Dict,
+        num_partners: int
+    ) -> List[Dict]:
+        """
+        Fallback to AI suggestions when no real partners are found.
+        Makes it clear these are suggestions, not real organizations.
+        """
+
+        system_prompt = """You are an expert in European grant partnerships.
+        Since no real organizations were found through search, suggest TYPES of organizations
+        that would be ideal partners. Make it clear these are suggestions for what to look for,
+        not real organizations."""
+
+        user_prompt = f"""No real organizations were found matching the criteria.
+        Suggest {num_partners} TYPES of partner organizations to search for:
+
+CRITERIA:
+- Partner Types: {criteria.get('partner_types', ['Any type'])}
+- Countries: {criteria.get('countries', ['Any EU country'])}
+- Expertise: {criteria.get('expertise_areas', [])}
+- Requirements: {criteria.get('custom_requirements', '')}
+- Field: {criteria.get('project_field', 'Adult Education')}
+
+For each suggestion, provide:
+1. Suggested type of organization
+2. Recommended country/region
+3. Key expertise to look for
+4. Why this type would be valuable
+5. Where to search for such partners
+
+Make it CLEAR these are suggestions, not real organizations.
+Use phrases like "Look for...", "Search for...", "Consider organizations that..."
+
+Return as JSON array:
+[
+  {{
+    "name": "SUGGESTION: Type of organization to look for",
+    "type": "NGO",
+    "country": "Recommended country",
+    "website": "N/A - This is a suggestion",
+    "description": "Look for organizations that...",
+    "expertise_areas": ["Expertise to search for"],
+    "match_reason": "Why this type of partner would be valuable",
+    "is_suggestion": true,
+    "search_tips": "Where and how to find such organizations"
+  }}
+]"""
+
+        try:
+            response = await self.openai_service.generate_completion(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                max_tokens=1500,
+                temperature=0.7
+            )
+
+            suggestions = json.loads(response)
+            for suggestion in suggestions:
+                suggestion['is_ai_generated'] = True
+                suggestion['is_suggestion'] = True
+                suggestion['is_verified'] = False
+
+            return suggestions
+
+        except Exception as e:
+            logger.error(f"Error generating partner suggestions: {str(e)}")
+            return []
+
     async def find_partners_for_proposal(
         self,
         proposal: Proposal,
         num_partners: int = 5
     ) -> List[Dict]:
         """
-        Find partners that match a specific proposal
+        Find REAL partners that match a specific proposal using web search
 
         Args:
             proposal: The proposal object to match partners for
-            num_partners: Number of partners to generate
+            num_partners: Number of partners to find
 
         Returns:
-            List of partner dictionaries with compatibility scores
+            List of real partner dictionaries with compatibility scores
         """
 
         # Extract relevant information from the proposal
@@ -156,11 +245,32 @@ Return as JSON array with this structure:
             'existing_partners': proposal.partners or []
         }
 
-        system_prompt = """You are an expert in Erasmus+ KA220-ADU partnerships.
-        Analyze the project and generate partner organizations that would strengthen this specific proposal.
-        Consider the project's objectives, priorities, and existing partnerships to suggest complementary partners."""
+        # Build search criteria from proposal
+        criteria = {
+            'project_field': 'Adult Education',
+            'expertise_areas': self._extract_expertise_from_proposal(proposal),
+            'countries': self._suggest_countries_for_proposal(proposal),
+            'custom_requirements': f"{proposal.title} {proposal.project_idea[:200]}"
+        }
 
-        user_prompt = f"""Based on this Erasmus+ project, suggest {num_partners} ideal partner organizations:
+        # Search for real partners
+        real_partners = await self.search_service.search_partners(
+            search_criteria=criteria,
+            num_results=num_partners * 2
+        )
+
+        if not real_partners:
+            logger.warning("No real partners found for proposal, using AI suggestions")
+            return await self._generate_ai_partner_suggestions(criteria, num_partners)
+
+        system_prompt = """You are an expert in Erasmus+ KA220-ADU partnerships.
+        Analyze these REAL organizations and evaluate their fit for this specific proposal.
+        Consider the project's objectives, priorities, and existing partnerships."""
+
+        user_prompt = f"""Analyze these REAL organizations for the Erasmus+ project and select the best {num_partners}:
+
+REAL ORGANIZATIONS FOUND:
+{json.dumps(real_partners, indent=2)}
 
 PROJECT DETAILS:
 Title: {project_context['title']}
@@ -179,39 +289,36 @@ TARGET GROUPS:
 EXISTING PARTNERS:
 {json.dumps(project_context.get('existing_partners', []), indent=2)}
 
-REQUIREMENTS:
-1. Suggest partners that complement existing partners (avoid duplication)
-2. Ensure geographic diversity across EU
-3. Include organizations with specific expertise needed for the project
-4. Consider the project priorities when matching expertise
-5. Each partner should bring unique value to the consortium
+EVALUATION CRITERIA:
+1. How well they complement existing partners (avoid duplication)
+2. Geographic diversity across EU
+3. Specific expertise matching project needs
+4. Alignment with project priorities
+5. Unique value they bring to the consortium
 
-For each suggested partner, provide:
-1. Organization name (realistic, specific to their field)
-2. Type (NGO, PUBLIC_INSTITUTION, PRIVATE_COMPANY, EDUCATIONAL_INSTITUTION, RESEARCH_CENTER, or SOCIAL_ENTERPRISE)
-3. Country (different from existing partners if possible)
-4. Website (realistic format)
-5. Description (focusing on relevance to this project)
-6. Expertise areas (directly relevant to project needs)
-7. Specific contribution to this project
-8. Why they complement the existing consortium
-9. Compatibility score (0-100) based on project fit
+For each organization:
+1. Keep their REAL name and website unchanged
+2. Enhance their description based on project relevance
+3. Identify their expertise areas relevant to this project
+4. Explain their specific contribution
+5. Score their compatibility (0-100)
 
-Return as JSON array with this structure:
+Return the top {num_partners} as JSON:
 [
   {{
-    "name": "Organization Name",
-    "type": "NGO",
-    "country": "Country",
-    "website": "www.example.org",
-    "description": "Description focused on project relevance...",
-    "expertise_areas": ["Relevant area 1", "Relevant area 2"],
+    "name": "[Keep real name]",
+    "type": "[Determined type]",
+    "country": "[Keep real country]",
+    "website": "[Keep real website]",
+    "description": "Enhanced description showing project relevance...",
+    "expertise_areas": ["Real expertise areas"],
     "project_contribution": "Specific contribution to this project",
-    "match_reason": "Why this partner is ideal for this project",
+    "match_reason": "Why this real partner fits this project",
     "contact_info": {{
-      "email": "contact@example.org"
+      "website": "[Keep real website]"
     }},
-    "compatibility_score": 92
+    "compatibility_score": 92,
+    "is_verified": true
   }}
 ]"""
 
@@ -413,3 +520,69 @@ Return as JSON with clear, actionable recommendations."""
                 "expertise_gaps": "Unable to determine specific gaps",
                 "recommendations": ["Add more diverse partners", "Ensure all work packages have expert partners"]
             }
+
+    def _extract_expertise_from_proposal(self, proposal: Proposal) -> List[str]:
+        """Extract expertise areas from proposal content"""
+        expertise = []
+
+        # Extract from priorities
+        if proposal.priorities:
+            for priority in proposal.priorities:
+                if 'digital' in priority.lower():
+                    expertise.append('Digital transformation')
+                elif 'inclusion' in priority.lower():
+                    expertise.append('Social inclusion')
+                elif 'environment' in priority.lower():
+                    expertise.append('Sustainability')
+                elif 'democratic' in priority.lower():
+                    expertise.append('Civic engagement')
+
+        # Extract from project idea
+        if proposal.project_idea:
+            idea_lower = proposal.project_idea.lower()
+            if 'technology' in idea_lower or 'digital' in idea_lower:
+                expertise.append('Digital skills')
+            if 'training' in idea_lower or 'education' in idea_lower:
+                expertise.append('Adult education')
+            if 'employment' in idea_lower or 'job' in idea_lower:
+                expertise.append('Employment')
+
+        # Extract from target groups
+        if proposal.target_groups:
+            for group in proposal.target_groups:
+                if 'educator' in group.lower():
+                    expertise.append('Teacher training')
+                elif 'migrant' in group.lower() or 'refugee' in group.lower():
+                    expertise.append('Migration and integration')
+
+        # Remove duplicates
+        return list(set(expertise))
+
+    def _suggest_countries_for_proposal(self, proposal: Proposal) -> List[str]:
+        """Suggest countries for partners based on existing partners"""
+        countries = []
+
+        # Get existing partner countries
+        existing_countries = set()
+        if proposal.partners:
+            for partner in proposal.partners:
+                if isinstance(partner, dict) and partner.get('country'):
+                    existing_countries.add(partner['country'])
+
+        # Suggest complementary countries
+        all_eu_countries = [
+            'Germany', 'France', 'Italy', 'Spain', 'Portugal', 'Netherlands',
+            'Belgium', 'Austria', 'Poland', 'Czech Republic', 'Slovakia',
+            'Hungary', 'Romania', 'Bulgaria', 'Greece', 'Sweden', 'Denmark',
+            'Finland', 'Ireland', 'Croatia', 'Slovenia', 'Lithuania', 'Latvia',
+            'Estonia', 'Luxembourg', 'Malta', 'Cyprus'
+        ]
+
+        # Prioritize countries not yet in partnership
+        for country in all_eu_countries:
+            if country not in existing_countries:
+                countries.append(country)
+                if len(countries) >= 5:
+                    break
+
+        return countries if countries else ['Germany', 'France', 'Italy', 'Spain', 'Netherlands']
