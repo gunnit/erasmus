@@ -66,7 +66,7 @@ class FirecrawlSearchService:
                     if 'markdown' in scraped_data:
                         extracted = self._extract_partners_from_content(
                             scraped_data['markdown'],
-                            scraped_data.get('links', []),
+                            scraped_data.get('links') or [],  # Ensure we always pass a list, not None
                             search_criteria
                         )
                         partners.extend(extracted)
@@ -77,7 +77,7 @@ class FirecrawlSearchService:
                         if isinstance(data, dict) and 'markdown' in data:
                             extracted = self._extract_partners_from_content(
                                 data['markdown'],
-                                data.get('links', []),
+                                data.get('links') or [],  # Ensure we always pass a list, not None
                                 search_criteria
                             )
                             partners.extend(extracted)
@@ -148,8 +148,9 @@ class FirecrawlSearchService:
                 if partner and self._validate_partner(partner):
                     partners.append(partner)
 
-        # Also try to extract from links directly
-        for link in links[:20]:  # Limit to avoid too many
+        # Also try to extract from links directly - check if links is not None
+        if links:
+            for link in links[:20]:  # Limit to avoid too many
             if self._is_organization_website(link):
                 partner = self._create_partner_from_url(link, criteria)
                 if partner and self._validate_partner(partner):

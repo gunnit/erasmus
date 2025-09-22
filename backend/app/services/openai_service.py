@@ -152,8 +152,23 @@ class OpenAIService:
                 temperature=temperature
             )
 
+            # Check if we have a valid response
+            if not response.choices:
+                logger.error("OpenAI response has no choices")
+                raise ValueError("OpenAI returned no response choices")
+
             answer = response.choices[0].message.content
-            logger.info(f"Successfully generated completion of length {len(answer)}")
+
+            # Check if the answer is empty or None
+            if answer is None:
+                logger.error("OpenAI returned None as message content")
+                raise ValueError("OpenAI returned empty response")
+
+            if not answer.strip():
+                logger.warning("OpenAI returned empty or whitespace-only response")
+                # Don't raise an error for empty responses, let the caller handle it
+
+            logger.info(f"Successfully generated completion of length {len(answer) if answer else 0}")
             return answer
 
         except Exception as e:

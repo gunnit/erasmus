@@ -109,6 +109,11 @@ Return as JSON array with this structure:
                 temperature=0.8
             )
 
+            # Check if response is empty
+            if not response or not response.strip():
+                logger.warning("OpenAI returned empty response for partner generation")
+                return await self._generate_ai_partner_suggestions(criteria, num_partners)
+
             # Parse the JSON response
             partners_data = json.loads(response)
 
@@ -222,6 +227,23 @@ Return as JSON array:
                 max_tokens=1500,
                 temperature=0.7
             )
+
+            # Check if response is empty
+            if not response or not response.strip():
+                logger.warning("OpenAI returned empty response for partner suggestions")
+                # Return a default suggestion when AI fails
+                return [{
+                    "name": "SUGGESTION: European Adult Education Organization",
+                    "type": "NGO",
+                    "country": "Search in EU countries",
+                    "website": "N/A - Manual search required",
+                    "description": "Due to AI service limitations, please search manually for adult education organizations in EU countries that match your project needs.",
+                    "expertise_areas": ["Adult Education", "European Cooperation"],
+                    "match_reason": "Manual search recommended for best results",
+                    "is_suggestion": True,
+                    "is_ai_generated": False,
+                    "search_tips": "Try searching on EPALE (https://epale.ec.europa.eu), Erasmus+ project database, or national agency websites"
+                }]
 
             suggestions = json.loads(response)
             for suggestion in suggestions:
