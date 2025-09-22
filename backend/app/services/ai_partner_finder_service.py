@@ -144,6 +144,23 @@ Return as JSON array with this structure:
 
             raise ValueError("Failed to generate valid partner suggestions")
 
+        except ValueError as ve:
+            # Handle OpenAI quota errors specifically
+            logger.error(f"ValueError generating partners: {str(ve)}")
+            if "quota" in str(ve).lower():
+                # Return a helpful message about quota issues
+                return [{
+                    "name": "OpenAI API Limit Reached",
+                    "type": "NGO",
+                    "country": "N/A",
+                    "website": "https://platform.openai.com/account/billing",
+                    "description": str(ve),
+                    "expertise_areas": [],
+                    "match_reason": "Please check your OpenAI account to restore partner search functionality.",
+                    "is_error": True,
+                    "compatibility_score": 0
+                }]
+            raise
         except Exception as e:
             logger.error(f"Error generating partners by criteria: {str(e)}")
             raise
@@ -214,6 +231,23 @@ Return as JSON array:
 
             return suggestions
 
+        except ValueError as ve:
+            # Handle OpenAI quota errors
+            logger.error(f"ValueError generating suggestions: {str(ve)}")
+            if "quota" in str(ve).lower():
+                return [{
+                    "name": "OpenAI API Limit Reached",
+                    "type": "NGO",
+                    "country": "N/A",
+                    "website": "https://platform.openai.com/account/billing",
+                    "description": str(ve),
+                    "expertise_areas": [],
+                    "match_reason": "Please check your OpenAI account to restore partner search functionality.",
+                    "is_error": True,
+                    "is_suggestion": True,
+                    "compatibility_score": 0
+                }]
+            return []
         except Exception as e:
             logger.error(f"Error generating partner suggestions: {str(e)}")
             return []

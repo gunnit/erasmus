@@ -55,8 +55,13 @@ class FirecrawlSearchService:
 
                 logger.info(f"Scraped data type: {type(scraped_data)}")
 
+                # Handle None response from scrape_url
+                if scraped_data is None:
+                    logger.warning(f"Firecrawl returned None for URL: {directory_url}")
+                    continue
+
                 # Extract partners from scraped content
-                if scraped_data and isinstance(scraped_data, dict):
+                if isinstance(scraped_data, dict):
                     # Extract from markdown content
                     if 'markdown' in scraped_data:
                         extracted = self._extract_partners_from_content(

@@ -157,7 +157,17 @@ class OpenAIService:
             return answer
 
         except Exception as e:
-            logger.error(f"Error generating completion: {str(e)}")
+            error_msg = str(e)
+            logger.error(f"Error generating completion: {error_msg}")
+
+            # Handle quota exceeded error gracefully
+            if "insufficient_quota" in error_msg.lower() or "exceeded your current quota" in error_msg.lower():
+                logger.warning("OpenAI API quota exceeded - returning fallback message")
+                raise ValueError(
+                    "OpenAI API quota has been exceeded. Please check your OpenAI account billing and usage limits. "
+                    "Visit https://platform.openai.com/account/billing to add credits or upgrade your plan."
+                )
+
             raise
 
     async def generate_answer(
