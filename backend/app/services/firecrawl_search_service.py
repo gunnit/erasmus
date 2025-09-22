@@ -151,10 +151,10 @@ class FirecrawlSearchService:
         # Also try to extract from links directly - check if links is not None
         if links:
             for link in links[:20]:  # Limit to avoid too many
-            if self._is_organization_website(link):
-                partner = self._create_partner_from_url(link, criteria)
-                if partner and self._validate_partner(partner):
-                    partners.append(partner)
+                if self._is_organization_website(link):
+                    partner = self._create_partner_from_url(link, criteria)
+                    if partner and self._validate_partner(partner):
+                        partners.append(partner)
 
         return self._deduplicate_partners(partners)
 
