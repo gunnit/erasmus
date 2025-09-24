@@ -14,25 +14,30 @@ logger = logging.getLogger(__name__)
 class QualityScorer:
     """
     Comprehensive quality scoring system for Erasmus+ KA220-ADU applications
-    Based on official evaluation criteria: Relevance (30%), Partnership (20%),
-    Impact (25%), Project Management (25%)
+    Based on official evaluation criteria:
+    - Relevance of the project (25 points)
+    - Quality of the project design and implementation (30 points)
+    - Quality of the partnership and cooperation arrangements (20 points)
+    - Impact (25 points)
+    Total: 100 points (minimum 70 to pass)
     """
 
     def __init__(self):
         # Official Erasmus+ section weights
         self.section_weights = {
-            'relevance': 30.0,
+            'relevance': 25.0,
+            'quality_design': 30.0,
             'partnership': 20.0,
-            'impact': 25.0,
-            'project_management': 25.0
+            'impact': 25.0
         }
 
-        # Minimum score thresholds
+        # Minimum score thresholds (must score at least half the maximum points)
         self.thresholds = {
-            'total': 60,
-            'relevance': 15,
-            'quality': 15,  # Combined partnership + management
-            'impact': 15
+            'total': 70,
+            'relevance': 13,  # Half of 25 rounded up
+            'quality_design': 15,  # Half of 30
+            'partnership': 10,  # Half of 20
+            'impact': 13  # Half of 25 rounded up
         }
 
         # EU priority keywords for relevance scoring
@@ -438,9 +443,9 @@ class QualityScorer:
         # Initialize weighted scores
         weighted = {
             'relevance': 0,
+            'quality_design': 0,
             'partnership': 0,
-            'impact': 0,
-            'project_management': 0
+            'impact': 0
         }
 
         # Map sections to evaluation criteria
@@ -459,7 +464,8 @@ class QualityScorer:
             weighted['impact'] = (section_results['impact']['score'] / 100) * self.section_weights['impact']
 
         if 'project_management' in section_results:
-            weighted['project_management'] = (section_results['project_management']['score'] / 100) * self.section_weights['project_management']
+            # Project management contributes to Quality of Design and Implementation
+            weighted['quality_design'] = (section_results['project_management']['score'] / 100) * self.section_weights['quality_design']
 
         # Project summary contributes to overall coherence (distributed across sections)
         if 'project_summary' in section_results:
@@ -472,17 +478,17 @@ class QualityScorer:
     def _check_thresholds(self, overall_score: float, weighted_scores: Dict) -> Dict[str, bool]:
         """Check if score meets minimum thresholds"""
 
-        quality_score = weighted_scores.get('partnership', 0) + weighted_scores.get('project_management', 0)
-
         return {
             'total': overall_score >= self.thresholds['total'],
             'relevance': weighted_scores.get('relevance', 0) >= self.thresholds['relevance'],
-            'quality': quality_score >= self.thresholds['quality'],
+            'quality_design': weighted_scores.get('quality_design', 0) >= self.thresholds['quality_design'],
+            'partnership': weighted_scores.get('partnership', 0) >= self.thresholds['partnership'],
             'impact': weighted_scores.get('impact', 0) >= self.thresholds['impact'],
             'all_thresholds_met': (
                 overall_score >= self.thresholds['total'] and
                 weighted_scores.get('relevance', 0) >= self.thresholds['relevance'] and
-                quality_score >= self.thresholds['quality'] and
+                weighted_scores.get('quality_design', 0) >= self.thresholds['quality_design'] and
+                weighted_scores.get('partnership', 0) >= self.thresholds['partnership'] and
                 weighted_scores.get('impact', 0) >= self.thresholds['impact']
             )
         }
@@ -532,13 +538,16 @@ class QualityScorer:
         if overall_score >= 90:
             overall_assessment = "Excellent proposal ready for submission"
             classification = "excellent"
-        elif overall_score >= 75:
-            overall_assessment = "Good proposal with minor improvements recommended"
+        elif overall_score >= 80:
+            overall_assessment = "Very good proposal with minor improvements recommended"
+            classification = "very_good"
+        elif overall_score >= 70:
+            overall_assessment = "Good proposal meeting minimum requirements"
             classification = "good"
         elif overall_score >= 60:
-            overall_assessment = "Acceptable proposal but significant improvements needed"
-            classification = "acceptable"
-        elif overall_score >= 45:
+            overall_assessment = "Below threshold - improvements needed to meet minimum standards"
+            classification = "below_threshold"
+        elif overall_score >= 50:
             overall_assessment = "Poor proposal requiring major revisions"
             classification = "poor"
         else:
@@ -578,11 +587,18 @@ class QualityScorer:
                 'suggestion': 'Strengthen alignment with EU priorities and demonstrate clear European added value'
             })
 
-        if not thresholds_met['quality']:
+        if not thresholds_met['quality_design']:
             critical_improvements.append({
-                'section': 'quality',
-                'issue': 'Below minimum quality threshold',
-                'suggestion': 'Improve partnership structure and project management details'
+                'section': 'quality_design',
+                'issue': 'Below minimum quality of design threshold',
+                'suggestion': 'Improve project objectives clarity, work plan structure, and evaluation measures'
+            })
+
+        if not thresholds_met['partnership']:
+            critical_improvements.append({
+                'section': 'partnership',
+                'issue': 'Below minimum partnership quality threshold',
+                'suggestion': 'Strengthen partner mix, clarify roles, and improve cooperation mechanisms'
             })
 
         if not thresholds_met['impact']:
@@ -667,12 +683,17 @@ class QualityScorer:
             else:
                 warnings.append(f"Warning: Relevance score ({weighted_scores['relevance']:.1f}) close to minimum threshold ({self.thresholds['relevance']})")
 
-        quality_score = weighted_scores['partnership'] + weighted_scores['project_management']
-        if quality_score < self.thresholds['quality'] + 2:
-            if not thresholds_met['quality']:
-                warnings.append(f"CRITICAL: Quality score ({quality_score:.1f}) below minimum threshold ({self.thresholds['quality']})")
+        if weighted_scores['quality_design'] < self.thresholds['quality_design'] + 2:
+            if not thresholds_met['quality_design']:
+                warnings.append(f"CRITICAL: Quality of design score ({weighted_scores['quality_design']:.1f}) below minimum threshold ({self.thresholds['quality_design']})")
             else:
-                warnings.append(f"Warning: Quality score ({quality_score:.1f}) close to minimum threshold ({self.thresholds['quality']})")
+                warnings.append(f"Warning: Quality of design score ({weighted_scores['quality_design']:.1f}) close to minimum threshold ({self.thresholds['quality_design']})")
+
+        if weighted_scores['partnership'] < self.thresholds['partnership'] + 2:
+            if not thresholds_met['partnership']:
+                warnings.append(f"CRITICAL: Partnership score ({weighted_scores['partnership']:.1f}) below minimum threshold ({self.thresholds['partnership']})")
+            else:
+                warnings.append(f"Warning: Partnership score ({weighted_scores['partnership']:.1f}) close to minimum threshold ({self.thresholds['partnership']})")
 
         if weighted_scores['impact'] < self.thresholds['impact'] + 2:
             if not thresholds_met['impact']:
@@ -688,15 +709,16 @@ class QualityScorer:
             'overall_score': 0,
             'section_scores': {
                 'relevance': 0,
+                'quality_design': 0,
                 'partnership': 0,
-                'impact': 0,
-                'project_management': 0
+                'impact': 0
             },
             'raw_section_scores': {},
             'thresholds_met': {
                 'total': False,
                 'relevance': False,
-                'quality': False,
+                'quality_design': False,
+                'partnership': False,
                 'impact': False,
                 'all_thresholds_met': False
             },
