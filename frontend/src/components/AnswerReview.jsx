@@ -12,6 +12,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/
 import { Progress } from './ui/Progress';
 import { cn } from '../lib/utils';
 import MarkdownRenderer from './ui/MarkdownRenderer';
+import ConversationalAI from './ConversationalAI';
 
 const SECTION_ICONS = {
   project_summary: FileText,
@@ -674,6 +675,13 @@ const AnswerReview = ({ answers, projectData, onEdit, onExport }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Conversational AI Assistant */}
+      <ConversationalAI
+        projectContext={projectData}
+        currentAnswers={editedAnswers}
+        proposalId={answers?.application_id}
+      />
     </motion.div>
   );
 };

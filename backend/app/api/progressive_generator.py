@@ -49,14 +49,14 @@ async def start_generation(
     Start a new progressive generation session
     """
     try:
-        # Define sections order
+        # Define sections order - summary moved to end
         sections_order = [
-            "project_summary",
             "relevance",
             "needs_analysis",
             "partnership",
             "impact",
-            "project_management"
+            "project_management",
+            "project_summary"  # Now generated last with full context
         ]
 
         # Create new generation session

@@ -60,13 +60,14 @@ class AIAutoFillService:
         }
         
         # Process sections in logical order for context building
+        # Summary moved to end as it synthesizes all previous sections
         section_order = [
-            "project_summary",
             "relevance",
             "needs_analysis",
             "partnership",
             "impact",
-            "project_management"
+            "project_management",
+            "project_summary"  # Now generated last with full context
         ]
         
         all_answers = {}

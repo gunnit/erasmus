@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import WorkplanViewer from './WorkplanViewer';
 import QualityScoreCard from './QualityScoreCard';
+import ConversationalAI from './ConversationalAI';
 
 const ProposalDetailNew = () => {
   const [proposal, setProposal] = useState(null);
@@ -909,6 +910,22 @@ const ProposalDetailNew = () => {
           </div>
         ) : null}
       </div>
+
+      {/* Conversational AI Assistant */}
+      <ConversationalAI
+        projectContext={{
+          title: proposal?.title,
+          field: proposal?.field,
+          project_idea: proposal?.project_idea,
+          priorities: proposal?.priorities,
+          target_groups: proposal?.target_groups,
+          partners: proposal?.partners || proposal?.library_partners,
+          budget: proposal?.budget,
+          duration: proposal?.duration
+        }}
+        currentAnswers={proposal?.answers}
+        proposalId={proposal?.id}
+      />
     </div>
   );
 };

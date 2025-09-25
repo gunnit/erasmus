@@ -14,6 +14,7 @@ from app.api import quality_score
 from app.api import payments
 from app.api import admin
 from app.api import partners
+from app.api import conversational_ai
 from app.core.config import settings
 from app.db.database import engine, Base
 
@@ -79,6 +80,7 @@ app.include_router(quality_score.router, prefix="/api/quality-score", tags=["qua
 app.include_router(payments.router, prefix="/api", tags=["payments"])
 app.include_router(admin.router, prefix="/api", tags=["admin"])
 app.include_router(partners.router, tags=["partners"])
+app.include_router(conversational_ai.router, prefix="/api/ai", tags=["conversational-ai"])
 
 @app.get("/")
 async def root():
