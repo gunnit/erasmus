@@ -2,38 +2,6 @@
   "form_type": "KA220-ADU",
   "form_name": "Cooperation partnerships in adult education",
   "sections": {
-    "project_summary": {
-      "title": "Project Summary",
-      "questions": [
-        {
-          "id": "PS-1",
-          "field": "objectives",
-          "question": "Objectives: What do you want to achieve by implementing the project?",
-          "character_limit": 2000,
-          "required": true,
-          "evaluation_weight": 8,
-          "tips": ["Be specific and measurable", "Link to EU priorities", "Show clear outcomes"]
-        },
-        {
-          "id": "PS-2",
-          "field": "implementation",
-          "question": "Implementation: What activities are you going to implement?",
-          "character_limit": 2000,
-          "required": true,
-          "evaluation_weight": 6,
-          "tips": ["List concrete activities", "Show progression", "Include all partners"]
-        },
-        {
-          "id": "PS-3",
-          "field": "results",
-          "question": "Results: What project results and other outcomes do you expect your project to have?",
-          "character_limit": 2000,
-          "required": true,
-          "evaluation_weight": 8,
-          "tips": ["Define tangible outputs", "Include intellectual outputs", "Mention long-term impact"]
-        }
-      ]
-    },
     "relevance": {
       "title": "Relevance of the project",
       "max_score": 30,
@@ -276,6 +244,38 @@
           "required": true,
           "evaluation_weight": 2,
           "tips": ["Participation methods", "Community involvement", "Democratic values"]
+        }
+      ]
+    },
+    "project_summary": {
+      "title": "Project Summary",
+      "questions": [
+        {
+          "id": "PS-1",
+          "field": "objectives",
+          "question": "Objectives: What do you want to achieve by implementing the project?",
+          "character_limit": 500,
+          "required": true,
+          "evaluation_weight": 8,
+          "tips": ["Be concise and clear", "Highlight main goals", "Link to priorities"]
+        },
+        {
+          "id": "PS-2",
+          "field": "implementation",
+          "question": "Implementation: What activities are you going to implement?",
+          "character_limit": 500,
+          "required": true,
+          "evaluation_weight": 6,
+          "tips": ["Summarize key activities", "Show logical flow", "Be brief"]
+        },
+        {
+          "id": "PS-3",
+          "field": "results",
+          "question": "Results: What project results and other outcomes do you expect your project to have?",
+          "character_limit": 500,
+          "required": true,
+          "evaluation_weight": 8,
+          "tips": ["Focus on main outputs", "Be specific", "Show impact"]
         }
       ]
     }

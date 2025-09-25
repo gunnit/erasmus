@@ -237,10 +237,12 @@ IMPORTANT: Generate a focused, concise answer that prioritizes clarity and impac
         Initialize prompts for each section
         """
         return {
-            "project_summary": """This section provides an overview of your project.
-Focus on clarity, coherence, and alignment with priorities.
-Use concrete language and avoid jargon.
-Ensure consistency between objectives, activities, and results.""",
+            "project_summary": """This section provides a CONCISE executive summary of your project.
+IMPORTANT: This summary is generated AFTER all other sections - synthesize the key points.
+Character limit is now 500 characters per question - be EXTREMELY concise.
+Focus on the most impactful elements from the detailed answers already provided.
+Extract and condense the essence of: objectives, activities, and expected results.
+Use bullet-point style thinking to maximize information density.""",
             
             "relevance": """This section carries 30% of the total score.
 Demonstrate deep understanding of EU priorities.
@@ -274,9 +276,9 @@ Show inclusive and green practices."""
         Initialize specific requirements for question types
         """
         return {
-            "objectives": "Start with clear, measurable objectives using SMART criteria. Link each objective to specific EU priorities.",
-            "implementation": "Provide a clear timeline with specific activities, milestones, and deliverables. Show progression and logic.",
-            "results": "List concrete, tangible outputs. Include both immediate results and long-term outcomes. Quantify where possible.",
+            "objectives": "SUMMARY MODE (500 chars max): Extract 3-4 KEY objectives from the full application. Use numbers and concrete targets. Be extremely concise.",
+            "implementation": "SUMMARY MODE (500 chars max): List only the MAIN activities in brief. Focus on core actions. Use abbreviated format.",
+            "results": "SUMMARY MODE (500 chars max): State 3-4 MAIN outputs/outcomes. Use numbers and metrics. Maximum brevity required.",
             "priority_addressing": "Explicitly name each priority and explain detailed alignment. Use priority-specific terminology.",
             "motivation": "Show urgency and importance. Include statistics and evidence. Explain why EU funding is essential.",
             "innovation": "Compare to existing solutions. Highlight unique aspects. Show advancement of state-of-the-art.",

@@ -26,6 +26,7 @@ import PricingPlans from './components/PricingPlans.jsx';
 import PaymentCheckout from './components/PaymentCheckout.jsx';
 import PaymentSuccess from './components/PaymentSuccess.jsx';
 import { Partners } from './components/Partners.jsx';
+import ConversationalAI from './components/ConversationalAI.jsx';
 import { Progress, CircularProgress } from './components/ui/Progress';
 import { Card, CardContent } from './components/ui/Card';
 import { Sparkles, CheckCircle, FileText, Rocket } from 'lucide-react';
@@ -473,6 +474,13 @@ function ProposalCreator() {
           />
         )}
       </main>
+
+      {/* Conversational AI Assistant */}
+      <ConversationalAI
+        projectContext={projectData}
+        currentAnswers={generatedAnswers}
+        proposalId={proposalId}
+      />
     </motion.div>
   );
 }
