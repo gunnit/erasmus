@@ -704,10 +704,37 @@ const HomePage = () => {
             </div>
           </div>
 
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-            <p className="text-sm text-gray-400">
-              © 2025 Get Your Grant. All rights reserved.
-            </p>
+          {/* Legal Details Section */}
+          <div className="border-t border-gray-800 mt-8 pt-8">
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              {/* English Legal Details */}
+              <div className="space-y-1 text-xs text-gray-400">
+                <h5 className="text-white font-semibold text-sm mb-2">GYG S.R.L. - Company Details</h5>
+                <p><span className="text-gray-500">Registered Office:</span> Via Maffei, n. 71, 38067 - Ledro (TN), Italy</p>
+                <p><span className="text-gray-500">Business Registry:</span> Chamber of Commerce of Trento</p>
+                <p><span className="text-gray-500">VAT & Tax ID:</span> 02767760222</p>
+                <p><span className="text-gray-500">Share Capital:</span> €20,000.00 (paid-in €5,000.00)</p>
+                <p><span className="text-gray-500">Phone:</span> +39 0464 508583</p>
+                <p><span className="text-gray-500">PEC Email:</span> GYG.SRL@PEC.IT</p>
+              </div>
+
+              {/* Italian Legal Details */}
+              <div className="space-y-1 text-xs text-gray-400">
+                <h5 className="text-white font-semibold text-sm mb-2">GYG S.R.L. - Dettagli Societari</h5>
+                <p><span className="text-gray-500">Sede:</span> Via Maffei, n. 71, 38067 - Ledro (TN)</p>
+                <p><span className="text-gray-500">Reg. Imprese:</span> CCIAA di Trento</p>
+                <p><span className="text-gray-500">C.F. e P.Iva:</span> 02767760222</p>
+                <p><span className="text-gray-500">Capitale sociale:</span> Euro 20.000,00 versato per Euro 5.000,00</p>
+                <p><span className="text-gray-500">Telefono:</span> 0464 - 508583</p>
+                <p><span className="text-gray-500">Email PEC:</span> GYG.SRL@PEC.IT</p>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <p className="text-sm text-gray-400">
+                © 2025 Get Your Grant - GYG S.R.L. All rights reserved. | Tutti i diritti riservati.
+              </p>
+            </div>
           </div>
         </div>
       </footer>
