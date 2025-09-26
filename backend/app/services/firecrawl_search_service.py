@@ -2,6 +2,7 @@ from typing import Dict, List, Optional
 import logging
 import re
 from firecrawl import Firecrawl
+from firecrawl.v2.types import Document, SearchData
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -25,7 +26,7 @@ class FirecrawlSearchService:
         num_results: int = 10
     ) -> List[Dict]:
         """
-        Search for real partner organizations based on criteria using Firecrawl v2 API
+        Search for real partner organizations based on criteria using Firecrawl v4 API
 
         Args:
             search_criteria: Dict containing search parameters
@@ -40,44 +41,50 @@ class FirecrawlSearchService:
 
         partners = []
 
-        # Build search query based on criteria
+        # Note: Firecrawl v4 search functionality may have limitations
+        # We'll primarily use directory scraping for reliable results
+
+        # Try search first (may timeout or have limitations)
         search_query = self._build_search_query(search_criteria)
+        search_attempted = False
 
-        # First, use Firecrawl v2 search to find relevant organizations
         try:
-            logger.info(f"Searching with Firecrawl v2 API: {search_query}")
+            logger.info(f"Attempting Firecrawl v4 search: {search_query[:100]}...")
 
-            # Use v2 search endpoint with scraping enabled
+            # Use v4 search with shorter timeout
             search_results = self.app.search(
                 query=search_query,
-                limit=min(num_results * 2, 20),  # Get more results to filter
-                scrape_options={'formats': [{'type': 'markdown'}], 'onlyMainContent': True}
+                limit=min(num_results, 10)  # Limit to avoid timeouts
             )
 
-            logger.info(f"Search results type: {type(search_results)}")
+            search_attempted = True
 
-            if search_results and isinstance(search_results, dict):
-                # v2 API returns results in data.web, data.images, data.news structure
-                web_results = search_results.get('data', {}).get('web', [])
+            # Handle v4 SearchData response
+            if search_results:
+                if hasattr(search_results, 'model_dump'):
+                    # Convert Pydantic model to dict
+                    result_dict = search_results.model_dump()
+                    web_results = result_dict.get('web', [])
+                elif hasattr(search_results, 'web'):
+                    # Direct attribute access
+                    web_results = search_results.web or []
+                else:
+                    web_results = []
 
-                if not web_results and 'data' in search_results and isinstance(search_results['data'], list):
-                    # Handle if data is directly a list (backward compatibility)
-                    web_results = search_results['data']
+                logger.info(f"Found {len(web_results)} web search results")
 
-                logger.info(f"Found {len(web_results)} web results")
-
-                for result in web_results:
+                for result in web_results[:num_results]:
                     partner = self._extract_partner_from_result(result, search_criteria)
                     if partner and self._validate_partner(partner):
                         partners.append(partner)
 
         except Exception as e:
-            logger.error(f"Error with Firecrawl v2 search: {str(e)}")
-            # Fall back to directory scraping if search fails
-            partners.extend(await self._scrape_partner_directories(search_criteria, num_results))
+            logger.warning(f"Search feature not available or timed out: {str(e)}")
+            logger.info("Falling back to directory scraping method")
 
-        # If not enough results from search, supplement with directory scraping
+        # Always supplement with directory scraping for better results
         if len(partners) < num_results:
+            logger.info(f"Scraping partner directories to find {num_results - len(partners)} more partners")
             additional_partners = await self._scrape_partner_directories(
                 search_criteria,
                 num_results - len(partners)
@@ -142,27 +149,43 @@ class FirecrawlSearchService:
             try:
                 logger.info(f"Scraping partner directory: {directory_url}")
 
-                # Use v2 scrape method
+                # Use v4 scrape method
                 scraped_data = self.app.scrape(
                     url=directory_url,
-                    formats=[{'type': 'markdown'}, {'type': 'links'}]
+                    formats=['markdown', 'links']
                 )
 
                 if scraped_data is None:
                     logger.warning(f"Firecrawl returned None for URL: {directory_url}")
                     continue
 
-                # Extract partners from scraped content
-                if isinstance(scraped_data, dict):
-                    markdown_content = scraped_data.get('markdown', '')
-                    links = scraped_data.get('links', [])
+                # Handle v4 Document response
+                if scraped_data:
+                    markdown_content = ''
+                    links = []
 
-                    extracted = self._extract_partners_from_content(
-                        markdown_content,
-                        links or [],
-                        search_criteria
-                    )
-                    partners.extend(extracted)
+                    if hasattr(scraped_data, 'model_dump'):
+                        # Convert Pydantic model to dict
+                        data_dict = scraped_data.model_dump()
+                        markdown_content = data_dict.get('markdown', '')
+                        links = data_dict.get('links', [])
+                    elif hasattr(scraped_data, 'markdown'):
+                        # Direct attribute access
+                        markdown_content = scraped_data.markdown or ''
+                        links = scraped_data.links or []
+                    elif isinstance(scraped_data, dict):
+                        # Already a dict
+                        markdown_content = scraped_data.get('markdown', '')
+                        links = scraped_data.get('links', [])
+
+                    if markdown_content:
+                        extracted = self._extract_partners_from_content(
+                            markdown_content,
+                            links or [],
+                            search_criteria
+                        )
+                        partners.extend(extracted)
+                        logger.info(f"Extracted {len(extracted)} partners from {directory_url}")
 
                     if len(partners) >= num_results:
                         break
@@ -614,16 +637,23 @@ class FirecrawlSearchService:
             return partner
 
         try:
-            # Scrape the partner's website for more details using v2 API
+            # Scrape the partner's website for more details using v4 API
             scraped_data = self.app.scrape(
                 url=partner['website'],
-                formats=[{'type': 'markdown'}],
-                only_main_content=True
+                formats=['markdown']
             )
 
-            if scraped_data and 'markdown' in scraped_data:
-                # Extract additional information from scraped content
-                content = scraped_data['markdown'][:2000]  # Limit content size
+            if scraped_data:
+                content = ''
+
+                # Handle v4 Document response
+                if hasattr(scraped_data, 'model_dump'):
+                    data_dict = scraped_data.model_dump()
+                    content = data_dict.get('markdown', '')[:2000]
+                elif hasattr(scraped_data, 'markdown'):
+                    content = (scraped_data.markdown or '')[:2000]
+                elif isinstance(scraped_data, dict) and 'markdown' in scraped_data:
+                    content = scraped_data['markdown'][:2000]
 
                 # Update description if current one is generic
                 if len(partner.get('description', '')) < 100:
