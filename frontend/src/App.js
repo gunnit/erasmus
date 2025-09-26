@@ -30,6 +30,7 @@ import ConversationalAI from './components/ConversationalAI.jsx';
 import { Progress, CircularProgress } from './components/ui/Progress';
 import { Card, CardContent } from './components/ui/Card';
 import { Sparkles, CheckCircle, FileText, Rocket } from 'lucide-react';
+import { AIAssistantButton } from './components/AIAssistant';
 import api from './services/api';
 import './App.css';
 import { fadeInVariants, staggerContainer } from './lib/utils';
@@ -485,11 +486,12 @@ function ProposalCreator() {
   );
 }
 
-function App() {
+// Wrapper component that has access to AuthContext
+function AppWithAuth() {
   return (
-    <Router>
-      <AuthProvider>
-        <Toaster 
+    <>
+      <AIAssistantButton />
+      <Toaster
           position="top-right"
           toastOptions={{
             className: '',
@@ -644,6 +646,15 @@ function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+    </>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <AppWithAuth />
       </AuthProvider>
     </Router>
   );

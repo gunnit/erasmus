@@ -13,7 +13,12 @@ async def get_current_user(
     db: Session = Depends(get_db)
 ) -> User:
     token = credentials.credentials
+    print(f"\n=== AUTH DEBUG ===")
+    print(f"Token received: {token[:30] if token else 'None'}...")
+    print(f"Token length: {len(token) if token else 0}")
+
     payload = verify_token(token)
+    print(f"Payload after verify: {payload}")
     
     if not payload:
         raise HTTPException(

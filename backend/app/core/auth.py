@@ -2,14 +2,12 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-import os
-from dotenv import load_dotenv
+from app.core.config import settings
 
-load_dotenv()
-
-SECRET_KEY = os.getenv("SECRET_KEY", "development-secret-key-change-in-production")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+# Use settings from config.py for consistency
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = settings.ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -31,7 +29,15 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 def verify_token(token: str) -> Optional[dict]:
     try:
+        print(f"Verifying token with SECRET_KEY: {SECRET_KEY[:10]}...")
+        print(f"Algorithm: {ALGORITHM}")
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print(f"Token decoded successfully: {payload}")
         return payload
-    except JWTError:
+    except JWTError as e:
+        print(f"JWT Error: {e}")
+        print(f"Error type: {type(e).__name__}")
+        return None
+    except Exception as e:
+        print(f"Unexpected error in verify_token: {e}")
         return None

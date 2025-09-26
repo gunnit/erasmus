@@ -39,7 +39,7 @@ async def test_openai_config():
 
         # Try a simple completion
         response = await client.chat.completions.create(
-            model="gpt-4-turbo",
+            model="gpt-4.1-2025-04-14",
             messages=[
                 {"role": "system", "content": "You are a test assistant."},
                 {"role": "user", "content": "Say 'API is working!' in 3 words."}

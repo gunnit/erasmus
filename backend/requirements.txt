@@ -17,4 +17,4 @@ alembic==1.13.1
 email-validator==2.1.0
 beautifulsoup4==4.12.3
 aiohttp==3.9.3
-firecrawl-py==1.4.0
+firecrawl-py==1.5.2

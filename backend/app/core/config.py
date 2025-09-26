@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     # OpenAI API
     OPENAI_API_KEY: str
-    OPENAI_MODEL: str = "gpt-4-turbo"  # Updated model name
+    OPENAI_MODEL: str = "gpt-4.1-2025-04-14"  # Updated model name
 
     # Firecrawl API for web search and crawling
     FIRECRAWL_API_KEY: Optional[str] = None
@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     DATABASE_URL: Optional[str] = "sqlite:///./erasmus_forms.db"
 
     # Security
-    SECRET_KEY: str = "your-secret-key-change-in-production"
+    SECRET_KEY: str = "development-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 

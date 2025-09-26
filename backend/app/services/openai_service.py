@@ -185,6 +185,66 @@ class OpenAIService:
 
             raise
 
+    def generate_chat_completion(
+        self,
+        messages: List[Dict[str, str]],
+        max_tokens: int = 1000,
+        temperature: float = 0.7
+    ) -> str:
+        """
+        Generate a chat completion using OpenAI API (synchronous version)
+
+        Args:
+            messages: List of message dictionaries with 'role' and 'content'
+            max_tokens: Maximum tokens to generate
+            temperature: Temperature for generation (0-1)
+
+        Returns:
+            The generated text
+        """
+        try:
+            import openai
+
+            # Use synchronous client for this method
+            client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+
+            logger.info("Generating chat completion with OpenAI")
+            response = client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature
+            )
+
+            # Check if we have a valid response
+            if not response.choices:
+                logger.error("OpenAI response has no choices")
+                raise ValueError("OpenAI returned no response choices")
+
+            answer = response.choices[0].message.content
+
+            # Check if the answer is empty or None
+            if answer is None:
+                logger.error("OpenAI returned None as message content")
+                raise ValueError("OpenAI returned empty response")
+
+            logger.info(f"Successfully generated chat completion of length {len(answer) if answer else 0}")
+            return answer
+
+        except Exception as e:
+            error_msg = str(e)
+            logger.error(f"Error generating chat completion: {error_msg}")
+
+            # Handle quota exceeded error gracefully
+            if "insufficient_quota" in error_msg.lower() or "exceeded your current quota" in error_msg.lower():
+                logger.warning("OpenAI API quota exceeded - returning fallback message")
+                raise ValueError(
+                    "OpenAI API quota has been exceeded. Please check your OpenAI account billing and usage limits. "
+                    "Visit https://platform.openai.com/account/billing to add credits or upgrade your plan."
+                )
+
+            raise
+
     async def generate_answer(
         self,
         question: Dict,

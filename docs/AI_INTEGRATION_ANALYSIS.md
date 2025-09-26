@@ -450,9 +450,9 @@ def ask_assistant(abstract_id, user, prompt: str):
 ```python
 # Proposed model selection
 MODELS = {
-    'analysis': 'gpt-4o-mini',      # Fast, cheap for analysis
-    'generation': 'gpt-4o',         # High quality for content
-    'review': 'gpt-4-turbo',        # Thorough for final review
+    'analysis': 'gpt-4.1-2025-04-14',      # Fast, cheap for analysis
+    'generation': 'gpt-4.1-2025-04-14',         # High quality for content
+    'review': 'gpt-4.1-2025-04-14',        # Thorough for final review
 }
 ```
 

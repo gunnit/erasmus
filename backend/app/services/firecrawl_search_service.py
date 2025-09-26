@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional
 import logging
 import re
-from firecrawl import FirecrawlApp
+from firecrawl import Firecrawl
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ class FirecrawlSearchService:
             self.app = None
         else:
             self.enabled = True
-            self.app = FirecrawlApp(api_key=settings.FIRECRAWL_API_KEY)
+            self.app = Firecrawl(api_key=settings.FIRECRAWL_API_KEY)
 
     async def search_partners(
         self,
@@ -25,7 +25,7 @@ class FirecrawlSearchService:
         num_results: int = 10
     ) -> List[Dict]:
         """
-        Search for real partner organizations based on criteria
+        Search for real partner organizations based on criteria using Firecrawl v2 API
 
         Args:
             search_criteria: Dict containing search parameters
@@ -40,57 +40,138 @@ class FirecrawlSearchService:
 
         partners = []
 
-        # Use known partner directories instead of search
+        # Build search query based on criteria
+        search_query = self._build_search_query(search_criteria)
+
+        # First, use Firecrawl v2 search to find relevant organizations
+        try:
+            logger.info(f"Searching with Firecrawl v2 API: {search_query}")
+
+            # Use v2 search endpoint with scraping enabled
+            search_results = self.app.search(
+                query=search_query,
+                limit=min(num_results * 2, 20),  # Get more results to filter
+                scrape_options={'formats': [{'type': 'markdown'}], 'onlyMainContent': True}
+            )
+
+            logger.info(f"Search results type: {type(search_results)}")
+
+            if search_results and isinstance(search_results, dict):
+                # v2 API returns results in data.web, data.images, data.news structure
+                web_results = search_results.get('data', {}).get('web', [])
+
+                if not web_results and 'data' in search_results and isinstance(search_results['data'], list):
+                    # Handle if data is directly a list (backward compatibility)
+                    web_results = search_results['data']
+
+                logger.info(f"Found {len(web_results)} web results")
+
+                for result in web_results:
+                    partner = self._extract_partner_from_result(result, search_criteria)
+                    if partner and self._validate_partner(partner):
+                        partners.append(partner)
+
+        except Exception as e:
+            logger.error(f"Error with Firecrawl v2 search: {str(e)}")
+            # Fall back to directory scraping if search fails
+            partners.extend(await self._scrape_partner_directories(search_criteria, num_results))
+
+        # If not enough results from search, supplement with directory scraping
+        if len(partners) < num_results:
+            additional_partners = await self._scrape_partner_directories(
+                search_criteria,
+                num_results - len(partners)
+            )
+            partners.extend(additional_partners)
+
+        # Remove duplicates and limit results
+        partners = self._deduplicate_partners(partners)
+        return partners[:num_results]
+
+    def _build_search_query(self, criteria: Dict) -> str:
+        """Build an optimized search query from criteria"""
+        query_parts = []
+
+        # Add expertise areas
+        if criteria.get('expertise_areas'):
+            areas = ' OR '.join(f'"{area}"' for area in criteria['expertise_areas'][:3])
+            query_parts.append(f"({areas})")
+
+        # Add partner type
+        partner_type = criteria.get('partner_type', '')
+        if partner_type:
+            type_keywords = {
+                'NGO': 'NGO OR "non-profit" OR foundation OR association',
+                'EDUCATIONAL_INSTITUTION': 'university OR college OR school OR "higher education"',
+                'RESEARCH_CENTER': 'research OR laboratory OR institute',
+                'PUBLIC_INSTITUTION': 'government OR ministry OR "public institution"',
+                'PRIVATE_COMPANY': 'company OR enterprise OR business',
+                'SOCIAL_ENTERPRISE': '"social enterprise" OR cooperative'
+            }
+            if partner_type in type_keywords:
+                query_parts.append(f"({type_keywords[partner_type]})")
+
+        # Add country if specified
+        countries = criteria.get('countries', [])
+        if countries:
+            country_str = ' OR '.join(f'"{country}"' for country in countries[:2])
+            query_parts.append(f"({country_str})")
+
+        # Add base terms for Erasmus+ context
+        query_parts.append('"Erasmus+" OR "adult education" OR "European partner"')
+
+        # Join all parts
+        query = ' '.join(query_parts)
+
+        # Limit query length
+        if len(query) > 200:
+            query = query[:200]
+
+        return query
+
+    async def _scrape_partner_directories(
+        self,
+        search_criteria: Dict,
+        num_results: int
+    ) -> List[Dict]:
+        """Fallback method to scrape known partner directories"""
+        partners = []
         partner_directories = self._get_partner_directories(search_criteria)
 
-        for directory_url in partner_directories[:5]:  # Limit to avoid too many API calls
+        for directory_url in partner_directories[:3]:  # Limit API calls
             try:
                 logger.info(f"Scraping partner directory: {directory_url}")
 
-                # Scrape the directory page
-                scraped_data = self.app.scrape_url(
+                # Use v2 scrape method
+                scraped_data = self.app.scrape(
                     url=directory_url,
-                    params={'formats': ['markdown', 'links']}
+                    formats=[{'type': 'markdown'}, {'type': 'links'}]
                 )
 
-                logger.info(f"Scraped data type: {type(scraped_data)}")
-
-                # Handle None response from scrape_url
                 if scraped_data is None:
                     logger.warning(f"Firecrawl returned None for URL: {directory_url}")
                     continue
 
                 # Extract partners from scraped content
                 if isinstance(scraped_data, dict):
-                    # Extract from markdown content
-                    if 'markdown' in scraped_data:
-                        extracted = self._extract_partners_from_content(
-                            scraped_data['markdown'],
-                            scraped_data.get('links') or [],  # Ensure we always pass a list, not None
-                            search_criteria
-                        )
-                        partners.extend(extracted)
+                    markdown_content = scraped_data.get('markdown', '')
+                    links = scraped_data.get('links', [])
 
-                    # Also check for data key (v1.4.0 format)
-                    elif 'data' in scraped_data:
-                        data = scraped_data['data']
-                        if isinstance(data, dict) and 'markdown' in data:
-                            extracted = self._extract_partners_from_content(
-                                data['markdown'],
-                                data.get('links') or [],  # Ensure we always pass a list, not None
-                                search_criteria
-                            )
-                            partners.extend(extracted)
+                    extracted = self._extract_partners_from_content(
+                        markdown_content,
+                        links or [],
+                        search_criteria
+                    )
+                    partners.extend(extracted)
+
+                    if len(partners) >= num_results:
+                        break
 
             except Exception as e:
-                logger.error(f"Error searching with Firecrawl: {str(e)}")
+                logger.error(f"Error scraping directory {directory_url}: {str(e)}")
                 continue
 
-        # Remove duplicates based on name and website
-        partners = self._deduplicate_partners(partners)
-
-        # Limit to requested number
-        return partners[:num_results]
+        return partners
 
     def _get_partner_directories(self, criteria: Dict) -> List[str]:
         """Get URLs of known partner directories to scrape"""
@@ -528,18 +609,16 @@ class FirecrawlSearchService:
         return unique_partners
 
     async def enrich_partner_with_crawl(self, partner: Dict) -> Dict:
-        """Enrich partner data by crawling their website"""
+        """Enrich partner data by crawling their website using Firecrawl v2"""
         if not self.enabled or not partner.get('website'):
             return partner
 
         try:
-            # Scrape the partner's website for more details
-            scraped_data = self.app.scrape_url(
+            # Scrape the partner's website for more details using v2 API
+            scraped_data = self.app.scrape(
                 url=partner['website'],
-                params={
-                    'formats': ['markdown'],
-                    'onlyMainContent': True
-                }
+                formats=[{'type': 'markdown'}],
+                only_main_content=True
             )
 
             if scraped_data and 'markdown' in scraped_data:

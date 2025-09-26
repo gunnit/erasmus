@@ -15,6 +15,7 @@ from app.api import payments
 from app.api import admin
 from app.api import partners
 from app.api import conversational_ai
+from app.api import ai_assistant
 from app.core.config import settings
 from app.db.database import engine, Base
 
@@ -81,6 +82,7 @@ app.include_router(payments.router, prefix="/api", tags=["payments"])
 app.include_router(admin.router, prefix="/api", tags=["admin"])
 app.include_router(partners.router, tags=["partners"])
 app.include_router(conversational_ai.router, prefix="/api/ai", tags=["conversational-ai"])
+app.include_router(ai_assistant.router, prefix="/api/ai-assistant", tags=["ai-assistant"])
 
 @app.get("/")
 async def root():
