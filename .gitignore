@@ -113,6 +113,13 @@ data/temp/
 uploads/
 downloads/
 
+# Reorganized structure - exclude generated files
+/backend/data/*.db
+/backend/data/*.sqlite*
+/backend/tests/results/*.json
+/tests/results/*.json
+**/test_results_*.json
+
 # Jupyter Notebooks
 .ipynb_checkpoints
 *.ipynb

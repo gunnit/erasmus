@@ -23,6 +23,130 @@ npm install
 npm start
 ```
 
+## Project Structure
+
+```
+/mnt/c/Dev/gyg4/
+├── README.md                    # Project documentation
+├── CLAUDE.md                    # AI assistant guide (this file)
+├── build.sh, start.sh          # Build and startup scripts
+├── render.yaml                 # Render deployment configuration
+│
+├── /docs/                      # Organized documentation
+│   ├── /erasmus/              # Erasmus+ program documentation
+│   │   ├── ERASMUS_PRIORITIES_2024.md
+│   │   ├── ERASMUS_PROGRAMME_STRUCTURE.md
+│   │   ├── EVALUATION_CRITERIA_SCORING.md
+│   │   ├── FUNDING_RULES_BUDGET_GUIDELINES.md
+│   │   └── PARTNERSHIP_TYPES_ANALYSIS.md
+│   ├── /developer/            # Developer guides and API docs
+│   │   ├── DEVELOPER_GUIDE.md
+│   │   ├── SETUP.md
+│   │   ├── API.md
+│   │   ├── DATABASE_SCHEMA_ANALYSIS.md
+│   │   ├── AI_INTEGRATION_ANALYSIS.md
+│   │   ├── AI_REASONING_PIPELINE.md
+│   │   ├── VECTOR_EMBEDDINGS_SYSTEM.md
+│   │   ├── VECTOR_STORE_INTEGRATION.md
+│   │   ├── KNOWLEDGE_BASE_SCHEMA.md
+│   │   ├── COMPLIANCE_PROMPTS.md
+│   │   ├── IMPROVEMENTS.md
+│   │   ├── PROMPT_TEMPLATES.md
+│   │   └── quality-score-predictor-plan.md
+│   ├── /deployment/           # Deployment documentation
+│   │   ├── DEPLOYMENT_CHECKLIST.md
+│   │   └── PAYPAL_SANDBOX_SETUP.md
+│   └── /user/                 # User documentation
+│       ├── USER_GUIDE.md
+│       └── USER_JOURNEY_ANALYSIS.md
+│
+├── /reports/                   # Test and audit reports
+│   ├── /agent-tests/          # Agent testing reports
+│   │   ├── AGENT_2_AI_GENERATION_TEST_REPORT.md
+│   │   ├── AGENT_2_QUICK_REFERENCE.md
+│   │   ├── AGENT_2_SUMMARY.txt
+│   │   ├── AGENT_6_END_TO_END_USER_FLOW_REPORT.md
+│   │   ├── AGENT_6_QUICK_REFERENCE.md
+│   │   └── COMPREHENSIVE_TESTING_REPORT.md
+│   ├── /audits/               # Audit reports
+│   │   └── AUDIT_REPORT.md
+│   ├── /fixes/                # Fix documentation
+│   │   ├── CRITICAL_FIXES_APPLIED.md
+│   │   ├── FIXES_APPLIED.md
+│   │   ├── FIXES_APPLIED_2025-10-10.md
+│   │   └── IMMEDIATE_ACTION_PLAN.md
+│   └── /backend/              # Backend-specific reports
+│       └── AGENT3_BACKEND_TEST_REPORT.md
+│
+├── /tests/                     # Integration tests (root level)
+│   ├── test_api_endpoints.py
+│   ├── test_proposal.py
+│   └── /results/              # Test result files
+│
+├── /scripts/                   # Utility scripts (root level)
+│   └── save_proposal_direct.py
+│
+├── /backend/
+│   ├── requirements.txt
+│   ├── alembic.ini
+│   ├── .env, .env.example
+│   │
+│   ├── /app/                  # Main application code
+│   │   ├── main.py
+│   │   ├── /api/              # API endpoints
+│   │   ├── /core/             # Core configuration
+│   │   ├── /db/               # Database config
+│   │   ├── /models/           # Data models
+│   │   ├── /schemas/          # Pydantic schemas
+│   │   └── /services/         # Business logic
+│   │
+│   ├── /alembic/              # Database migrations
+│   │
+│   ├── /tests/                # Backend tests
+│   │   ├── test_autofill.py
+│   │   ├── test_basic.py
+│   │   ├── test_api_integrity.py
+│   │   ├── test_dashboard_metrics.py
+│   │   ├── test_error_handling.py
+│   │   ├── test_parallel_generation.py
+│   │   ├── test_partner_linking.py
+│   │   ├── test_progressive_generation.py
+│   │   ├── test_proposal_save.py
+│   │   ├── test_quality_scoring.py
+│   │   ├── /agent-tests/      # Agent-specific tests
+│   │   │   ├── test_agent3_api.py
+│   │   │   ├── test_render_ai_generation.py
+│   │   │   └── test_render_ai_simple.py
+│   │   ├── /integration/      # Service integration tests
+│   │   │   ├── test_ai_assistant.py
+│   │   │   ├── test_crawler_improved.py
+│   │   │   ├── test_direct_firecrawl.py
+│   │   │   ├── test_firecrawl_v2.py
+│   │   │   ├── test_openai_config.py
+│   │   │   └── test_real_partner_search.py
+│   │   └── /results/          # Test result JSON files
+│   │
+│   ├── /scripts/              # Backend utility scripts
+│   │   ├── check_openai_env.py
+│   │   ├── check_render_config.py
+│   │   ├── validate_autofill.py
+│   │   ├── migrate_partners.py
+│   │   ├── /migrations/       # Migration runner scripts
+│   │   │   ├── run_migration.py
+│   │   │   ├── run_migrations.py
+│   │   │   └── run_all_migrations.py
+│   │   └── start.sh
+│   │
+│   └── /data/                 # Data files
+│       └── erasmus_forms.db   # Local development database
+│
+└── /frontend/
+    ├── package.json
+    ├── tailwind.config.js
+    ├── .env, .env.production
+    └── /src/                  # Application code
+```
+
 ## Architecture
 
 ### Technology Stack
