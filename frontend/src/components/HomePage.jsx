@@ -27,6 +27,7 @@ import {
   Activity
 } from 'lucide-react'
 import api from '../services/api'
+import styles from './HomePage.module.css'
 
 const HomePage = () => {
   const navigate = useNavigate()
@@ -248,8 +249,7 @@ const HomePage = () => {
           <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
             <div className="aspect-w-16 aspect-h-9">
               <iframe
-                className="w-full h-full"
-                style={{ minHeight: '450px' }}
+                className={`w-full h-full ${styles.videoEmbed}`}
                 src="https://www.youtube.com/embed/fUCeDmkRbuw"
                 title="Get Your Grant Platform Explainer"
                 frameBorder="0"

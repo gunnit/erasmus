@@ -8,7 +8,6 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard.jsx';
 import HomeRouter from './components/HomeRouter.jsx';
-import ProposalDetail from './components/ProposalDetail';
 import ProposalDetailNew from './components/ProposalDetailNew';
 import ProposalAnswers from './components/ProposalAnswers';
 import ProposalEdit from './components/ProposalEdit';
@@ -494,21 +493,16 @@ function AppWithAuth() {
       <Toaster
           position="top-right"
           toastOptions={{
-            className: '',
-            style: {
-              background: 'white',
-              color: '#1f2937',
-              padding: '16px',
-              borderRadius: '12px',
-              boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-            },
+            className: 'toast-container',
             success: {
+              className: 'toast-success',
               iconTheme: {
                 primary: '#10b981',
                 secondary: 'white',
               },
             },
             error: {
+              className: 'toast-error',
               iconTheme: {
                 primary: '#ef4444',
                 secondary: 'white',

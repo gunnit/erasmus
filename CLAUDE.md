@@ -78,6 +78,23 @@ npm start
 **Context**
 - `AuthContext.js` - Authentication state management
 
+**CSS Architecture**
+- `index.css` - Global Tailwind CSS configuration
+- `App.css` - App-level styles (Toaster, global components)
+- Component CSS Modules:
+  - `HomePage.module.css` - Static styles for HomePage component
+  - `ProjectInputForm.module.css` - Static styles for ProjectInputForm component
+
+**Important: Dynamic Inline Styles**
+Most inline styles in this codebase are **intentionally dynamic** and cannot be extracted to CSS files. These include:
+- Parallax scroll effects using `scrollY` state (HomePage.jsx)
+- Dynamic progress bars using `progress` state (Dashboard.jsx, ProposalDetailNew.js)
+- Dynamic width/height based on completion percentages
+- Dynamic colors from data objects
+- Transform animations based on component state
+
+These styles MUST remain inline as they use JavaScript-computed values. Only static inline styles have been extracted to CSS modules.
+
 ## Key API Endpoints
 
 ### Form Generation

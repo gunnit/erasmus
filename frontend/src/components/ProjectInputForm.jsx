@@ -15,6 +15,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/
 import { cn } from '../lib/utils';
 import { ERASMUS_PRIORITIES_2025, PRIORITY_RULES } from '../config/erasmusPriorities';
 import { validateProposalForm } from '../utils/validation';
+import styles from './ProjectInputForm.module.css';
 
 // Using priorities from centralized configuration
 const PRIORITIES = ERASMUS_PRIORITIES_2025;
@@ -1165,7 +1166,7 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
             </div>
 
             {/* Partner List */}
-            <div className="p-6 overflow-y-auto" style={{ maxHeight: '400px' }}>
+            <div className={`p-6 overflow-y-auto ${styles.partnerLibraryList}`}>
               {loadingLibrary ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-blue-600" />

@@ -12,3 +12,22 @@
   font-size: calc(10px + 2vmin);
   color: white;
 }
+
+/* Toaster styles */
+.toast-container {
+  background: white;
+  color: #1f2937;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.toast-success .toast-icon {
+  color: #10b981;
+  background: white;
+}
+
+.toast-error .toast-icon {
+  color: #ef4444;
+  background: white;
+}
