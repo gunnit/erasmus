@@ -119,6 +119,17 @@ const ProposalDetailNew = () => {
     setGeneratingPdf(true);
     try {
       const blob = await api.getProposalPDF(id);
+
+      // Validate blob type
+      if (!blob || blob.type !== 'application/pdf') {
+        throw new Error('Invalid file type received. Expected PDF.');
+      }
+
+      // Validate blob size (should be > 0)
+      if (blob.size === 0) {
+        throw new Error('Received empty PDF file');
+      }
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
@@ -126,10 +137,30 @@ const ProposalDetailNew = () => {
       a.download = `${proposal.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_proposal.pdf`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
+
+      // Cleanup
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }, 100);
+
       toast.success('PDF exported successfully');
     } catch (error) {
-      toast.error('Failed to export PDF');
+      console.error('PDF export error:', error);
+
+      let errorMessage = 'Failed to export PDF';
+
+      if (error.response?.status === 404) {
+        errorMessage = 'PDF not found. Please regenerate your proposal answers first.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Server error while generating PDF. Please try again in a moment.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'You don\'t have permission to export this proposal.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage, { duration: 5000 });
     } finally {
       setGeneratingPdf(false);
     }

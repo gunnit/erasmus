@@ -314,31 +314,43 @@ class PayPalService:
 
     async def use_proposal_credit(self, db: Session, user_id: int) -> bool:
         """Decrement proposal credit when a proposal is generated"""
+        logger.info(f"[CREDIT_DEDUCTION] Starting credit deduction for user_id={user_id}")
+
         subscription = db.query(Subscription).filter_by(
             user_id=user_id,
             is_active=True
         ).first()
 
         if not subscription:
+            logger.warning(f"[CREDIT_DEDUCTION] No active subscription found for user_id={user_id}")
             return False
 
+        logger.info(f"[CREDIT_DEDUCTION] Found subscription: id={subscription.id}, used={subscription.proposals_used}, limit={subscription.proposals_limit}")
+
         if subscription.proposals_used >= subscription.proposals_limit:
+            logger.warning(f"[CREDIT_DEDUCTION] Proposal limit reached for user_id={user_id}: {subscription.proposals_used}/{subscription.proposals_limit}")
             return False
 
         if subscription.expires_at < datetime.utcnow():
+            logger.warning(f"[CREDIT_DEDUCTION] Subscription expired for user_id={user_id}: expires_at={subscription.expires_at}")
             subscription.is_active = False
             db.commit()
             return False
 
         # Increment proposals used
+        old_used = subscription.proposals_used
         subscription.proposals_used += 1
+        logger.info(f"[CREDIT_DEDUCTION] Incrementing proposals_used: {old_used} -> {subscription.proposals_used}")
 
         # Update user's remaining proposals
         user = db.query(User).filter_by(id=user_id).first()
         if user:
+            old_remaining = user.proposals_remaining
             user.proposals_remaining = subscription.proposals_limit - subscription.proposals_used
+            logger.info(f"[CREDIT_DEDUCTION] Updating user proposals_remaining: {old_remaining} -> {user.proposals_remaining}")
 
         db.commit()
+        logger.info(f"[CREDIT_DEDUCTION] Successfully deducted credit for user_id={user_id}")
         return True
 
     async def get_user_subscription_status(self, db: Session, user_id: int) -> Dict:

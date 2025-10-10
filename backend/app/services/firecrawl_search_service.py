@@ -13,12 +13,24 @@ class FirecrawlSearchService:
 
     def __init__(self):
         if not settings.FIRECRAWL_API_KEY:
-            logger.warning("FIRECRAWL_API_KEY is not set, web search functionality will be limited")
+            logger.warning("FIRECRAWL_API_KEY is not set in environment variables")
+            logger.warning("Partner search functionality will be disabled")
+            self.enabled = False
+            self.app = None
+        elif settings.FIRECRAWL_API_KEY == "fc-your-firecrawl-api-key-here":
+            logger.error("FIRECRAWL_API_KEY is still set to placeholder value")
+            logger.error("Please set a valid Firecrawl API key from https://firecrawl.dev")
             self.enabled = False
             self.app = None
         else:
-            self.enabled = True
-            self.app = Firecrawl(api_key=settings.FIRECRAWL_API_KEY)
+            try:
+                self.enabled = True
+                self.app = Firecrawl(api_key=settings.FIRECRAWL_API_KEY)
+                logger.info("Firecrawl service initialized successfully")
+            except Exception as e:
+                logger.error(f"Failed to initialize Firecrawl service: {str(e)}")
+                self.enabled = False
+                self.app = None
 
     async def search_partners(
         self,

@@ -14,6 +14,7 @@ import { Input, Textarea } from './ui/Input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/Card';
 import { cn } from '../lib/utils';
 import { ERASMUS_PRIORITIES_2025, PRIORITY_RULES } from '../config/erasmusPriorities';
+import { validateProposalForm } from '../utils/validation';
 
 // Using priorities from centralized configuration
 const PRIORITIES = ERASMUS_PRIORITIES_2025;
@@ -43,6 +44,7 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
   const [librarySearchQuery, setLibrarySearchQuery] = useState('');
   const [libraryFilterType, setLibraryFilterType] = useState('');
   const [libraryFilterCountry, setLibraryFilterCountry] = useState('');
+  const [validationErrors, setValidationErrors] = useState({});
   const [formData, setFormData] = useState(initialData || {
     title: '',
     project_idea: '',
@@ -271,15 +273,42 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
   };
 
   const validateSection = (sectionIndex) => {
+    const validation = validateProposalForm(formData);
+    setValidationErrors(validation.errors);
+
     switch (sectionIndex) {
-      case 0:
-        return formData.title && formData.project_idea;
-      case 1:
-        return formData.lead_organization.name && formData.lead_organization.country;
-      case 2:
-        return formData.selected_priorities.length >= 1;
-      case 3:
-        return formData.target_groups;
+      case 0: // Basic info
+        const basicErrors = ['title', 'project_idea', 'duration_months', 'budget_eur'];
+        const hasBasicErrors = basicErrors.some(key => validation.errors[key]);
+        if (hasBasicErrors) {
+          const errorMessages = basicErrors
+            .filter(key => validation.errors[key])
+            .map(key => validation.errors[key]);
+          toast.error(errorMessages[0] || 'Please fill in all required fields');
+          return false;
+        }
+        return true;
+      case 1: // Organizations
+        const orgErrors = Object.keys(validation.errors).filter(key =>
+          key.includes('organization') || key.includes('partner')
+        );
+        if (orgErrors.length > 0) {
+          toast.error(validation.errors[orgErrors[0]] || 'Please complete organization details');
+          return false;
+        }
+        return true;
+      case 2: // Priorities
+        if (validation.errors.selected_priorities) {
+          toast.error(validation.errors.selected_priorities);
+          return false;
+        }
+        return true;
+      case 3: // Final details
+        if (validation.errors.target_groups) {
+          toast.error(validation.errors.target_groups);
+          return false;
+        }
+        return true;
       default:
         return true;
     }

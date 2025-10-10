@@ -1,8 +1,9 @@
 import json
 from typing import Dict, Any, List
-import openai
+from openai import OpenAI
 import os
 from ..db.models import Partner
+from ..core.config import settings
 
 class PartnerAffinityService:
     """Service to calculate affinity between partners and projects using AI"""
@@ -11,7 +12,8 @@ class PartnerAffinityService:
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
         if not self.openai_api_key:
             raise ValueError("OPENAI_API_KEY environment variable is not set")
-        openai.api_key = self.openai_api_key
+        self.client = OpenAI(api_key=self.openai_api_key)
+        self.model = settings.OPENAI_MODEL
 
     async def calculate_affinity(self, partner: Partner, project_context: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -39,19 +41,19 @@ class PartnerAffinityService:
             # Create the prompt for affinity analysis
             prompt = self._create_affinity_prompt(partner_info, project_context)
 
-            # Call OpenAI API
-            response = openai.ChatCompletion.create(
-                model="gpt-4",
+            # Call OpenAI API (GPT-5 compatible)
+            response = self.client.chat.completions.create(
+                model=self.model,
                 messages=[
                     {"role": "system", "content": "You are an expert in analyzing partner compatibility for Erasmus+ projects. Provide detailed analysis of how well a partner fits with a project."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.3,
-                max_tokens=800
+                max_output_tokens=800,
+                reasoning_effort="medium"  # Use medium reasoning for analysis
             )
 
             # Parse the response
-            result = self._parse_affinity_response(response.choices[0].message['content'])
+            result = self._parse_affinity_response(response.choices[0].message.content)
 
             return result
 
@@ -182,18 +184,18 @@ Format as a JSON list of improvements with priority (high/medium/low).
 """
 
         try:
-            response = openai.ChatCompletion.create(
-                model="gpt-4",
+            response = self.client.chat.completions.create(
+                model=self.model,
                 messages=[
                     {"role": "system", "content": "You are an Erasmus+ partnership expert."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.3,
-                max_tokens=400
+                max_output_tokens=400,
+                reasoning_effort="medium"
             )
 
             # Parse and return suggestions
-            suggestions = response.choices[0].message['content']
+            suggestions = response.choices[0].message.content
             return {"suggestions": suggestions}
 
         except Exception as e:

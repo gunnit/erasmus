@@ -108,8 +108,8 @@ class AIAutoFillService:
         project_idea = project_context.get('project_idea', '')
         
         prompt = self.prompts.get_priority_analysis_prompt(priorities, project_idea)
-        
-        response = await self._call_ai(prompt, temperature=0.3)
+
+        response = await self._call_ai(prompt, reasoning_effort="low", max_output_tokens=1000)
         
         try:
             return json.loads(response)
@@ -128,8 +128,8 @@ class AIAutoFillService:
         partners = project_context.get('partners', [])
         
         prompt = self.prompts.get_partnership_analysis_prompt(lead_org, partners)
-        
-        response = await self._call_ai(prompt, temperature=0.3)
+
+        response = await self._call_ai(prompt, reasoning_effort="low", max_output_tokens=1000)
         
         try:
             return json.loads(response)
@@ -148,8 +148,8 @@ class AIAutoFillService:
         field = project_context.get('field', 'Adult Education')
         
         prompt = self.prompts.get_innovation_analysis_prompt(project_idea, field)
-        
-        response = await self._call_ai(prompt, temperature=0.5)
+
+        response = await self._call_ai(prompt, reasoning_effort="medium", max_output_tokens=1000)
         
         try:
             return json.loads(response)
@@ -320,24 +320,24 @@ class AIAutoFillService:
         # Get optimized parameters for this question type
         params = self._get_question_parameters(question, section_key)
 
-        # Generate answer with optimized parameters
+        # Generate answer with optimized parameters (GPT-5)
         try:
             response = await self._call_ai(
                 prompt,
-                temperature=params['temperature'],
-                max_tokens=params['max_tokens']
+                reasoning_effort=params['reasoning_effort'],
+                max_output_tokens=params['max_output_tokens']
             )
 
             # Validate response quality
             if len(response) > 50:  # Minimum quality check
                 return response
             else:
-                # If response is too short, try again with higher temperature
-                logger.warning(f"Response too short for {question['field']}, retrying with higher temperature")
+                # If response is too short, try again with higher reasoning
+                logger.warning(f"Response too short for {question['field']}, retrying with higher reasoning effort")
                 response = await self._call_ai(
                     prompt,
-                    temperature=min(params['temperature'] + 0.2, 1.0),
-                    max_tokens=params['max_tokens']
+                    reasoning_effort="high",  # Use maximum reasoning for retry
+                    max_output_tokens=params['max_output_tokens']
                 )
                 return response
 
@@ -352,66 +352,65 @@ class AIAutoFillService:
         field = question['field'].lower()
         character_limit = question.get('character_limit', 3000)
 
-        # Base parameters - using // 4 for more concise answers
+        # Base parameters (GPT-5: using reasoning_effort instead of temperature)
         params = {
-            'temperature': 0.7,
-            'max_tokens': min(character_limit // 4, 1200)  # More conservative token estimate for conciseness
+            'reasoning_effort': 'medium',
+            'max_output_tokens': min(character_limit // 4, 1200)
         }
 
         # Question-specific optimizations
         if section_key == 'project_summary':
-            # Summary questions need concise, clear answers
-            params['temperature'] = 0.6
-            params['max_tokens'] = min(character_limit // 4, 1000)
+            params['reasoning_effort'] = 'medium'
+            params['max_output_tokens'] = min(character_limit // 4, 1000)
 
         elif section_key == 'relevance':
-            # Relevance questions need analytical, focused answers
-            params['temperature'] = 0.7
-            params['max_tokens'] = min(character_limit // 4, 1200)
+            params['reasoning_effort'] = 'medium'
+            params['max_output_tokens'] = min(character_limit // 4, 1200)
 
         elif section_key == 'needs_analysis':
-            # Needs analysis requires data-driven responses
-            params['temperature'] = 0.5
-            params['max_tokens'] = min(character_limit // 4, 1100)
+            params['reasoning_effort'] = 'medium'
+            params['max_output_tokens'] = min(character_limit // 4, 1100)
 
         elif section_key == 'partnership':
-            # Partnership questions need structured, clear answers
-            params['temperature'] = 0.6
-            params['max_tokens'] = min(character_limit // 4, 1000)
+            params['reasoning_effort'] = 'medium'
+            params['max_output_tokens'] = min(character_limit // 4, 1000)
 
         elif section_key == 'impact':
-            # Impact questions need focused, measurable outcomes
-            params['temperature'] = 0.8
-            params['max_tokens'] = min(character_limit // 4, 1200)
+            params['reasoning_effort'] = 'high'  # Analytical depth
+            params['max_output_tokens'] = min(character_limit // 4, 1200)
 
         elif section_key == 'project_management':
-            # Management questions need precise, structured answers
-            params['temperature'] = 0.4
-            params['max_tokens'] = min(character_limit // 4, 1100)
+            params['reasoning_effort'] = 'low'  # Precise and factual
+            params['max_output_tokens'] = min(character_limit // 4, 1100)
 
         # Field-specific overrides
         if 'innovation' in field or 'creative' in field:
-            params['temperature'] = min(params['temperature'] + 0.2, 0.9)
+            params['reasoning_effort'] = 'high'  # Creative thinking
         elif 'budget' in field or 'timeline' in field or 'milestone' in field:
-            params['temperature'] = 0.3  # Very precise for numbers and dates
-            params['max_tokens'] = min(params['max_tokens'], 800)
+            params['reasoning_effort'] = 'low'  # Precise for numbers
+            params['max_output_tokens'] = min(params['max_output_tokens'], 800)
         elif 'risk' in field or 'quality' in field:
-            params['temperature'] = 0.5  # Balanced for risk assessment
+            params['reasoning_effort'] = 'medium'  # Balanced
         elif 'dissemination' in field or 'sustainability' in field:
-            params['temperature'] = 0.7  # More creative for future planning
+            params['reasoning_effort'] = 'high'  # Forward thinking
 
         # For shorter questions, use fewer tokens
         if character_limit < 1000:
-            params['max_tokens'] = min(params['max_tokens'], 400)
+            params['max_output_tokens'] = min(params['max_output_tokens'], 400)
         elif character_limit < 2000:
-            params['max_tokens'] = min(params['max_tokens'], 700)
+            params['max_output_tokens'] = min(params['max_output_tokens'], 700)
 
-        logger.debug(f"Parameters for {field} in {section_key}: temp={params['temperature']}, tokens={params['max_tokens']}")
+        logger.debug(f"Parameters for {field} in {section_key}: reasoning={params['reasoning_effort']}, tokens={params['max_output_tokens']}")
         return params
     
-    async def _call_ai(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
+    async def _call_ai(self, prompt: str, reasoning_effort: str = "medium", max_output_tokens: int = 2000) -> str:
         """
-        Call OpenAI API with proper error handling
+        Call OpenAI GPT-5 API with proper error handling
+
+        Args:
+            prompt: The user prompt to send
+            reasoning_effort: GPT-5 reasoning level ("minimal", "low", "medium", "high")
+            max_output_tokens: Maximum tokens to generate
         """
         max_retries = 2  # Reduced retries since we have parallel processing
 
@@ -432,8 +431,8 @@ class AIAutoFillService:
                             "content": prompt
                         }
                     ],
-                    max_tokens=max_tokens,
-                    temperature=temperature,
+                    max_output_tokens=max_output_tokens,
+                    reasoning_effort=reasoning_effort
                 )
 
                 if response and response.choices and response.choices[0].message.content:

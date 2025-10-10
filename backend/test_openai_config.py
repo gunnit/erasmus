@@ -39,13 +39,12 @@ async def test_openai_config():
 
         # Try a simple completion
         response = await client.chat.completions.create(
-            model="gpt-4.1-2025-04-14",
+            model="gpt-5",
             messages=[
                 {"role": "system", "content": "You are a test assistant."},
                 {"role": "user", "content": "Say 'API is working!' in 3 words."}
             ],
-            max_tokens=10,
-            temperature=0.1
+            max_tokens=10
         )
 
         print(f"✅ API Response: {response.choices[0].message.content}")
@@ -56,7 +55,7 @@ async def test_openai_config():
         print(f"\n❌ Error testing OpenAI API: {e}")
         print("\nPossible issues:")
         print("1. Invalid API key")
-        print("2. API key doesn't have access to gpt-4-turbo")
+        print("2. API key doesn't have access to GPT-5 model")
         print("3. Network connectivity issues")
         print("4. OpenAI service is down")
         return False

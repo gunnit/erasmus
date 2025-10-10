@@ -52,18 +52,29 @@ async def update_proposal_status_from_answers(proposal: Proposal, db: Session, c
         proposal.updated_at = datetime.utcnow()
 
         # If status changes to "complete" and credit hasn't been used, deduct one credit
+        logger.info(f"[CREDIT_CHECK] Proposal {proposal.id}: new_status={new_status}, old_status={old_status}, credit_used={proposal.credit_used}")
+
         if new_status == "complete" and old_status != "complete" and not proposal.credit_used:
+            logger.info(f"[CREDIT_CHECK] Conditions met for credit deduction on proposal {proposal.id}")
             if current_user:
                 try:
+                    logger.info(f"[CREDIT_CHECK] Calling use_proposal_credit for user_id={current_user.id}")
                     success = await use_proposal_credit(current_user, db)
                     if success:
                         proposal.credit_used = True
-                        logger.info(f"Proposal credit deducted for proposal {proposal.id} (status changed to complete)")
+                        logger.info(f"[CREDIT_CHECK] ✅ Proposal credit deducted for proposal {proposal.id} (status changed to complete)")
                     else:
-                        logger.warning(f"Failed to deduct credit for proposal {proposal.id} (insufficient credits or no subscription)")
+                        logger.warning(f"[CREDIT_CHECK] ❌ Failed to deduct credit for proposal {proposal.id} (insufficient credits or no subscription)")
                 except Exception as e:
-                    logger.error(f"Error deducting credit for proposal {proposal.id}: {str(e)}")
+                    logger.error(f"[CREDIT_CHECK] ❌ Error deducting credit for proposal {proposal.id}: {str(e)}")
                     # Don't block the status update if credit deduction fails
+        else:
+            if new_status != "complete":
+                logger.info(f"[CREDIT_CHECK] Skipping credit deduction - status is '{new_status}', not 'complete'")
+            elif old_status == "complete":
+                logger.info(f"[CREDIT_CHECK] Skipping credit deduction - status was already 'complete'")
+            elif proposal.credit_used:
+                logger.info(f"[CREDIT_CHECK] Skipping credit deduction - credit already used")
 
         db.commit()
 

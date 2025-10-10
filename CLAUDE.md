@@ -313,9 +313,95 @@ The system maintains a reusable partner library with advanced features:
 - `frontend/src/components/Partners.jsx` - Partner library UI
 - `frontend/src/components/ProjectInputForm.jsx` - Partner search integration
 
+## OpenAI Integration
+
+### Current Models (as of 2025)
+The application uses OpenAI's Python SDK (`openai-python`) for AI generation.
+
+**Available Models (2025):**
+- **GPT-5** (Latest Flagship) - `gpt-5`
+  - Most advanced model with SOTA performance across math, coding, and reasoning
+  - 45% less likely to hallucinate than GPT-4o
+  - Supports up to 1M tokens context
+  - Best for: Complex grant writing, comprehensive analysis
+  - Note: `temperature`, `top_p`, `logprobs` not supported
+
+- **GPT-4.1 Series** - `gpt-4.1`, `gpt-4.1-mini`, `gpt-4.1-nano`
+  - Outperforms GPT-4o across coding and instruction following
+  - Up to 1M tokens context with improved comprehension
+  - Best for: Precise instruction following, web development
+
+- **o3/o4-mini** (Reasoning Models) - `o3`, `o4-mini`
+  - Optimized for reasoning tasks (coding, math, logic)
+  - Best for: Complex problem solving, structured analysis
+
+- **GPT-4o** (Still Available) - `gpt-4o`, `gpt-4o-mini`
+  - Previous flagship with multimodal capabilities
+  - Best for: Legacy compatibility, cost-effectiveness
+
+**Current Configuration:**
+- Set in `backend/app/core/config.py:OPENAI_MODEL`
+- **Default**: `gpt-5` (latest flagship for best quality)
+- Can switch to `gpt-4.1` or `gpt-4o` if needed
+
+**API Integration:**
+- SDK: `openai>=1.12.0` (AsyncOpenAI client)
+- Methods: `client.chat.completions.create()` for standard requests
+- Streaming: `client.chat.completions.stream()` for progressive generation
+- Parsing: `client.chat.completions.parse()` for Pydantic model parsing
+
+**GPT-5 Specific Parameters:**
+- `model`: "gpt-5"
+- `messages`: Conversation history with role/content
+- `max_output_tokens`: Response length (replaces `max_tokens`)
+- `reasoning_effort`: "minimal" | "low" | "medium" | "high" (optional)
+- `verbosity`: "low" | "medium" | "high" (optional)
+- `tools`: Custom tools for function calling
+- **NOT supported**: `temperature`, `top_p`, `logprobs`
+
+### Migration from GPT-4 to GPT-5
+
+**Breaking Changes:**
+1. **`temperature` removed** - GPT-5 does not support temperature control
+   - Previously: `temperature=0.7` for creativity control
+   - Now: Use `reasoning_effort` for similar control
+     - `reasoning_effort="minimal"` - Fast, direct responses
+     - `reasoning_effort="medium"` - Balanced reasoning (recommended)
+     - `reasoning_effort="high"` - Deep analysis and reasoning
+
+2. **`max_tokens` → `max_output_tokens`** - Parameter renamed
+   - Old: `max_tokens=1000`
+   - New: `max_output_tokens=1000`
+
+3. **`top_p` and `logprobs` removed** - No longer supported in GPT-5
+
+**Updated Code:**
+- `openai_service.py` - Updated all methods to use GPT-5 parameters
+- `partner_affinity_service.py` - Removed temperature, added reasoning_effort
+- All services now use `max_output_tokens` instead of `max_tokens`
+
+**Reasoning Effort Guidelines:**
+- Grant writing: `reasoning_effort="medium"` (balanced quality/speed)
+- Partner analysis: `reasoning_effort="medium"` (thorough analysis)
+- Simple descriptions: `reasoning_effort="minimal"` (fast generation)
+
+**Available Features:**
+- Chat completions with enhanced context awareness
+- Custom tool calling for structured outputs
+- Streaming responses for real-time feedback
+- Pydantic model parsing for type-safe responses
+- Advanced reasoning capabilities
+
+### OpenAI Service Implementation
+- `backend/app/services/openai_service.py` - Main service class
+- `generate_completion()` - Async method for chat completions
+- Error handling for quota limits and API failures
+- Automatic retry logic for transient failures
+- Uses `settings.OPENAI_MODEL` for model selection
+
 ## Important Notes
 
-- Using OpenAI GPT-4 (not Anthropic Claude)
+- Using OpenAI GPT-5 (latest 2025 model, not Anthropic Claude)
 - Deployed on Render.com with PostgreSQL database
 - All configuration is in `render.yaml`
 - Progressive generation uses SSE for real-time updates

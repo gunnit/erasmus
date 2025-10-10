@@ -205,11 +205,11 @@ async def get_recent_activity(
     db: Session = Depends(get_db)
 ) -> List[Dict[str, Any]]:
     """Get recent activity for the user"""
-    
+
     proposals = db.query(Proposal).filter(
         Proposal.user_id == current_user.id
     ).order_by(Proposal.updated_at.desc()).limit(limit).all()
-    
+
     activities = []
     for proposal in proposals:
         activities.append({
@@ -219,5 +219,56 @@ async def get_recent_activity(
             "timestamp": proposal.updated_at.isoformat() if proposal.updated_at else proposal.created_at.isoformat(),
             "status": proposal.status
         })
-    
+
     return activities
+
+@router.get("/public-stats")
+async def get_public_stats(db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """
+    Get public platform statistics for homepage (no authentication required)
+
+    This endpoint is public and can be accessed without a token.
+    Path: /api/analytics/public-stats
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    try:
+        # Calculate aggregate platform statistics
+        total_proposals = db.query(func.count(Proposal.id)).scalar() or 0
+        total_users = db.query(func.count(User.id)).scalar() or 0
+
+        # Calculate completed proposals (status = 'submitted' or 'complete')
+        completed_proposals = db.query(func.count(Proposal.id)).filter(
+            Proposal.status.in_(['submitted', 'complete'])
+        ).scalar() or 0
+
+        # Calculate average time saved (based on completed proposals)
+        # Assumption: Manual application takes 40-60 hours, AI takes 0.5 hours
+        # Average time saved per proposal: 50 hours
+        hours_saved = completed_proposals * 50
+
+        # Calculate success rate (proposals submitted vs total)
+        success_rate = round((completed_proposals / total_proposals * 100), 1) if total_proposals > 0 else 0
+
+        result = {
+            "hours_saved": hours_saved,
+            "proposals_generated": total_proposals,
+            "success_rate": success_rate,
+            "total_users": total_users,
+            "completed_proposals": completed_proposals
+        }
+
+        logger.info(f"Public stats requested: {result}")
+        return result
+
+    except Exception as e:
+        logger.error(f"Error fetching public stats: {str(e)}")
+        # Return default values on error instead of failing
+        return {
+            "hours_saved": 0,
+            "proposals_generated": 0,
+            "success_rate": 0,
+            "total_users": 0,
+            "completed_proposals": 0
+        }

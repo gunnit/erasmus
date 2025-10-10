@@ -3,8 +3,26 @@ from typing import Dict, List, Optional
 import json
 from app.core.config import settings
 import logging
+import asyncio
+from functools import wraps
 
 logger = logging.getLogger(__name__)
+
+def with_timeout(timeout_seconds=60):
+    """Decorator to add timeout to async OpenAI calls"""
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            try:
+                return await asyncio.wait_for(
+                    func(*args, **kwargs),
+                    timeout=timeout_seconds
+                )
+            except asyncio.TimeoutError:
+                logger.error(f"OpenAI API call timed out after {timeout_seconds} seconds")
+                raise TimeoutError(f"AI generation timed out after {timeout_seconds} seconds. Please try again.")
+        return wrapper
+    return decorator
 
 class OpenAIService:
     """Service for interacting with OpenAI API for form completion"""
@@ -19,7 +37,11 @@ class OpenAIService:
             raise ValueError("OPENAI_API_KEY is not properly configured")
 
         logger.info(f"Initializing OpenAI client with model: {settings.OPENAI_MODEL}")
-        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        self.client = AsyncOpenAI(
+            api_key=settings.OPENAI_API_KEY,
+            timeout=90.0,  # 90 second timeout for API requests
+            max_retries=2   # Retry failed requests twice
+        )
         self.model = settings.OPENAI_MODEL
 
     async def generate_project_description(self, title: str, existing_description: str = "") -> str:
@@ -111,8 +133,7 @@ class OpenAIService:
                         "content": prompt
                     }
                 ],
-                max_tokens=1200,
-                temperature=0.7
+                max_output_tokens=1200
             )
 
             return response.choices[0].message.content.strip()
@@ -125,32 +146,45 @@ class OpenAIService:
         self,
         system_prompt: str,
         user_prompt: str,
-        max_tokens: int = 1000,
-        temperature: float = 0.7
+        max_output_tokens: int = 1000,
+        reasoning_effort: str = None,
+        verbosity: str = None
     ) -> str:
         """
-        Generate a completion using OpenAI API
+        Generate a completion using OpenAI API (GPT-5 compatible)
 
         Args:
             system_prompt: The system role prompt
             user_prompt: The user prompt
-            max_tokens: Maximum tokens to generate
-            temperature: Temperature for generation (0-1)
+            max_output_tokens: Maximum tokens to generate
+            reasoning_effort: Optional reasoning effort level ("minimal", "low", "medium", "high")
+            verbosity: Optional output verbosity level ("low", "medium", "high")
 
         Returns:
             The generated text
+
+        Note: GPT-5 does not support temperature, top_p, or logprobs parameters
         """
         try:
-            logger.info("Generating completion with OpenAI")
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
+            logger.info("Generating completion with OpenAI GPT-5")
+
+            # Build request parameters
+            params = {
+                "model": self.model,
+                "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                max_tokens=max_tokens,
-                temperature=temperature
-            )
+                "max_output_tokens": max_output_tokens
+            }
+
+            # Add optional GPT-5 specific parameters
+            if reasoning_effort:
+                params["reasoning_effort"] = reasoning_effort
+            if verbosity:
+                params["verbosity"] = verbosity
+
+            response = await self.client.chat.completions.create(**params)
 
             # Check if we have a valid response
             if not response.choices:
@@ -188,19 +222,23 @@ class OpenAIService:
     def generate_chat_completion(
         self,
         messages: List[Dict[str, str]],
-        max_tokens: int = 1000,
-        temperature: float = 0.7
+        max_output_tokens: int = 1000,
+        reasoning_effort: str = None,
+        verbosity: str = None
     ) -> str:
         """
-        Generate a chat completion using OpenAI API (synchronous version)
+        Generate a chat completion using OpenAI API (synchronous GPT-5 compatible version)
 
         Args:
             messages: List of message dictionaries with 'role' and 'content'
-            max_tokens: Maximum tokens to generate
-            temperature: Temperature for generation (0-1)
+            max_output_tokens: Maximum tokens to generate
+            reasoning_effort: Optional reasoning effort level ("minimal", "low", "medium", "high")
+            verbosity: Optional output verbosity level ("low", "medium", "high")
 
         Returns:
             The generated text
+
+        Note: GPT-5 does not support temperature, top_p, or logprobs parameters
         """
         try:
             import openai
@@ -208,13 +246,22 @@ class OpenAIService:
             # Use synchronous client for this method
             client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
 
-            logger.info("Generating chat completion with OpenAI")
-            response = client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                max_tokens=max_tokens,
-                temperature=temperature
-            )
+            logger.info("Generating chat completion with OpenAI GPT-5")
+
+            # Build request parameters
+            params = {
+                "model": self.model,
+                "messages": messages,
+                "max_output_tokens": max_output_tokens
+            }
+
+            # Add optional GPT-5 specific parameters
+            if reasoning_effort:
+                params["reasoning_effort"] = reasoning_effort
+            if verbosity:
+                params["verbosity"] = verbosity
+
+            response = client.chat.completions.create(**params)
 
             # Check if we have a valid response
             if not response.choices:
@@ -276,10 +323,9 @@ class OpenAIService:
                         "content": prompt
                     }
                 ],
-                max_tokens=800,  # Reduced for more concise answers
-                temperature=0.7
+                max_output_tokens=800  # Concise answers for grant forms
             )
-            
+
             answer = response.choices[0].message.content
 
             # Return answer without trimming - let token limits control length

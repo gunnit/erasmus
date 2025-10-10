@@ -539,6 +539,24 @@ const api = {
     }
   },
 
+  // Public stats endpoint (no auth required)
+  getPublicStats: async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/analytics/public-stats`);
+      return response.data;
+    } catch (error) {
+      console.error('Public Stats Error:', error);
+      // Return fallback data if API fails
+      return {
+        hours_saved: 0,
+        proposals_generated: 0,
+        success_rate: 0,
+        total_users: 0,
+        completed_proposals: 0
+      };
+    }
+  },
+
   checkSubscription: async () => {
     try {
       const response = await axiosInstance.post('/payments/check-subscription');

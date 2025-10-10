@@ -59,9 +59,11 @@ class WebCrawlerService:
             raise Exception(f"Failed to crawl website: {str(e)}")
 
     async def _fetch_page(self, session: aiohttp.ClientSession, url: str) -> Dict[str, Any]:
-        """Fetch and parse a single page"""
+        """Fetch and parse a single page with SSL verification"""
         try:
-            async with session.get(url, headers=self.headers, ssl=False) as response:
+            # Enable SSL verification for security
+            # If SSL certificate errors occur with specific sites, handle them individually
+            async with session.get(url, headers=self.headers, ssl=True) as response:
                 if response.status != 200:
                     raise Exception(f"HTTP {response.status}")
 
@@ -73,6 +75,11 @@ class WebCrawlerService:
                     'html': html,
                     'soup': soup
                 }
+        except aiohttp.ClientSSLError as e:
+            logger.warning(f"SSL verification failed for {url}: {str(e)}")
+            # For sites with SSL issues, you could optionally retry with ssl=False
+            # but log it as a security warning
+            return {'url': url, 'html': '', 'soup': BeautifulSoup('', 'html.parser')}
         except Exception as e:
             logger.error(f"Failed to fetch {url}: {str(e)}")
             return {'url': url, 'html': '', 'soup': BeautifulSoup('', 'html.parser')}

@@ -50,10 +50,15 @@ async def require_valid_subscription(
         raise
     except Exception as e:
         logger.error(f"Error checking subscription: {str(e)}")
-        # In case of error, allow generation to proceed (fail open)
-        # You may want to change this to fail closed for production
-        logger.warning(f"Subscription check failed for user {current_user.id}, allowing generation")
-        return current_user
+        # Fail closed for production security - deny access on error
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Subscription verification temporarily unavailable. Please try again in a moment.",
+            headers={
+                "X-Subscription-Check": "failed",
+                "Retry-After": "30"
+            }
+        )
 
 async def use_proposal_credit(
     current_user: User,

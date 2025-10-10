@@ -29,15 +29,16 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 def verify_token(token: str) -> Optional[dict]:
     try:
-        print(f"Verifying token with SECRET_KEY: {SECRET_KEY[:10]}...")
-        print(f"Algorithm: {ALGORITHM}")
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print(f"Token decoded successfully: {payload}")
         return payload
     except JWTError as e:
-        print(f"JWT Error: {e}")
-        print(f"Error type: {type(e).__name__}")
+        # Log securely without exposing token details
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"JWT verification failed: {type(e).__name__}")
         return None
     except Exception as e:
-        print(f"Unexpected error in verify_token: {e}")
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Unexpected error in verify_token: {type(e).__name__}")
         return None

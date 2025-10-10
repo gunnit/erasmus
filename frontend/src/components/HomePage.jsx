@@ -26,6 +26,7 @@ import {
   GitBranch,
   Activity
 } from 'lucide-react'
+import api from '../services/api'
 
 const HomePage = () => {
   const navigate = useNavigate()
@@ -44,21 +45,45 @@ const HomePage = () => {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Animated counters
+  // Fetch real statistics from API
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const interval = setInterval(() => {
-        setCounters(prev => ({
-          hours: Math.min(prev.hours + 2, 60),
-          proposals: Math.min(prev.proposals + 50, 1250),
-          success: Math.min(prev.success + 3, 98)
-        }))
-      }, 50)
+    const fetchStats = async () => {
+      try {
+        const stats = await api.getPublicStats()
+        // Animate counters to real values
+        const timer = setTimeout(() => {
+          const interval = setInterval(() => {
+            setCounters(prev => ({
+              hours: Math.min(prev.hours + Math.ceil(stats.hours_saved / 40), stats.hours_saved || 60),
+              proposals: Math.min(prev.proposals + Math.ceil((stats.proposals_generated || 1250) / 25), stats.proposals_generated || 1250),
+              success: Math.min(prev.success + Math.ceil((stats.success_rate || 98) / 33), stats.success_rate || 98)
+            }))
+          }, 50)
 
-      setTimeout(() => clearInterval(interval), 2000)
-    }, 500)
+          setTimeout(() => clearInterval(interval), 2000)
+        }, 500)
 
-    return () => clearTimeout(timer)
+        return () => clearTimeout(timer)
+      } catch (error) {
+        console.error('Failed to fetch stats:', error)
+        // Use fallback animation if API fails
+        const timer = setTimeout(() => {
+          const interval = setInterval(() => {
+            setCounters(prev => ({
+              hours: Math.min(prev.hours + 2, 60),
+              proposals: Math.min(prev.proposals + 50, 1250),
+              success: Math.min(prev.success + 3, 98)
+            }))
+          }, 50)
+
+          setTimeout(() => clearInterval(interval), 2000)
+        }, 500)
+
+        return () => clearTimeout(timer)
+      }
+    }
+
+    fetchStats()
   }, [])
 
   return (

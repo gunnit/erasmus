@@ -16,6 +16,7 @@ from app.api import admin
 from app.api import partners
 from app.api import conversational_ai
 from app.api import ai_assistant
+from app.api import paypal_webhook
 from app.core.config import settings
 from app.db.database import engine, Base
 
@@ -50,15 +51,22 @@ app = FastAPI(
 )
 
 # Configure CORS
+# Build allowed origins list, filtering out empty values for security
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://erasmus-frontend.onrender.com",  # Production frontend
+    "https://erasmus-backend.onrender.com",   # Allow backend self-calls
+]
+
+# Add custom frontend URL if provided (must be valid URL)
+frontend_url = os.getenv("FRONTEND_URL")
+if frontend_url and frontend_url.strip() and frontend_url.startswith(("http://", "https://")):
+    allowed_origins.append(frontend_url.strip())
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000", 
-        "http://localhost:3001",
-        "https://erasmus-frontend.onrender.com",  # Production frontend
-        "https://erasmus-backend.onrender.com",   # Allow backend self-calls
-        os.getenv("FRONTEND_URL", "")  # Allow custom frontend URL
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -83,6 +91,7 @@ app.include_router(admin.router, prefix="/api", tags=["admin"])
 app.include_router(partners.router, tags=["partners"])
 app.include_router(conversational_ai.router, prefix="/api/ai", tags=["conversational-ai"])
 app.include_router(ai_assistant.router, prefix="/api/ai-assistant", tags=["ai-assistant"])
+app.include_router(paypal_webhook.router, prefix="/api/webhooks", tags=["webhooks"])
 
 @app.get("/")
 async def root():
