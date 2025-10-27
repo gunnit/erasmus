@@ -1,7 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
+import logging
 
 from app.api import form_generator, health, auth, proposals, dashboard, analytics
 from app.api import settings as settings_api
@@ -22,6 +23,10 @@ from app.db.database import engine, Base
 
 # Load environment variables
 load_dotenv()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -55,8 +60,14 @@ app = FastAPI(
 allowed_origins = [
     "http://localhost:3000",
     "http://localhost:3001",
+    "http://172.26.168.2:3000",  # WSL IP address
+    "http://127.0.0.1:3000",      # Additional localhost format
     "https://erasmus-frontend.onrender.com",  # Production frontend
     "https://erasmus-backend.onrender.com",   # Allow backend self-calls
+    "https://getyourgrant.eu",    # Production domain
+    "https://www.getyourgrant.eu", # Production domain with www
+    "http://getyourgrant.eu",     # Production domain (http)
+    "http://www.getyourgrant.eu",  # Production domain with www (http)
 ]
 
 # Add custom frontend URL if provided (must be valid URL)
@@ -71,6 +82,33 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    # Log all incoming requests with their details
+    origin = request.headers.get("origin", "No Origin Header")
+    method = request.method
+    path = request.url.path
+
+    logger.info(f"=== Incoming Request ===")
+    logger.info(f"Method: {method}")
+    logger.info(f"Path: {path}")
+    logger.info(f"Origin: {origin}")
+    logger.info(f"Headers: {dict(request.headers)}")
+    logger.info(f"Allowed Origins: {allowed_origins}")
+
+    # Check if origin is in allowed list
+    if origin != "No Origin Header":
+        is_allowed = origin in allowed_origins
+        logger.info(f"Origin Allowed: {is_allowed}")
+
+    response = await call_next(request)
+
+    logger.info(f"Response Status: {response.status_code}")
+    logger.info(f"======================")
+
+    return response
 
 # Include routers
 app.include_router(health.router, prefix="/api/health", tags=["health"])
