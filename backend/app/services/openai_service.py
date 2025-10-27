@@ -133,7 +133,7 @@ class OpenAIService:
                         "content": prompt
                     }
                 ],
-                max_output_tokens=1200
+                max_tokens=1200
             )
 
             return response.choices[0].message.content.strip()
@@ -146,45 +146,33 @@ class OpenAIService:
         self,
         system_prompt: str,
         user_prompt: str,
-        max_output_tokens: int = 1000,
-        reasoning_effort: str = None,
-        verbosity: str = None
+        max_tokens: int = 1000,
+        temperature: float = 0.7
     ) -> str:
         """
-        Generate a completion using OpenAI API (GPT-5 compatible)
+        Generate a completion using OpenAI API (GPT-4o)
 
         Args:
             system_prompt: The system role prompt
             user_prompt: The user prompt
-            max_output_tokens: Maximum tokens to generate
-            reasoning_effort: Optional reasoning effort level ("minimal", "low", "medium", "high")
-            verbosity: Optional output verbosity level ("low", "medium", "high")
+            max_tokens: Maximum tokens to generate
+            temperature: Sampling temperature (0-2)
 
         Returns:
             The generated text
-
-        Note: GPT-5 does not support temperature, top_p, or logprobs parameters
         """
         try:
-            logger.info("Generating completion with OpenAI GPT-5")
+            logger.info(f"Generating completion with OpenAI {self.model}")
 
-            # Build request parameters
-            params = {
-                "model": self.model,
-                "messages": [
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                "max_output_tokens": max_output_tokens
-            }
-
-            # Add optional GPT-5 specific parameters
-            if reasoning_effort:
-                params["reasoning_effort"] = reasoning_effort
-            if verbosity:
-                params["verbosity"] = verbosity
-
-            response = await self.client.chat.completions.create(**params)
+                max_tokens=max_tokens,
+                temperature=temperature
+            )
 
             # Check if we have a valid response
             if not response.choices:
@@ -222,23 +210,19 @@ class OpenAIService:
     def generate_chat_completion(
         self,
         messages: List[Dict[str, str]],
-        max_output_tokens: int = 1000,
-        reasoning_effort: str = None,
-        verbosity: str = None
+        max_tokens: int = 1000,
+        temperature: float = 0.7
     ) -> str:
         """
-        Generate a chat completion using OpenAI API (synchronous GPT-5 compatible version)
+        Generate a chat completion using OpenAI API (synchronous GPT-4o version)
 
         Args:
             messages: List of message dictionaries with 'role' and 'content'
-            max_output_tokens: Maximum tokens to generate
-            reasoning_effort: Optional reasoning effort level ("minimal", "low", "medium", "high")
-            verbosity: Optional output verbosity level ("low", "medium", "high")
+            max_tokens: Maximum tokens to generate
+            temperature: Sampling temperature (0-2)
 
         Returns:
             The generated text
-
-        Note: GPT-5 does not support temperature, top_p, or logprobs parameters
         """
         try:
             import openai
@@ -246,22 +230,14 @@ class OpenAIService:
             # Use synchronous client for this method
             client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
 
-            logger.info("Generating chat completion with OpenAI GPT-5")
+            logger.info(f"Generating chat completion with OpenAI {self.model}")
 
-            # Build request parameters
-            params = {
-                "model": self.model,
-                "messages": messages,
-                "max_output_tokens": max_output_tokens
-            }
-
-            # Add optional GPT-5 specific parameters
-            if reasoning_effort:
-                params["reasoning_effort"] = reasoning_effort
-            if verbosity:
-                params["verbosity"] = verbosity
-
-            response = client.chat.completions.create(**params)
+            response = client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature
+            )
 
             # Check if we have a valid response
             if not response.choices:
@@ -323,7 +299,8 @@ class OpenAIService:
                         "content": prompt
                     }
                 ],
-                max_output_tokens=800  # Concise answers for grant forms
+                max_tokens=800,  # Concise answers for grant forms
+                temperature=0.7
             )
 
             answer = response.choices[0].message.content

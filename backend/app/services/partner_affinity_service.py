@@ -48,8 +48,8 @@ class PartnerAffinityService:
                     {"role": "system", "content": "You are an expert in analyzing partner compatibility for Erasmus+ projects. Provide detailed analysis of how well a partner fits with a project."},
                     {"role": "user", "content": prompt}
                 ],
-                max_output_tokens=800,
-                reasoning_effort="medium"  # Use medium reasoning for analysis
+                max_tokens=800,
+                temperature=0.7  # Use medium reasoning for analysis
             )
 
             # Parse the response
@@ -190,8 +190,8 @@ Format as a JSON list of improvements with priority (high/medium/low).
                     {"role": "system", "content": "You are an Erasmus+ partnership expert."},
                     {"role": "user", "content": prompt}
                 ],
-                max_output_tokens=400,
-                reasoning_effort="medium"
+                max_tokens=400,
+                temperature=0.7
             )
 
             # Parse and return suggestions

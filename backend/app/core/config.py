@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     # OpenAI API
     OPENAI_API_KEY: str
-    OPENAI_MODEL: str = "gpt-5"  # Latest GPT-5 model (2025 flagship)
+    OPENAI_MODEL: str = "gpt-4o"  # GPT-4o (GPT-5 not yet available in SDK)
 
     # Firecrawl API for web search and crawling
     FIRECRAWL_API_KEY: Optional[str] = None
