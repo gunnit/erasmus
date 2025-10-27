@@ -58,10 +58,9 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
       city: '',
       experience: ''
     },
-    partner_organizations: [
-      { name: '', type: 'NGO', country: '', role: '' },
-      { name: '', type: 'NGO', country: '', role: '' }
-    ],
+    expected_partners: 2,
+    partner_types_description: '',
+    partner_organizations: [],  // Kept for backward compatibility, populated later if needed
     selected_priorities: [],
     target_groups: ''
   });
@@ -450,19 +449,19 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
             className="space-y-6"
           >
             <Input
-              label="Project Title"
+              label="Project Idea"
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
-              placeholder="Enter a compelling project title"
+              placeholder="Write one sentence or more to communicate your project's purpose"
               required
               icon={Sparkles}
-              helper="Choose a title that clearly communicates your project's purpose"
+              helper="Briefly describe what your project aims to achieve"
             />
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-gray-700">
-                  Project Idea <span className="text-red-500">*</span>
+                  Project Details <span className="text-red-500">*</span>
                 </label>
                 <Button
                   type="button"
@@ -505,27 +504,40 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input
-                label="Duration (months)"
-                type="number"
-                value={formData.duration_months}
-                onChange={(e) => handleInputChange('duration_months', parseInt(e.target.value))}
-                min="12"
-                max="36"
-                icon={Calendar}
-                helper="Typically 12-36 months"
-              />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                  Duration (months)
+                </label>
+                <select
+                  value={formData.duration_months}
+                  onChange={(e) => handleInputChange('duration_months', parseInt(e.target.value))}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                  {[...Array(25)].map((_, i) => {
+                    const months = i + 12;
+                    return <option key={months} value={months}>{months} months</option>;
+                  })}
+                </select>
+                <p className="text-sm text-gray-500">Select project duration (12-36 months)</p>
+              </div>
 
-              <Input
-                label="Budget (EUR)"
-                type="number"
-                value={formData.budget_eur}
-                onChange={(e) => handleInputChange('budget_eur', parseInt(e.target.value))}
-                min="60000"
-                max="400000"
-                icon={Euro}
-                helper="€60,000 - €400,000"
-              />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Euro className="h-4 w-4 text-gray-500" />
+                  Budget (EUR)
+                </label>
+                <select
+                  value={formData.budget_eur}
+                  onChange={(e) => handleInputChange('budget_eur', parseInt(e.target.value))}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                  <option value={120000}>€120,000</option>
+                  <option value={250000}>€250,000</option>
+                  <option value={400000}>€400,000</option>
+                </select>
+                <p className="text-sm text-gray-500">Choose one of the three available budget levels</p>
+              </div>
             </div>
           </motion.div>
         );
@@ -602,139 +614,66 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
               </CardContent>
             </Card>
 
-            {/* Partner Organizations */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Partner Organizations ({formData.partner_organizations.length})
-                </h3>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => setShowPartnerLibraryModal(true)}
-                    variant="outline"
-                    size="sm"
-                    icon={Library}
+            {/* Partnership Planning (Simplified) */}
+            <Card gradient hover={false}>
+              <CardHeader>
+                <CardTitle className="text-xl flex items-center">
+                  <Users className="w-5 h-5 mr-2" />
+                  Partnership Planning
+                </CardTitle>
+                <CardDescription>Tell us about your partnership plans (you can add specific partners later)</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Users className="h-4 w-4 text-gray-500" />
+                    How many partner organizations do you plan to involve?
+                  </label>
+                  <select
+                    value={formData.expected_partners || 2}
+                    onChange={(e) => handleInputChange('expected_partners', parseInt(e.target.value))}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   >
-                    Browse Library
-                  </Button>
-                  <Button
-                    onClick={addPartner}
-                    variant="outline"
-                    size="sm"
-                    icon={Plus}
-                  >
-                    Add Partner
-                  </Button>
+                    <option value={2}>2 partners</option>
+                    <option value={3}>3 partners</option>
+                    <option value={4}>4 partners</option>
+                    <option value={5}>5 partners</option>
+                    <option value={6}>6 partners</option>
+                    <option value={7}>7+ partners</option>
+                  </select>
+                  <p className="text-sm text-gray-500">This is just an estimate - you can modify it during proposal development</p>
                 </div>
-              </div>
 
-              <AnimatePresence>
-                {formData.partner_organizations.map((partner, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    layout
-                  >
-                    <Card className="relative">
-                      <CardContent className="pt-6">
-                        <div className="absolute top-4 right-4">
-                          <Button
-                            onClick={() => removePartner(index)}
-                            variant="ghost"
-                            size="sm"
-                            icon={Trash2}
-                            className="text-red-500 hover:text-red-700"
-                          />
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="relative">
-                            <Input
-                              label={`Partner ${index + 1} Name`}
-                              value={partner.name}
-                              onChange={(e) => handlePartnerChange(index, 'name', e.target.value)}
-                              icon={Building2}
-                            />
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    What types of partners are you considering?
+                  </label>
+                  <textarea
+                    value={formData.partner_types_description || ''}
+                    onChange={(e) => handleInputChange('partner_types_description', e.target.value)}
+                    placeholder="e.g., Universities, Adult education centers, NGOs working with migrants, VET providers..."
+                    rows={4}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                  />
+                  <p className="text-sm text-gray-500">
+                    Briefly describe the types of organizations you want to partner with and their potential expertise
+                  </p>
+                </div>
 
-                            {/* Partner suggestions dropdown */}
-                            {activePartnerSearch === index && partnerSuggestions.length > 0 && (
-                              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                {searchingPartners && (
-                                  <div className="p-3 text-sm text-gray-500 flex items-center">
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Searching...
-                                  </div>
-                                )}
-                                {!searchingPartners && partnerSuggestions.map((suggestion) => (
-                                  <button
-                                    key={suggestion.id}
-                                    type="button"
-                                    onClick={() => selectPartnerFromLibrary(index, suggestion)}
-                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <div>
-                                        <div className="font-medium text-gray-900">{suggestion.name}</div>
-                                        <div className="text-sm text-gray-500">
-                                          {suggestion.type.replace('_', ' ')} • {suggestion.country}
-                                        </div>
-                                        {suggestion.affinity_score && (
-                                          <div className="text-xs text-blue-600 mt-1">
-                                            Affinity: {suggestion.affinity_score}%
-                                          </div>
-                                        )}
-                                      </div>
-                                      <Check className="w-5 h-5 text-green-500 opacity-0 hover:opacity-100" />
-                                    </div>
-                                  </button>
-                                ))}
-                                <div className="p-2 bg-gray-50 text-xs text-gray-600 text-center">
-                                  <Search className="w-3 h-3 inline mr-1" />
-                                  From your partner library
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="space-y-2">
-                            <label className="block text-sm font-medium text-gray-700">
-                              Organization Type
-                            </label>
-                            <select
-                              value={partner.type}
-                              onChange={(e) => handlePartnerChange(index, 'type', e.target.value)}
-                              className="w-full h-11 px-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                              {ORGANIZATION_TYPES.map(type => (
-                                <option key={type.value} value={type.value}>
-                                  {type.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <Input
-                            label="Country"
-                            value={partner.country}
-                            onChange={(e) => handlePartnerChange(index, 'country', e.target.value)}
-                            icon={Globe}
-                          />
-
-                          <Input
-                            label="Role in Project"
-                            value={partner.role}
-                            onChange={(e) => handlePartnerChange(index, 'role', e.target.value)}
-                            placeholder="e.g., Training provider, Technical expert"
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-blue-900">
+                      <p className="font-medium mb-1">Partner details can be added later</p>
+                      <p className="text-blue-700">
+                        You'll be able to search for and add specific partner organizations from your library
+                        during the proposal development process. This initial information helps generate better content.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
         );
 
@@ -918,7 +857,7 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                   </div>
                   <div>
                     <p className="text-gray-600">Partners</p>
-                    <p className="font-medium">{formData.partner_organizations.length + 1} organizations</p>
+                    <p className="font-medium">{(formData.expected_partners || 2) + 1} organizations (estimated)</p>
                   </div>
                 </div>
                 

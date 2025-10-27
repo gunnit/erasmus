@@ -487,10 +487,20 @@ const ProposalDetailNew = () => {
               {/* Project Information with enhanced card */}
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-blue-600" />
-                    Project Information
-                  </h2>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                      Project Information
+                    </h2>
+                    <button
+                      onClick={() => navigate('/dashboard')}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg transition-colors"
+                      title="Edit project details in dashboard"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                      Edit Details
+                    </button>
+                  </div>
                 </div>
                 <div className="p-6">
                   <div className="space-y-4">
