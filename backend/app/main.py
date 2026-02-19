@@ -46,6 +46,14 @@ try:
         conn.execute(text("ALTER TABLE proposals ADD COLUMN IF NOT EXISTS score_calculated_at TIMESTAMP"))
         # Add credit_used column for tracking proposal credit deduction
         conn.execute(text("ALTER TABLE proposals ADD COLUMN IF NOT EXISTS credit_used BOOLEAN DEFAULT false"))
+        # Add user profile columns (migration 007)
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS country VARCHAR"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS organization_role VARCHAR"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_data JSON DEFAULT '{}'"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS settings_json JSON DEFAULT '{}'"))
         conn.commit()
 except Exception as e:
     print(f"Note: Could not add new columns (may already exist): {e}")
