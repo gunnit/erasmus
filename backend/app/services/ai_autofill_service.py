@@ -427,7 +427,7 @@ class AIAutoFillService:
                     model=self.model,
                     messages=[
                         {
-                            "role": "system",
+                            "role": "developer",
                             "content": self.prompts.get_system_prompt()
                         },
                         {
@@ -436,7 +436,8 @@ class AIAutoFillService:
                         }
                     ],
                     max_tokens=max_tokens,
-                    temperature=temperature
+                    temperature=temperature,
+                    reasoning_effort="none"
                 )
 
                 if response and response.choices and response.choices[0].message.content:

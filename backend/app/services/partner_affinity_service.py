@@ -48,11 +48,12 @@ class PartnerAffinityService:
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": "You are an expert in analyzing partner compatibility for Erasmus+ projects. Provide detailed analysis of how well a partner fits with a project."},
+                    {"role": "developer", "content": "You are an expert in analyzing partner compatibility for Erasmus+ projects. Provide detailed analysis of how well a partner fits with a project."},
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=800,
-                temperature=0.7
+                temperature=0.7,
+                reasoning_effort="none"
             )
 
             # Parse the response
@@ -188,11 +189,12 @@ Format as a JSON list of improvements with priority (high/medium/low).
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": "You are an Erasmus+ partnership expert."},
+                    {"role": "developer", "content": "You are an Erasmus+ partnership expert."},
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=400,
-                temperature=0.7
+                temperature=0.7,
+                reasoning_effort="none"
             )
 
             # Parse and return suggestions

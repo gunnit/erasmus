@@ -457,15 +457,21 @@ The system maintains a reusable partner library with advanced features:
 ## OpenAI Integration
 
 ### Current Configuration
-- **Model**: `gpt-4o` (set in `backend/app/core/config.py:OPENAI_MODEL`)
-- **SDK**: `openai==1.12.0` (AsyncOpenAI and OpenAI clients)
+- **Model**: `gpt-5.2` (set in `backend/app/core/config.py:OPENAI_MODEL`)
+- **SDK**: `openai>=2.8.0` (AsyncOpenAI client)
 - **API Method**: `client.chat.completions.create()`
 
+**GPT-5.2 Parameter Compatibility:**
+- With `reasoning_effort="none"`: `temperature`, `top_p`, `max_tokens` all supported (standard mode)
+- With reasoning enabled: use `max_output_tokens`, no `temperature`/`top_p`
+- All services use `reasoning_effort="none"` to maintain temperature control for grant writing
+
 **Parameters used across all services:**
-- `model`: From `settings.OPENAI_MODEL` (default `gpt-4o`)
-- `messages`: List of `{"role": "system"|"user", "content": "..."}`
+- `model`: From `settings.OPENAI_MODEL` (default `gpt-5.2`)
+- `messages`: List of `{"role": "developer"|"user", "content": "..."}` (GPT-5.2 uses "developer" role instead of "system")
 - `temperature`: Float 0-2 (typically 0.5-0.9 depending on question type)
 - `max_tokens`: Integer (typically 400-1200 depending on character limits)
+- `reasoning_effort`: Set to `"none"` for temperature-controlled generation
 
 **Temperature settings by question type** (in `ai_autofill_service.py`):
 - Project summary / relevance / needs analysis / partnership: `0.7` (balanced)
@@ -474,9 +480,9 @@ The system maintains a reusable partner library with advanced features:
 - Innovation-related questions: `0.9` (creative thinking)
 
 ### OpenAI Service Implementation
-- `backend/app/services/openai_service.py` - Main service class with async and sync clients
+- `backend/app/services/openai_service.py` - Main service class with AsyncOpenAI client
 - `generate_completion()` - Async method for chat completions (system_prompt, user_prompt, max_tokens, temperature)
-- `generate_chat_completion()` - Sync method accepting a messages list
+- `generate_chat_completion()` - Async method accepting a messages list
 - `generate_answer()` - Generates answers for specific form questions
 - Error handling for quota limits and API failures
 - Automatic retry logic (max 2 retries) for transient failures
@@ -485,19 +491,19 @@ The system maintains a reusable partner library with advanced features:
 
 ### AI Auto-Fill Service
 - `backend/app/services/ai_autofill_service.py` - Orchestrates full application generation
-- `_call_ai()` - Core method calling `chat.completions.create()` with temperature and max_tokens
+- `_call_ai()` - Core method calling `chat.completions.create()` with temperature, max_tokens, and reasoning_effort="none"
 - Parallel question processing (2 concurrent) with rate limit handling
 - Per-question timeout of 45 seconds
 - Quality scoring and cross-section consistency validation
 
 ### Partner Affinity Service
-- `backend/app/services/partner_affinity_service.py` - Uses synchronous OpenAI client
-- Standard parameters: `temperature=0.7`, `max_tokens=800`
+- `backend/app/services/partner_affinity_service.py` - Uses AsyncOpenAI client
+- Parameters: `temperature=0.7`, `max_tokens=800`, `reasoning_effort="none"`
 - Returns JSON-structured affinity scores (0-100)
 
 ## Important Notes
 
-- Using OpenAI GPT-4o (configured in backend/app/core/config.py)
+- Using OpenAI GPT-5.2 (configured in backend/app/core/config.py)
 - Deployed on Render.com with PostgreSQL database
 - All configuration is in `render.yaml`
 - Progressive generation uses SSE for real-time updates

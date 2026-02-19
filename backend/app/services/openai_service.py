@@ -125,7 +125,7 @@ class OpenAIService:
                 model=self.model,
                 messages=[
                     {
-                        "role": "system",
+                        "role": "developer",
                         "content": "You are an expert Erasmus+ grant writer specializing in KA220-ADU adult education projects. Write compelling, specific, and innovative project descriptions that align with EU priorities. When enhancing existing descriptions, preserve the user's original ideas while elevating them to grant-winning quality."
                     },
                     {
@@ -133,7 +133,8 @@ class OpenAIService:
                         "content": prompt
                     }
                 ],
-                max_tokens=1200
+                max_tokens=1200,
+                reasoning_effort="none"
             )
 
             return response.choices[0].message.content.strip()
@@ -167,11 +168,12 @@ class OpenAIService:
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": system_prompt},
+                    {"role": "developer", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
                 max_tokens=max_tokens,
-                temperature=temperature
+                temperature=temperature,
+                reasoning_effort="none"
             )
 
             # Check if we have a valid response
@@ -231,7 +233,8 @@ class OpenAIService:
                 model=self.model,
                 messages=messages,
                 max_tokens=max_tokens,
-                temperature=temperature
+                temperature=temperature,
+                reasoning_effort="none"
             )
 
             # Check if we have a valid response
@@ -286,7 +289,7 @@ class OpenAIService:
                 model=self.model,
                 messages=[
                     {
-                        "role": "system",
+                        "role": "developer",
                         "content": "You are an expert Erasmus+ grant writer specializing in KA220-ADU applications. Write compelling, specific answers that maximize evaluation scores."
                     },
                     {
@@ -295,7 +298,8 @@ class OpenAIService:
                     }
                 ],
                 max_tokens=800,  # Concise answers for grant forms
-                temperature=0.7
+                temperature=0.7,
+                reasoning_effort="none"
             )
 
             answer = response.choices[0].message.content

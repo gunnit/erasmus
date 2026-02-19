@@ -58,12 +58,12 @@ class ConversationalAIService:
         try:
             # Build the conversation context
             system_prompt = self._build_conversational_system_prompt(mode)
-            messages = [{"role": "system", "content": system_prompt}]
+            messages = [{"role": "developer", "content": system_prompt}]
 
             # Add context about the project if available
             if project_context or current_answers:
                 context_message = self._build_context_message(project_context, current_answers)
-                messages.append({"role": "system", "content": context_message})
+                messages.append({"role": "developer", "content": context_message})
 
             # Add conversation history (last 10 messages to manage token usage)
             for msg in conversation_history[-10:]:
@@ -161,7 +161,7 @@ Potential with improvements: Y/100
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": self.prompts.get_system_prompt()},
+                    {"role": "developer", "content": self.prompts.get_system_prompt()},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.6,
@@ -238,7 +238,7 @@ Provide the alternative answer:"""
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": self.prompts.get_system_prompt()},
+                    {"role": "developer", "content": self.prompts.get_system_prompt()},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.8,
@@ -397,7 +397,7 @@ Format as structured guidance that's immediately actionable."""
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": self.prompts.get_system_prompt()},
+                    {"role": "developer", "content": self.prompts.get_system_prompt()},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.6,

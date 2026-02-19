@@ -42,7 +42,7 @@ async def chat_with_assistant(
         # Build conversation with system context
         messages = [
             {
-                "role": "system",
+                "role": "developer",
                 "content": """You are an expert AI assistant specializing in Erasmus+ KA220-ADU grant applications.
                 Your role is to help users understand and complete their grant applications effectively.
 

@@ -167,7 +167,7 @@ class WorkplanService:
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": "You are an expert Erasmus+ project manager creating professional workplans."},
+                    {"role": "developer", "content": "You are an expert Erasmus+ project manager creating professional workplans."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.3,
