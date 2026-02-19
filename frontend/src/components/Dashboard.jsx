@@ -98,15 +98,17 @@ const Dashboard = () => {
     }
   };
 
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this proposal?')) {
-      try {
-        await api.deleteProposal(id);
-        setProposals(proposals.filter(p => p.id !== id));
-        toast.success('Proposal deleted successfully');
-      } catch (error) {
-        toast.error('Failed to delete proposal');
-      }
+    try {
+      await api.deleteProposal(id);
+      setProposals(proposals.filter(p => p.id !== id));
+      setConfirmDeleteId(null);
+      toast.success('Proposal deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete proposal');
+      setConfirmDeleteId(null);
     }
   };
 
@@ -402,13 +404,33 @@ const Dashboard = () => {
                                 >
                                   <Edit3 className="w-4 h-4 text-gray-600 group-hover:text-blue-600" />
                                 </button>
-                                <button
-                                  onClick={() => handleDelete(proposal.id)}
-                                  className="p-2 hover:bg-red-50 rounded-lg transition-all hover:shadow-md group"
-                                  title="Delete"
-                                >
-                                  <Trash2 className="w-4 h-4 text-red-500 group-hover:text-red-600" />
-                                </button>
+                                {confirmDeleteId === proposal.id ? (
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-xs text-gray-500 mr-1">Delete?</span>
+                                    <button
+                                      onClick={() => handleDelete(proposal.id)}
+                                      className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 transition-colors font-medium"
+                                      title="Confirm delete"
+                                    >
+                                      Yes
+                                    </button>
+                                    <button
+                                      onClick={() => setConfirmDeleteId(null)}
+                                      className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors font-medium"
+                                      title="Cancel"
+                                    >
+                                      No
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setConfirmDeleteId(proposal.id)}
+                                    className="p-2 hover:bg-red-50 rounded-lg transition-all hover:shadow-md group"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-500 group-hover:text-red-600" />
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </motion.tr>

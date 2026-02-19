@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, Link } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -25,6 +25,9 @@ import PaymentCheckout from './components/PaymentCheckout.jsx';
 import PaymentSuccess from './components/PaymentSuccess.jsx';
 import { Partners } from './components/Partners.jsx';
 import ConversationalAI from './components/ConversationalAI.jsx';
+import TermsOfService from './components/TermsOfService.jsx';
+import PrivacyPolicy from './components/PrivacyPolicy.jsx';
+import GDPRCompliance from './components/GDPRCompliance.jsx';
 import { Progress, CircularProgress } from './components/ui/Progress';
 import { Card, CardContent } from './components/ui/Card';
 import { Sparkles, CheckCircle, FileText, Rocket } from 'lucide-react';
@@ -425,6 +428,7 @@ function ProposalCreator() {
                     projectData={projectData}
                     onEdit={handleEdit}
                     onExport={handleExport}
+                    proposalId={proposalId}
                   />
                 </CardContent>
               </Card>
@@ -481,6 +485,10 @@ function AppWithAuth() {
           <Route path="/" element={<HomeRouter />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/pricing" element={<PricingPlans />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/gdpr" element={<GDPRCompliance />} />
           <Route element={<Layout />}>
             <Route
               path="/dashboard"
@@ -561,12 +569,6 @@ function AppWithAuth() {
               }
             />
             <Route
-              path="/pricing"
-              element={
-                <PricingPlans />
-              }
-            />
-            <Route
               path="/payment"
               element={
                 <ProtectedRoute>
@@ -589,9 +591,9 @@ function AppWithAuth() {
                   <div className="text-center">
                     <h2 className="text-2xl font-bold text-gray-900 mb-4">Payment Cancelled</h2>
                     <p className="text-gray-600 mb-6">Your payment was cancelled. No charges were made.</p>
-                    <a href="/pricing" className="bg-blue-600 text-white px-6 py-3 rounded-lg inline-block">
+                    <Link to="/pricing" className="bg-blue-600 text-white px-6 py-3 rounded-lg inline-block">
                       Return to Pricing
-                    </a>
+                    </Link>
                   </div>
                 </div>
               }

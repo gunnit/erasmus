@@ -171,7 +171,7 @@ const SubscriptionStatus = ({ className }) => {
       <div className="flex gap-3">
         {subscription.proposals_remaining > 0 ? (
           <button
-            onClick={() => navigate('/project-input')}
+            onClick={() => navigate('/new-proposal')}
             className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
           >
             New Proposal

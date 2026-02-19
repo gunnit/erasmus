@@ -511,38 +511,114 @@ class AIAutoFillService:
     
     async def _assess_answer_quality(self, answer: str, question: Dict) -> float:
         """
-        Assess the quality of generated answer
+        Assess the quality of a generated answer using content-aware checks.
+        Checks for: length, structure, specificity, EU priority references,
+        partner mentions, measurable indicators, and target group references.
         """
-        quality_score = 0.0
-        
-        # Check length appropriateness
-        char_limit = question.get('character_limit', 2000)
-        if len(answer) >= char_limit * 0.7:
-            quality_score += 0.3
-        
-        # Check for key tips coverage
-        tips = question.get('tips', [])
-        for tip in tips:
-            if any(keyword in answer.lower() for keyword in tip.lower().split()):
-                quality_score += 0.2 / len(tips) if tips else 0
-        
-        # Check structure (paragraphs, lists)
-        if '\n\n' in answer or '• ' in answer or '- ' in answer:
-            quality_score += 0.2
-        
-        # Check specificity (numbers, percentages, concrete examples)
         import re
-        if re.search(r'\d+', answer):
-            quality_score += 0.1
-        if re.search(r'\d+%', answer):
-            quality_score += 0.1
-        
-        # Check priority keywords
-        priority_keywords = ['inclusion', 'digital', 'sustainable', 'democratic', 'innovation']
-        if any(keyword in answer.lower() for keyword in priority_keywords):
-            quality_score += 0.1
-        
-        return min(quality_score, 1.0)
+        quality_score = 0.0
+        answer_lower = answer.lower()
+
+        # 1. Length appropriateness (max 0.15)
+        char_limit = question.get('character_limit', 2000)
+        length_ratio = len(answer) / char_limit if char_limit > 0 else 0
+        if length_ratio >= 0.7:
+            quality_score += 0.15
+        elif length_ratio >= 0.5:
+            quality_score += 0.10
+        elif length_ratio >= 0.3:
+            quality_score += 0.05
+
+        # 2. Tips coverage (max 0.15)
+        tips = question.get('tips', [])
+        if tips:
+            tips_matched = sum(
+                1 for tip in tips
+                if any(keyword in answer_lower for keyword in tip.lower().split() if len(keyword) > 3)
+            )
+            quality_score += 0.15 * (tips_matched / len(tips))
+
+        # 3. Structure quality (max 0.10)
+        has_paragraphs = answer.count('\n\n') >= 1
+        has_lists = bool(re.search(r'[\n][\s]*[-•\d]+[.)\s]', answer))
+        if has_paragraphs and has_lists:
+            quality_score += 0.10
+        elif has_paragraphs or has_lists:
+            quality_score += 0.05
+
+        # 4. Measurable indicators - numbers, percentages, timeframes (max 0.15)
+        has_numbers = bool(re.search(r'\d+', answer))
+        has_percentages = bool(re.search(r'\d+\s*%', answer))
+        has_timeframes = bool(re.search(r'\d+\s*(month|year|week|quarter|day)', answer_lower))
+        has_currency = bool(re.search(r'[€$£]\s*[\d,]+', answer))
+        indicator_count = sum([has_numbers, has_percentages, has_timeframes, has_currency])
+        quality_score += min(0.15, indicator_count * 0.05)
+
+        # 5. EU priority references (max 0.15)
+        # Check if the answer references the SPECIFIC priorities from the project context
+        project_priorities = self.context_memory.get('project', {}).get('selected_priorities', [])
+        if project_priorities:
+            priorities_text = ' '.join(str(p) for p in project_priorities).lower()
+            # Extract key terms from priorities (words longer than 4 chars)
+            priority_terms = set(
+                word for word in re.findall(r'\b\w{5,}\b', priorities_text)
+                if word not in {'these', 'those', 'their', 'which', 'would', 'could', 'should', 'about', 'through', 'between'}
+            )
+            if priority_terms:
+                matched_terms = sum(1 for term in priority_terms if term in answer_lower)
+                priority_coverage = matched_terms / len(priority_terms)
+                quality_score += 0.15 * min(1.0, priority_coverage * 2)  # 50% coverage = full score
+        else:
+            # Fallback: check for generic EU priority keywords
+            eu_keywords = ['inclusion', 'digital', 'sustainable', 'green', 'democratic', 'innovation',
+                           'european', 'erasmus', 'adult education', 'lifelong learning']
+            matched = sum(1 for kw in eu_keywords if kw in answer_lower)
+            quality_score += 0.15 * min(1.0, matched / 3)
+
+        # 6. Partner organization mentions (max 0.15)
+        partner_names = []
+        lead_org = self.context_memory.get('project', {}).get('lead_org', {})
+        if lead_org and lead_org.get('name'):
+            partner_names.append(lead_org['name'].lower())
+        for partner in self.context_memory.get('project', {}).get('partners', []):
+            if isinstance(partner, dict) and partner.get('name'):
+                partner_names.append(partner['name'].lower())
+            elif isinstance(partner, str):
+                partner_names.append(partner.lower())
+
+        if partner_names:
+            partners_mentioned = sum(1 for name in partner_names if name in answer_lower)
+            # For some questions (like summary), mentioning 1-2 partners is enough
+            partner_coverage = partners_mentioned / max(len(partner_names), 1)
+            quality_score += 0.15 * min(1.0, partner_coverage * 2)  # 50% coverage = full score
+        else:
+            quality_score += 0.05  # Partial credit if no partners to check against
+
+        # 7. Target group references (max 0.15)
+        target_groups_text = self.context_memory.get('project', {}).get('target_groups', '')
+        if target_groups_text:
+            target_terms = set(
+                word.lower() for word in re.findall(r'\b\w{5,}\b', str(target_groups_text))
+                if word.lower() not in {'these', 'those', 'their', 'which', 'would', 'could', 'should', 'about', 'through'}
+            )
+            if target_terms:
+                matched = sum(1 for term in target_terms if term in answer_lower)
+                target_coverage = matched / len(target_terms)
+                quality_score += 0.15 * min(1.0, target_coverage * 2)
+            else:
+                quality_score += 0.05
+        else:
+            # Check for generic target group language
+            target_keywords = ['participant', 'beneficiar', 'learner', 'educator', 'adult', 'target group', 'stakeholder']
+            matched = sum(1 for kw in target_keywords if kw in answer_lower)
+            quality_score += 0.15 * min(1.0, matched / 2)
+
+        final_score = min(quality_score, 1.0)
+        logger.debug(
+            f"Quality assessment for {question.get('field', 'unknown')}: {final_score:.2f} "
+            f"(length={length_ratio:.1f}, indicators={indicator_count}, partners={len(partner_names)})"
+        )
+        return final_score
     
     async def _validate_and_enhance(
         self,
@@ -589,52 +665,185 @@ class AIAutoFillService:
     
     async def _check_consistency(self, answers: Dict) -> List[Dict]:
         """
-        Check for inconsistencies across answers
+        Comprehensive consistency checking across all answers.
+        Extracts key entities and checks for mismatches in partner names,
+        budget figures, timeline references, and thematic coherence.
         """
+        import re
         inconsistencies = []
-        
-        # Check budget consistency
-        if 'project_summary' in answers and 'project_management' in answers:
-            summary_budget = self._extract_budget_info(answers['project_summary'])
-            management_budget = self._extract_budget_info(answers['project_management'])
-            
-            if summary_budget and management_budget and summary_budget != management_budget:
+
+        # Collect all answer texts indexed by section.field
+        all_texts = {}
+        for section_key, section_answers in answers.items():
+            for field, data in section_answers.items():
+                answer = data.get('answer', '')
+                if answer and not answer.startswith('[Error'):
+                    all_texts[f"{section_key}.{field}"] = answer
+
+        if not all_texts:
+            return inconsistencies
+
+        # --- 1. Budget consistency ---
+        budget_mentions = {}
+        for key, text in all_texts.items():
+            budgets_found = re.findall(r'€\s*[\d,]+(?:\.\d+)?', text)
+            if budgets_found:
+                budget_mentions[key] = budgets_found
+
+        if len(budget_mentions) >= 2:
+            # Extract unique budget figures across sections
+            all_budget_values = set()
+            for budgets in budget_mentions.values():
+                for b in budgets:
+                    normalized = b.replace(' ', '').replace(',', '')
+                    all_budget_values.add(normalized)
+            # If there are very different budget totals, flag it
+            # (We look for total budget figures > €10,000 to avoid flagging small amounts)
+            large_budgets = set()
+            for b in all_budget_values:
+                try:
+                    val = float(b.replace('€', ''))
+                    if val > 10000:
+                        large_budgets.add(b)
+                except ValueError:
+                    pass
+            if len(large_budgets) > 1:
                 inconsistencies.append({
                     'type': 'budget',
-                    'sections': ['project_summary', 'project_management'],
-                    'details': f"Budget mismatch: {summary_budget} vs {management_budget}"
+                    'sections': list(budget_mentions.keys()),
+                    'details': f"Multiple different large budget figures found: {', '.join(large_budgets)}. "
+                               f"Ensure total budget is consistent across all sections."
                 })
-        
-        # Check duration consistency
-        # Add more consistency checks as needed
-        
+
+        # --- 2. Partner name consistency ---
+        # Extract partner names from project context
+        project = self.context_memory.get('project', {})
+        expected_partners = []
+        lead_org = project.get('lead_org', {})
+        if lead_org and lead_org.get('name'):
+            expected_partners.append(lead_org['name'])
+        for partner in project.get('partners', []):
+            if isinstance(partner, dict) and partner.get('name'):
+                expected_partners.append(partner['name'])
+            elif isinstance(partner, str):
+                expected_partners.append(partner)
+
+        if expected_partners:
+            # Check which sections mention partner names
+            partner_sections = {
+                'partnership': ['partnership_formation', 'task_allocation', 'coordination'],
+                'impact': ['organizational_impact'],
+            }
+            for section_key, fields in partner_sections.items():
+                for field in fields:
+                    key = f"{section_key}.{field}"
+                    if key in all_texts:
+                        text_lower = all_texts[key].lower()
+                        missing = [p for p in expected_partners if p.lower() not in text_lower]
+                        if missing and len(missing) < len(expected_partners):
+                            # Some partners mentioned but not all
+                            inconsistencies.append({
+                                'type': 'partner_names',
+                                'sections': [key],
+                                'details': f"Partners not mentioned in {key}: {', '.join(missing)}. "
+                                           f"This section should reference all partners."
+                            })
+
+        # --- 3. Timeline/duration consistency ---
+        duration_mentions = {}
+        for key, text in all_texts.items():
+            # Look for project duration mentions
+            durations = re.findall(r'(\d+)\s*[-–]?\s*months?', text.lower())
+            if durations:
+                duration_mentions[key] = [int(d) for d in durations]
+
+        if len(duration_mentions) >= 2:
+            # Check if project duration references are consistent
+            project_duration = project.get('duration', '')
+            expected_months = None
+            dur_match = re.search(r'(\d+)', str(project_duration))
+            if dur_match:
+                expected_months = int(dur_match.group(1))
+
+            if expected_months:
+                for key, months_list in duration_mentions.items():
+                    for m in months_list:
+                        # Only flag significantly different durations (not sub-period references)
+                        if m > 12 and abs(m - expected_months) > 6:
+                            inconsistencies.append({
+                                'type': 'duration',
+                                'sections': [key],
+                                'details': f"Duration mismatch in {key}: mentions {m} months, "
+                                           f"but project duration is {expected_months} months."
+                            })
+
+        # --- 4. Key theme consistency ---
+        # Check that themes mentioned in objectives appear in later sections
+        objectives_text = all_texts.get('relevance.objectives_results', '')
+        if objectives_text:
+            # Extract capitalized multi-word phrases as potential key themes
+            key_phrases = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\b', objectives_text)
+            if key_phrases:
+                # Check if key phrases from objectives appear in impact/management sections
+                impact_text = ' '.join(
+                    text for key, text in all_texts.items()
+                    if key.startswith('impact.')
+                )
+                if impact_text and key_phrases:
+                    missing_themes = [
+                        phrase for phrase in key_phrases[:5]  # Check top 5 themes
+                        if phrase.lower() not in impact_text.lower()
+                    ]
+                    if len(missing_themes) > 2:
+                        inconsistencies.append({
+                            'type': 'thematic_coherence',
+                            'sections': ['relevance.objectives_results', 'impact'],
+                            'details': f"Key themes from objectives not found in impact section: "
+                                       f"{', '.join(missing_themes[:3])}. Consider reinforcing thematic coherence."
+                        })
+
         return inconsistencies
-    
+
     def _extract_budget_info(self, section_answers: Dict) -> Optional[str]:
         """
         Extract budget information from answers
         """
+        import re
         for field, data in section_answers.items():
             answer = data.get('answer', '')
-            import re
             budget_match = re.search(r'€[\d,]+', answer)
             if budget_match:
                 return budget_match.group()
         return None
-    
+
     async def _fix_inconsistencies(
         self,
         answers: Dict,
         inconsistencies: List[Dict]
     ) -> Dict:
         """
-        Fix identified inconsistencies
+        Log identified inconsistencies clearly for review.
+        We flag but do NOT auto-fix to avoid introducing new errors.
+        The logged inconsistencies serve as quality signals for the user.
         """
-        # Implementation would fix specific inconsistencies
-        # For now, just log them
-        for inconsistency in inconsistencies:
-            logger.warning(f"Inconsistency: {inconsistency}")
-        
+        if not inconsistencies:
+            return answers
+
+        logger.warning(f"=== CONSISTENCY CHECK: {len(inconsistencies)} issue(s) found ===")
+        for i, inconsistency in enumerate(inconsistencies, 1):
+            issue_type = inconsistency.get('type', 'unknown')
+            sections = inconsistency.get('sections', [])
+            details = inconsistency.get('details', 'No details')
+            logger.warning(
+                f"  [{i}] Type: {issue_type} | "
+                f"Sections: {', '.join(sections)} | "
+                f"Details: {details}"
+            )
+        logger.warning(f"=== END CONSISTENCY CHECK ===")
+
+        # Store inconsistencies in context for potential future use (e.g., UI display)
+        self.context_memory['inconsistencies'] = inconsistencies
+
         return answers
     
     def _get_eu_priorities_detail(self) -> Dict:

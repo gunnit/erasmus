@@ -14,6 +14,7 @@ import { formatDeadlineDate, formatBrusselsTime } from '../../utils/dateUtils';
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Proposals', href: '/proposals', icon: FileText },
+  { name: 'Analytics', href: '/analytics', icon: TrendingUp },
   { name: 'Partners', href: '/partners', icon: Users },
   { name: 'Erasmus+ Resources', href: '/resources', icon: BookOpen },
   { name: 'Settings', href: '/settings', icon: SettingsIcon },

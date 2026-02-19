@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { 
+import {
   FileText, ChevronDown, ChevronUp, Copy, Edit3, Save, X,
   Download, ArrowLeft, CheckCircle, AlertCircle, Info,
   Sparkles, Target, Users, Building2, TrendingUp, Globe,
-  FileDown, Eye, Maximize2, Minimize2
+  FileDown, Eye, Maximize2, Minimize2, RefreshCw, Loader2
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/Card';
@@ -13,6 +13,7 @@ import { Progress } from './ui/Progress';
 import { cn } from '../lib/utils';
 import MarkdownRenderer from './ui/MarkdownRenderer';
 import ConversationalAI from './ConversationalAI';
+import api from '../services/api';
 
 const SECTION_ICONS = {
   project_summary: FileText,
@@ -32,13 +33,16 @@ const SECTION_COLORS = {
   project_management: 'from-yellow-500 to-amber-500'
 };
 
-const AnswerReview = ({ answers, projectData, onEdit, onExport }) => {
+const AnswerReview = ({ answers, projectData, onEdit, onExport, proposalId }) => {
   const [editingField, setEditingField] = useState(null);
   const [editedAnswers, setEditedAnswers] = useState({});
   const [expandedSections, setExpandedSections] = useState([]);
   const [fullscreenAnswer, setFullscreenAnswer] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showStats, setShowStats] = useState(true);
+  const [savingField, setSavingField] = useState(null);
+  const [regeneratingField, setRegeneratingField] = useState(null);
+  const [checklistState, setChecklistState] = useState({});
 
   useEffect(() => {
     // Initialize edited answers from the response
@@ -111,7 +115,7 @@ const AnswerReview = ({ answers, projectData, onEdit, onExport }) => {
           ? answerData.length 
           : (answerData.answer || '').length,
         character_limit: answerData.character_limit || 3000,
-        quality_score: answerData.quality_score || 85
+        quality_score: answerData.quality_score || null
       };
 
       sections[section].push(formattedAnswer);
@@ -134,6 +138,131 @@ const AnswerReview = ({ answers, projectData, onEdit, onExport }) => {
       newSections[sectionKey][fieldIndex].character_count = newAnswer.length;
       setEditedAnswers(newSections);
     }
+  };
+
+  // Save edited answer to backend
+  const handleSaveAnswer = async (sectionKey, fieldIndex) => {
+    const answer = editedAnswers[sectionKey]?.[fieldIndex];
+    if (!answer) return;
+
+    // Build flat answers object from all sections for the API
+    const flatAnswers = {};
+    Object.entries(editedAnswers).forEach(([secKey, secAnswers]) => {
+      if (!flatAnswers[secKey]) flatAnswers[secKey] = {};
+      secAnswers.forEach(a => {
+        flatAnswers[secKey][a.field] = a.answer;
+      });
+    });
+
+    const currentProposalId = proposalId || answers?.application_id || answers?.proposal_id;
+
+    if (currentProposalId) {
+      const fieldKey = `${sectionKey}-${fieldIndex}`;
+      setSavingField(fieldKey);
+      try {
+        await api.updateProposal(currentProposalId, {
+          answers: flatAnswers,
+          status: 'generated'
+        });
+        setEditingField(null);
+        toast.success('Answer saved successfully');
+      } catch (error) {
+        console.error('Failed to save answer:', error);
+        toast.error('Failed to save answer to server');
+      } finally {
+        setSavingField(null);
+      }
+    } else {
+      // No proposal ID available, just update locally
+      setEditingField(null);
+      toast.success('Answer updated locally');
+    }
+  };
+
+  // Regenerate a single answer using AI
+  const handleRegenerateAnswer = async (sectionKey, fieldIndex) => {
+    const answer = editedAnswers[sectionKey]?.[fieldIndex];
+    if (!answer) return;
+
+    const currentProposalId = proposalId || answers?.application_id || answers?.proposal_id;
+    const fieldKey = `${sectionKey}-${fieldIndex}`;
+    setRegeneratingField(fieldKey);
+
+    try {
+      // Build previous answers context from all sections
+      const previousAnswers = {};
+      Object.entries(editedAnswers).forEach(([secKey, secAnswers]) => {
+        if (!previousAnswers[secKey]) previousAnswers[secKey] = {};
+        secAnswers.forEach(a => {
+          previousAnswers[secKey][a.field] = a.answer;
+        });
+      });
+
+      // Build project context from available data
+      const projectContext = {
+        title: projectData?.title || '',
+        project_idea: projectData?.project_idea || '',
+        priorities: projectData?.selected_priorities || projectData?.priorities || [],
+        target_groups: projectData?.target_groups || '',
+        duration_months: projectData?.duration_months || 24,
+        budget: projectData?.budget_eur || projectData?.budget || 250000,
+        partners: projectData?.partner_organizations || projectData?.partners || [],
+        answers: previousAnswers
+      };
+
+      const response = await api.generateSingleAnswer({
+        proposal_id: String(currentProposalId || ''),
+        section: sectionKey,
+        question_id: answer.question_id || answer.field,
+        question_field: answer.field,
+        project_context: projectContext
+      });
+
+      if (response && response.answer) {
+        // Update local state
+        const newSections = { ...editedAnswers };
+        newSections[sectionKey][fieldIndex].answer = response.answer;
+        newSections[sectionKey][fieldIndex].character_count = response.character_count || response.answer.length;
+        if (response.character_limit) {
+          newSections[sectionKey][fieldIndex].character_limit = response.character_limit;
+        }
+        setEditedAnswers(newSections);
+        toast.success(`"${getFieldLabel(answer.field)}" regenerated successfully`);
+      } else {
+        toast.error('Regeneration returned no answer');
+      }
+    } catch (error) {
+      console.error('Failed to regenerate answer:', error);
+      toast.error('Failed to regenerate answer. Please try again.');
+    } finally {
+      setRegeneratingField(null);
+    }
+  };
+
+  // Checklist helpers
+  const checkAllWithinLimits = () => {
+    let allWithin = true;
+    Object.values(editedAnswers).forEach(section => {
+      section.forEach(answer => {
+        if (answer.character_count > answer.character_limit) {
+          allWithin = false;
+        }
+      });
+    });
+    return allWithin;
+  };
+
+  const checkBudgetJustification = () => {
+    const budgetFields = ['budget_allocation', 'budget_justification'];
+    let hasBudget = false;
+    Object.values(editedAnswers).forEach(section => {
+      section.forEach(answer => {
+        if (budgetFields.includes(answer.field) && answer.answer && answer.answer.trim().length > 50) {
+          hasBudget = true;
+        }
+      });
+    });
+    return hasBudget;
   };
 
   const toggleSection = (sectionKey) => {
@@ -444,12 +573,12 @@ const AnswerReview = ({ answers, projectData, onEdit, onExport }) => {
                                     <h4 className="font-medium text-gray-900 text-lg">
                                       {getFieldLabel(answer.field)}
                                     </h4>
-                                    {answer.quality_score && (
+                                    {answer.quality_score != null ? (
                                       <div className="flex items-center mt-1 space-x-2">
-                                        <Progress 
-                                          value={answer.quality_score} 
-                                          max={100} 
-                                          size="sm" 
+                                        <Progress
+                                          value={answer.quality_score}
+                                          max={100}
+                                          size="sm"
                                           variant={answer.quality_score >= 80 ? "success" : "warning"}
                                           className="w-24"
                                         />
@@ -457,6 +586,10 @@ const AnswerReview = ({ answers, projectData, onEdit, onExport }) => {
                                           Quality: {answer.quality_score}%
                                         </span>
                                       </div>
+                                    ) : (
+                                      <span className="text-xs text-gray-400 mt-1 inline-block">
+                                        Not scored
+                                      </span>
                                     )}
                                   </div>
                                   
@@ -486,13 +619,27 @@ const AnswerReview = ({ answers, projectData, onEdit, onExport }) => {
                                       </button>
                                       
                                       {!isEditing && (
-                                        <button
-                                          onClick={() => setEditingField(`${sectionKey}-${index}`)}
-                                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                          title="Edit"
-                                        >
-                                          <Edit3 className="w-4 h-4 text-gray-600" />
-                                        </button>
+                                        <>
+                                          <button
+                                            onClick={() => handleRegenerateAnswer(sectionKey, index)}
+                                            disabled={regeneratingField === `${sectionKey}-${index}`}
+                                            className="p-2 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                                            title="Regenerate with AI"
+                                          >
+                                            {regeneratingField === `${sectionKey}-${index}` ? (
+                                              <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                                            ) : (
+                                              <RefreshCw className="w-4 h-4 text-blue-500" />
+                                            )}
+                                          </button>
+                                          <button
+                                            onClick={() => setEditingField(`${sectionKey}-${index}`)}
+                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                            title="Edit"
+                                          >
+                                            <Edit3 className="w-4 h-4 text-gray-600" />
+                                          </button>
+                                        </>
                                       )}
                                     </div>
                                   </div>
@@ -516,15 +663,13 @@ const AnswerReview = ({ answers, projectData, onEdit, onExport }) => {
                                         Cancel
                                       </Button>
                                       <Button
-                                        onClick={() => {
-                                          setEditingField(null);
-                                          toast.success('Answer updated');
-                                        }}
+                                        onClick={() => handleSaveAnswer(sectionKey, index)}
+                                        disabled={savingField === `${sectionKey}-${index}`}
                                         variant="default"
                                         size="sm"
-                                        icon={Save}
+                                        icon={savingField === `${sectionKey}-${index}` ? Loader2 : Save}
                                       >
-                                        Save
+                                        {savingField === `${sectionKey}-${index}` ? 'Saving...' : 'Save'}
                                       </Button>
                                     </div>
                                   </div>
@@ -565,29 +710,63 @@ const AnswerReview = ({ answers, projectData, onEdit, onExport }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="flex items-center space-x-2">
-                <input type="checkbox" className="rounded text-blue-600" defaultChecked />
-                <span className="text-sm text-gray-700">All answers within character limits</span>
+                <input
+                  type="checkbox"
+                  className="rounded text-blue-600"
+                  checked={checkAllWithinLimits()}
+                  readOnly
+                />
+                <span className={cn("text-sm", checkAllWithinLimits() ? "text-green-700" : "text-red-600 font-medium")}>
+                  {checkAllWithinLimits() ? "All answers within character limits" : "Some answers exceed character limits"}
+                </span>
               </label>
               <label className="flex items-center space-x-2">
-                <input type="checkbox" className="rounded text-blue-600" defaultChecked />
+                <input
+                  type="checkbox"
+                  className="rounded text-blue-600"
+                  checked={checklistState.priorities || false}
+                  onChange={(e) => setChecklistState(prev => ({ ...prev, priorities: e.target.checked }))}
+                />
                 <span className="text-sm text-gray-700">EU priorities clearly addressed</span>
               </label>
               <label className="flex items-center space-x-2">
-                <input type="checkbox" className="rounded text-blue-600" defaultChecked />
-                <span className="text-sm text-gray-700">Budget justification provided</span>
+                <input
+                  type="checkbox"
+                  className="rounded text-blue-600"
+                  checked={checkBudgetJustification()}
+                  readOnly
+                />
+                <span className={cn("text-sm", checkBudgetJustification() ? "text-green-700" : "text-amber-600")}>
+                  {checkBudgetJustification() ? "Budget justification provided" : "Budget justification missing or incomplete"}
+                </span>
               </label>
             </div>
             <div className="space-y-2">
               <label className="flex items-center space-x-2">
-                <input type="checkbox" className="rounded text-blue-600" defaultChecked />
+                <input
+                  type="checkbox"
+                  className="rounded text-blue-600"
+                  checked={checklistState.partnerRoles || false}
+                  onChange={(e) => setChecklistState(prev => ({ ...prev, partnerRoles: e.target.checked }))}
+                />
                 <span className="text-sm text-gray-700">Partner roles defined</span>
               </label>
               <label className="flex items-center space-x-2">
-                <input type="checkbox" className="rounded text-blue-600" defaultChecked />
+                <input
+                  type="checkbox"
+                  className="rounded text-blue-600"
+                  checked={checklistState.impactMeasures || false}
+                  onChange={(e) => setChecklistState(prev => ({ ...prev, impactMeasures: e.target.checked }))}
+                />
                 <span className="text-sm text-gray-700">Impact measures included</span>
               </label>
               <label className="flex items-center space-x-2">
-                <input type="checkbox" className="rounded text-blue-600" defaultChecked />
+                <input
+                  type="checkbox"
+                  className="rounded text-blue-600"
+                  checked={checklistState.sustainability || false}
+                  onChange={(e) => setChecklistState(prev => ({ ...prev, sustainability: e.target.checked }))}
+                />
                 <span className="text-sm text-gray-700">Sustainability plan complete</span>
               </label>
             </div>

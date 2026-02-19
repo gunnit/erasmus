@@ -32,6 +32,17 @@ const SimpleGenerationModal = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [isCancelled, setIsCancelled] = useState(false);
+  const [sectionStartTime, setSectionStartTime] = useState(null);
+  const [generationStartTime, setGenerationStartTime] = useState(null);
+
+  // Force re-render every 2 seconds to update progress bar smoothly during generation
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (isGenerating) {
+      const interval = setInterval(() => setTick(t => t + 1), 2000);
+      return () => clearInterval(interval);
+    }
+  }, [isGenerating]);
 
   useEffect(() => {
     if (isOpen && projectData && currentSectionIndex === -1) {
@@ -48,6 +59,8 @@ const SimpleGenerationModal = ({
     setSectionAnswers({});
     setError(null);
     setIsCancelled(false);
+    setGenerationStartTime(Date.now());
+    setSectionStartTime(Date.now());
 
     // Start generating first section
     generateNextSection(0, {});
@@ -64,6 +77,7 @@ const SimpleGenerationModal = ({
     setCurrentSectionIndex(sectionIndex);
     setIsGenerating(true);
     setError(null);
+    setSectionStartTime(Date.now());
 
     try {
       // Generate this section
@@ -163,7 +177,28 @@ const SimpleGenerationModal = ({
   const getProgress = () => {
     const completed = completedSections.length;
     const total = SECTIONS.length;
+    // When generating, add partial progress for the current section
+    if (isGenerating && currentSectionIndex >= 0 && currentSectionIndex < total) {
+      const baseProgress = (completed / total) * 100;
+      const sectionProgress = sectionStartTime ? Math.min(((Date.now() - sectionStartTime) / 30000) * (100 / total), (100 / total) * 0.9) : 0;
+      return Math.round(baseProgress + sectionProgress);
+    }
     return Math.round((completed / total) * 100);
+  };
+
+  const getTimeEstimate = () => {
+    const completed = completedSections.length;
+    if (completed === 0 || !generationStartTime) {
+      // Default estimate: ~30 seconds per section
+      const remainingSections = SECTIONS.length - completed;
+      return Math.ceil((remainingSections * 30) / 60);
+    }
+    const elapsed = (Date.now() - generationStartTime) / 1000; // seconds
+    const avgTimePerSection = elapsed / completed;
+    const remainingSections = SECTIONS.length - completed - (isGenerating ? 0 : 0);
+    const remainingSeconds = remainingSections * avgTimePerSection;
+    if (remainingSeconds < 60) return 'less than 1';
+    return Math.ceil(remainingSeconds / 60);
   };
 
   const getSectionStatus = (sectionIndex) => {
@@ -218,6 +253,19 @@ const SimpleGenerationModal = ({
                     style={{ width: `${getProgress()}%` }}
                   />
                 </div>
+                {isGenerating && currentSectionIndex >= 0 && (
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-xs text-blue-600 font-medium">
+                      Generating section {currentSectionIndex + 1} of {SECTIONS.length}: {SECTIONS[currentSectionIndex]?.name}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      Estimated time remaining: ~{getTimeEstimate()} minute{getTimeEstimate() !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                )}
+                {completedSections.length === SECTIONS.length && (
+                  <p className="text-xs text-green-600 font-medium mt-2">All sections complete!</p>
+                )}
               </div>
 
               {/* Section Progress */}

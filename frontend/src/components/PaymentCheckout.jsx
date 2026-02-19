@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { FiCreditCard, FiLock, FiCheck } from 'react-icons/fi';
+
+// NOTE: PayPal credentials configuration
+// - Sandbox: Set REACT_APP_PAYPAL_CLIENT_ID in .env for sandbox testing
+// - Production: Set REACT_APP_PAYPAL_CLIENT_ID to live client ID in .env.production
+// The server-redirect payment flow (create-order -> redirect to PayPal -> capture) is used.
+// To switch to PayPal JS SDK buttons in the future, load the SDK and render PayPal buttons inline.
 
 const PaymentCheckout = () => {
   const location = useLocation();
@@ -12,7 +18,6 @@ const PaymentCheckout = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [planDetails, setPlanDetails] = useState(null);
-  const [paypalReady, setPaypalReady] = useState(false);
 
   const planType = location.state?.planType || 'starter';
 
@@ -23,7 +28,6 @@ const PaymentCheckout = () => {
     }
 
     fetchPlanDetails();
-    loadPayPalScript();
   }, [user, planType]);
 
   const fetchPlanDetails = async () => {
@@ -34,24 +38,6 @@ const PaymentCheckout = () => {
       console.error('Error fetching plan details:', error);
       setError('Unable to load plan details. Please try again.');
     }
-  };
-
-  const loadPayPalScript = () => {
-    // Check if PayPal script is already loaded
-    if (window.paypal) {
-      setPaypalReady(true);
-      return;
-    }
-
-    // Load PayPal SDK
-    const script = document.createElement('script');
-    // Using the sandbox client ID from environment variable
-    const clientId = process.env.REACT_APP_PAYPAL_CLIENT_ID || 'AfCc-UkfUFA4q-hKiTKLkyN5DgRX4by1JB1vEditwNmChL-cuPelm2u-eXDCt1wAXOkyCrMz1fWdN59R';
-    script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=EUR`;
-    script.async = true;
-    script.onload = () => setPaypalReady(true);
-    script.onerror = () => setError('Failed to load PayPal. Please refresh and try again.');
-    document.body.appendChild(script);
   };
 
   const handleCreateOrder = async () => {
@@ -81,18 +67,7 @@ const PaymentCheckout = () => {
     }
   };
 
-  const renderPayPalButton = () => {
-    if (!paypalReady || !window.paypal) {
-      return (
-        <div className="text-center py-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-gray-500 mt-2">Loading PayPal...</p>
-        </div>
-      );
-    }
-
-    // For now, we'll use a simple button that redirects to PayPal
-    // In production, you'd integrate PayPal's button component
+  const renderPaymentButton = () => {
     return (
       <button
         onClick={handleCreateOrder}
@@ -182,12 +157,15 @@ const PaymentCheckout = () => {
             </div>
           )}
 
-          {/* PayPal Button */}
-          {renderPayPalButton()}
+          {/* Payment Button */}
+          {renderPaymentButton()}
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-500 mb-2">
-              By completing this purchase, you agree to our Terms of Service
+              By completing this purchase, you agree to our{' '}
+              <Link to="/terms" className="text-blue-600 hover:text-blue-700 underline">
+                Terms of Service
+              </Link>
             </p>
             <button
               onClick={() => navigate('/pricing')}

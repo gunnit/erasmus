@@ -168,7 +168,7 @@ const PaymentSuccess = () => {
             <FiArrowRight className="ml-2" />
           </button>
           <button
-            onClick={() => navigate('/project-input')}
+            onClick={() => navigate('/new-proposal')}
             className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
           >
             Start First Proposal

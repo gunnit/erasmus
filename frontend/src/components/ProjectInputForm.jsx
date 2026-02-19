@@ -453,19 +453,19 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
             className="space-y-6"
           >
             <Input
-              label="Project Idea"
+              label="Project Title"
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
-              placeholder="Write one sentence or more to communicate your project's purpose"
+              placeholder="Write a concise, descriptive title for your project"
               required
               icon={Sparkles}
-              helper="Briefly describe what your project aims to achieve"
+              helper="A clear, memorable title that communicates your project's purpose"
             />
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-gray-700">
-                  Project Details <span className="text-red-500">*</span>
+                  Project Idea / Description <span className="text-red-500">*</span>
                 </label>
                 <Button
                   type="button"
@@ -494,6 +494,22 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                   )}
                 </Button>
               </div>
+
+              {/* Guidance box */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-amber-800 space-y-1">
+                    <p className="font-medium">Tips for a better AI-generated application:</p>
+                    <ul className="list-disc ml-4 space-y-0.5">
+                      <li>Describe your project in detail: target groups, geographic context, specific challenges, expected outcomes</li>
+                      <li>The more detail you provide, the better the AI-generated answers will be</li>
+                      <li>Include specific partner expertise areas and their countries for better results</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
               <textarea
                 value={formData.project_idea}
                 onChange={(e) => handleInputChange('project_idea', e.target.value)}
@@ -502,9 +518,27 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                 required
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
               />
-              <p className="text-sm text-gray-500">
-                Explain the main concept, objectives, and expected impact (500-1000 words recommended)
-              </p>
+              {(() => {
+                const wordCount = formData.project_idea ? formData.project_idea.trim().split(/\s+/).filter(w => w.length > 0).length : 0;
+                const isLow = wordCount > 0 && wordCount < 50;
+                const isInRange = wordCount >= 500 && wordCount <= 1000;
+                return (
+                  <div className="flex items-center justify-between">
+                    <p className={cn(
+                      "text-sm",
+                      isLow ? "text-amber-600 font-medium" : isInRange ? "text-green-600" : "text-gray-500"
+                    )}>
+                      {wordCount} words {isInRange ? "(good length)" : "(500-1000 recommended)"}
+                    </p>
+                    {isLow && (
+                      <p className="text-xs text-amber-600 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        Add more detail for better AI results
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -656,11 +690,46 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                     value={formData.partner_types_description || ''}
                     onChange={(e) => handleInputChange('partner_types_description', e.target.value)}
                     placeholder="e.g., Universities, Adult education centers, NGOs working with migrants, VET providers..."
-                    rows={4}
+                    rows={3}
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                   />
                   <p className="text-sm text-gray-500">
                     Briefly describe the types of organizations you want to partner with and their potential expertise
+                  </p>
+                </div>
+
+                {/* Structured partner country/expertise fields */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-gray-500" />
+                    Partner Countries
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.partner_countries || ''}
+                    onChange={(e) => handleInputChange('partner_countries', e.target.value)}
+                    placeholder="e.g., Italy, Germany, Spain, Greece"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                  <p className="text-sm text-gray-500">
+                    List the countries where you expect partners to be based (comma-separated)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Briefcase className="h-4 w-4 text-gray-500" />
+                    Partner Expertise Areas
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.partner_expertise_areas || ''}
+                    onChange={(e) => handleInputChange('partner_expertise_areas', e.target.value)}
+                    placeholder="e.g., Digital literacy, Adult education, Migration support, Environmental training"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                  <p className="text-sm text-gray-500">
+                    Key expertise areas your partners should bring to the project (comma-separated)
                   </p>
                 </div>
 

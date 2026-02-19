@@ -1,8 +1,10 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 import os
 import logging
+import traceback
 
 from app.api import form_generator, health, auth, proposals, dashboard, analytics
 from app.api import settings as settings_api
@@ -81,6 +83,18 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
+
+# Global exception handler to ensure CORS headers are included on error responses.
+# Without this, unhandled exceptions bypass the CORS middleware and the browser
+# reports a CORS error instead of the actual server error.
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception on {request.method} {request.url.path}: {exc}")
+    logger.error(traceback.format_exc())
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"}
+    )
 
 # Add request logging middleware
 @app.middleware("http")

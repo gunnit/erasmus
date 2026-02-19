@@ -51,13 +51,17 @@ const HomePage = () => {
     const fetchStats = async () => {
       try {
         const stats = await api.getPublicStats()
-        // Animate counters to real values
+        // Use API values with sensible fallbacks for marketing display
+        const targetHours = stats.hours_saved || 40
+        const targetProposals = stats.proposals_generated || 1250
+        const targetSuccess = stats.success_rate || 98
+        // Animate counters to target values
         const timer = setTimeout(() => {
           const interval = setInterval(() => {
             setCounters(prev => ({
-              hours: Math.min(prev.hours + Math.ceil(stats.hours_saved / 40), stats.hours_saved || 60),
-              proposals: Math.min(prev.proposals + Math.ceil((stats.proposals_generated || 1250) / 25), stats.proposals_generated || 1250),
-              success: Math.min(prev.success + Math.ceil((stats.success_rate || 98) / 33), stats.success_rate || 98)
+              hours: Math.min(prev.hours + Math.ceil(targetHours / 20), targetHours),
+              proposals: Math.min(prev.proposals + Math.ceil(targetProposals / 25), targetProposals),
+              success: Math.min(prev.success + Math.ceil(targetSuccess / 33), targetSuccess)
             }))
           }, 50)
 
@@ -67,11 +71,11 @@ const HomePage = () => {
         return () => clearTimeout(timer)
       } catch (error) {
         console.error('Failed to fetch stats:', error)
-        // Use fallback animation if API fails
+        // Use fallback animation with credible default values
         const timer = setTimeout(() => {
           const interval = setInterval(() => {
             setCounters(prev => ({
-              hours: Math.min(prev.hours + 2, 60),
+              hours: Math.min(prev.hours + 2, 40),
               proposals: Math.min(prev.proposals + 50, 1250),
               success: Math.min(prev.success + 3, 98)
             }))
@@ -401,7 +405,7 @@ const HomePage = () => {
                   2. AI Generates
                 </h3>
                 <p className="text-gray-600">
-                  GPT-4 creates comprehensive answers for all 27 questions instantly
+                  GPT-5 creates comprehensive answers for all 27 questions instantly
                 </p>
               </div>
 
@@ -439,7 +443,7 @@ const HomePage = () => {
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {[
-              { icon: Target, color: 'from-blue-500 to-indigo-600', title: 'EU Priority Alignment', desc: 'Automatically aligns with 2025 EU priorities' },
+              { icon: Target, color: 'from-blue-500 to-indigo-600', title: 'EU Priority Alignment', desc: 'Automatically aligns with 2026 EU priorities' },
               { icon: BarChart3, color: 'from-purple-500 to-pink-600', title: 'Evaluation Optimized', desc: 'Maximizes points across all criteria' },
               { icon: Shield, color: 'from-green-500 to-emerald-600', title: '100% Compliant', desc: 'Meets all formatting requirements' },
               { icon: Users, color: 'from-orange-500 to-red-600', title: 'Partner Support', desc: 'Handles multi-partner consortiums' },
@@ -757,7 +761,7 @@ const HomePage = () => {
 
             <div className="text-center">
               <p className="text-sm text-gray-400">
-                © 2025 Get Your Grant - GYG S.R.L. All rights reserved. | Tutti i diritti riservati.
+                © 2026 Get Your Grant - GYG S.R.L. All rights reserved. | Tutti i diritti riservati.
               </p>
             </div>
           </div>
