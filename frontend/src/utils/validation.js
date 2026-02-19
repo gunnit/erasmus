@@ -32,30 +32,21 @@ export const validateProposalForm = (formData) => {
     errors.lead_organization_type = 'Lead organization type is required';
   }
 
-  // Partner organizations validation
-  if (!formData.partner_organizations || formData.partner_organizations.length < 2) {
-    errors.partner_organizations = 'At least 2 partner organizations are required for Erasmus+ projects';
-  } else {
-    formData.partner_organizations.forEach((partner, index) => {
-      if (!partner.name || partner.name.trim().length < 2) {
-        errors[`partner_${index}_name`] = `Partner ${index + 1} name is required`;
-      }
-      if (!partner.country || partner.country.trim().length < 2) {
-        errors[`partner_${index}_country`] = `Partner ${index + 1} country is required`;
-      }
-    });
-  }
+  // Partner organizations validation - now optional since details can be added later
+  // Partners can be added during proposal development phase
 
   // EU Priorities validation
   if (!formData.selected_priorities || formData.selected_priorities.length === 0) {
     errors.selected_priorities = 'Please select at least one EU priority';
   }
-  if (formData.selected_priorities && formData.selected_priorities.length > 4) {
-    errors.selected_priorities = 'Please select no more than 4 priorities for focused project';
+  if (formData.selected_priorities && formData.selected_priorities.length > 3) {
+    errors.selected_priorities = 'Please select no more than 3 priorities for focused project';
   }
 
   // Target groups validation
-  if (!formData.target_groups || (Array.isArray(formData.target_groups) && formData.target_groups.length === 0)) {
+  if (!formData.target_groups ||
+      (Array.isArray(formData.target_groups) && formData.target_groups.length === 0) ||
+      (typeof formData.target_groups === 'string' && formData.target_groups.trim().length === 0)) {
     errors.target_groups = 'Please specify target groups for your project';
   }
 
@@ -65,11 +56,9 @@ export const validateProposalForm = (formData) => {
   }
 
   // Budget validation
-  if (!formData.budget_eur || formData.budget_eur < 0) {
-    errors.budget_eur = 'Budget must be a positive number';
-  }
-  if (formData.budget_eur && formData.budget_eur > 1000000) {
-    errors.budget_eur = 'Budget seems unusually high. Please verify (max €1,000,000 for KA220)';
+  const validBudgets = [120000, 250000, 400000];
+  if (!formData.budget_eur || !validBudgets.includes(formData.budget_eur)) {
+    errors.budget_eur = 'Please select a valid budget level (€120,000, €250,000, or €400,000)';
   }
 
   return {

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from app.db.database import get_db
-from app.db.models import User, Proposal
+from app.db.models import User, Proposal, Partner
 from app.api.dependencies import get_current_user
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
@@ -63,8 +63,8 @@ async def get_dashboard_stats(
         Proposal.user_id == current_user.id
     ).scalar() or 24
     
-    # Count total partners (simplified)
-    total_partners = total_proposals * 3  # Assuming average 3 partners
+    # Count actual partners from the partners table
+    total_partners = db.query(Partner).filter(Partner.user_id == current_user.id).count()
     
     # Get recent proposals
     recent_proposals = db.query(Proposal).filter(

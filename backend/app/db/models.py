@@ -46,6 +46,19 @@ class User(Base):
     full_name = Column(String)
     organization = Column(String)
 
+    # Profile fields
+    phone = Column(String, nullable=True)
+    country = Column(String, nullable=True)
+    bio = Column(Text, nullable=True)
+    avatar_url = Column(Text, nullable=True)
+    organization_role = Column(String, nullable=True)
+
+    # Profile extended data (expertise, social links, org details)
+    profile_data = Column(JSON, nullable=True, default=lambda: {})
+
+    # Settings (notifications, preferences, etc.)
+    settings_json = Column(JSON, nullable=True, default=lambda: {})
+
     # Subscription fields
     subscription_plan = Column(Enum(SubscriptionPlan), nullable=True)
     proposals_remaining = Column(Integer, default=0)

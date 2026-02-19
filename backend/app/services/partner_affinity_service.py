@@ -1,9 +1,12 @@
 import json
+import logging
 from typing import Dict, Any, List
-from openai import OpenAI
+from openai import AsyncOpenAI
 import os
 from ..db.models import Partner
 from ..core.config import settings
+
+logger = logging.getLogger(__name__)
 
 class PartnerAffinityService:
     """Service to calculate affinity between partners and projects using AI"""
@@ -12,7 +15,7 @@ class PartnerAffinityService:
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
         if not self.openai_api_key:
             raise ValueError("OPENAI_API_KEY environment variable is not set")
-        self.client = OpenAI(api_key=self.openai_api_key)
+        self.client = AsyncOpenAI(api_key=self.openai_api_key)
         self.model = settings.OPENAI_MODEL
 
     async def calculate_affinity(self, partner: Partner, project_context: Dict[str, Any]) -> Dict[str, Any]:
@@ -41,15 +44,15 @@ class PartnerAffinityService:
             # Create the prompt for affinity analysis
             prompt = self._create_affinity_prompt(partner_info, project_context)
 
-            # Call OpenAI API (GPT-5 compatible)
-            response = self.client.chat.completions.create(
+            # Call OpenAI API using async client
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "You are an expert in analyzing partner compatibility for Erasmus+ projects. Provide detailed analysis of how well a partner fits with a project."},
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=800,
-                temperature=0.7  # Use medium reasoning for analysis
+                temperature=0.7
             )
 
             # Parse the response
@@ -58,7 +61,7 @@ class PartnerAffinityService:
             return result
 
         except Exception as e:
-            print(f"Error calculating affinity: {str(e)}")
+            logger.error(f"Error calculating affinity: {str(e)}")
             # Return a default score with error explanation
             return {
                 "score": 50.0,
@@ -128,7 +131,6 @@ Format your response as JSON:
                 # Fallback parsing if JSON extraction fails
                 lines = response_text.strip().split('\n')
                 score = 50.0
-                explanation = "Analysis completed but formatting was unclear"
 
                 # Try to extract score from text
                 for line in lines:
@@ -140,12 +142,11 @@ Format your response as JSON:
 
                 return {
                     "score": score,
-                    "explanation": explanation,
+                    "explanation": "Analysis completed but formatting was unclear",
                     "factors": []
                 }
 
         except json.JSONDecodeError:
-            # If JSON parsing fails, try to extract key information
             return {
                 "score": 50.0,
                 "explanation": "Could not parse the affinity analysis properly",
@@ -169,7 +170,7 @@ Format your response as JSON:
 
         return results
 
-    def suggest_partner_improvements(self, partner: Partner, project_context: Dict[str, Any]) -> Dict[str, Any]:
+    async def suggest_partner_improvements(self, partner: Partner, project_context: Dict[str, Any]) -> Dict[str, Any]:
         """Suggest improvements to increase partner affinity"""
         prompt = f"""Based on this partner and project, suggest specific improvements:
 
@@ -184,7 +185,7 @@ Format as a JSON list of improvements with priority (high/medium/low).
 """
 
         try:
-            response = self.client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "You are an Erasmus+ partnership expert."},
@@ -199,4 +200,5 @@ Format as a JSON list of improvements with priority (high/medium/low).
             return {"suggestions": suggestions}
 
         except Exception as e:
+            logger.error(f"Error suggesting partner improvements: {str(e)}")
             return {"error": str(e), "suggestions": []}

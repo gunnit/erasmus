@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
@@ -31,7 +31,7 @@ const ORGANIZATION_TYPES = [
 
 const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgressive = true, proposalId, onAutoSave }) => {
   const [currentSection, setCurrentSection] = useState(0);
-  const [saveTimeout, setSaveTimeout] = useState(null);
+  const saveTimeoutRef = useRef(null);
   const [saveStatus, setSaveStatus] = useState('idle'); // idle, saving, saved, error
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
@@ -86,6 +86,15 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
     fetchSubscriptionStatus();
   }, []);
 
+  // Cleanup save timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -95,17 +104,15 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
     // Trigger auto-save with debounce
     if (onAutoSave && proposalId) {
       // Clear existing timeout
-      if (saveTimeout) {
-        clearTimeout(saveTimeout);
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
 
       // Set new timeout for auto-save
       setSaveStatus('pending');
-      const timeout = setTimeout(() => {
+      saveTimeoutRef.current = setTimeout(() => {
         handleAutoSave({ ...formData, [field]: value });
       }, 1500); // Save after 1.5 seconds of inactivity
-
-      setSaveTimeout(timeout);
     }
   };
 
@@ -136,12 +143,11 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
 
     // Trigger auto-save
     if (onAutoSave && proposalId) {
-      if (saveTimeout) clearTimeout(saveTimeout);
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       setSaveStatus('pending');
-      const timeout = setTimeout(() => {
+      saveTimeoutRef.current = setTimeout(() => {
         handleAutoSave(newData);
       }, 1500);
-      setSaveTimeout(timeout);
     }
   };
 
@@ -183,12 +189,11 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
 
     // Trigger auto-save
     if (onAutoSave && proposalId) {
-      if (saveTimeout) clearTimeout(saveTimeout);
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       setSaveStatus('pending');
-      const timeout = setTimeout(() => {
+      saveTimeoutRef.current = setTimeout(() => {
         handleAutoSave(newData);
       }, 1500);
-      setSaveTimeout(timeout);
     }
   };
 
@@ -260,12 +265,11 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
 
       // Trigger auto-save
       if (onAutoSave && proposalId && newData !== prev) {
-        if (saveTimeout) clearTimeout(saveTimeout);
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         setSaveStatus('pending');
-        const timeout = setTimeout(() => {
+        saveTimeoutRef.current = setTimeout(() => {
           handleAutoSave(newData);
         }, 1500);
-        setSaveTimeout(timeout);
       }
 
       return newData;
@@ -672,6 +676,15 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                     </div>
                   </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPartnerLibraryModal(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border border-blue-200 rounded-xl hover:from-blue-100 hover:to-indigo-100 transition-all font-medium"
+                >
+                  <Library className="w-5 h-5" />
+                  Browse Partner Library
+                </button>
               </CardContent>
             </Card>
           </motion.div>

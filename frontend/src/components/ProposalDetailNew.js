@@ -493,9 +493,9 @@ const ProposalDetailNew = () => {
                       Project Information
                     </h2>
                     <button
-                      onClick={() => navigate('/dashboard')}
+                      onClick={() => navigate(`/proposals/${id}/edit`)}
                       className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg transition-colors"
-                      title="Edit project details in dashboard"
+                      title="Edit project details"
                     >
                       <Edit3 className="h-4 w-4" />
                       Edit Details

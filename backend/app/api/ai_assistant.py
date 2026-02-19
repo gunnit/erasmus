@@ -83,7 +83,7 @@ async def chat_with_assistant(
 
         # Get response from OpenAI
         try:
-            response = openai_service.generate_chat_completion(
+            response = await openai_service.generate_chat_completion(
                 messages=messages,
                 max_tokens=1000,
                 temperature=0.7

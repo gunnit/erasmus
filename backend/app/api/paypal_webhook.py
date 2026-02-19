@@ -27,8 +27,9 @@ async def verify_webhook_signature(
     See: https://developer.paypal.com/api/rest/webhooks/rest/
     """
     if not settings.PAYPAL_WEBHOOK_ID:
-        logger.warning("PAYPAL_WEBHOOK_ID not configured - skipping signature verification")
-        return True  # Skip verification if not configured (DEV only)
+        logger.error("PAYPAL_WEBHOOK_ID not configured - rejecting webhook")
+        # TODO: Configure PAYPAL_WEBHOOK_ID in environment variables for webhook verification
+        return False
 
     if not all([paypal_transmission_id, paypal_transmission_time, paypal_transmission_sig]):
         logger.error("Missing required PayPal webhook headers")
@@ -50,10 +51,11 @@ async def verify_webhook_signature(
         # For now, log for debugging
         logger.info(f"Webhook signature verification: transmission_id={paypal_transmission_id}")
 
-        # TODO: Implement full certificate-based verification
-        # This is a simplified version - production should verify certificate
-
-        return True  # Simplified for initial implementation
+        # TODO: Implement full certificate-based verification using PayPal's
+        # Notification-Validation API: POST /v1/notifications/verify-webhook-signature
+        # For now, reject until proper verification is implemented
+        logger.warning("PayPal webhook certificate verification not yet implemented - rejecting")
+        return False
 
     except Exception as e:
         logger.error(f"Error verifying webhook signature: {str(e)}")

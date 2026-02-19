@@ -6,6 +6,7 @@ from typing import Dict, Any, Optional
 from app.db.database import get_db
 from app.db.models import User
 from app.api.dependencies import get_current_user
+from app.core.auth import verify_password, get_password_hash
 
 router = APIRouter()
 
@@ -47,8 +48,65 @@ class AllSettings(BaseModel):
     security: SecuritySettings
     preferences: PreferencesSettings
 
-# In-memory storage for settings (in production, would use database)
-user_settings = {}
+# Default settings template
+_DEFAULT_SETTINGS = {
+    "notifications": {
+        "emailNotifications": True,
+        "proposalUpdates": True,
+        "deadlineReminders": True,
+        "partnerRequests": False,
+        "newsletter": True,
+        "reminderDays": 7
+    },
+    "preferences": {
+        "theme": "light",
+        "defaultCurrency": "EUR",
+        "autoSave": True,
+        "autoSaveInterval": 5,
+        "showTips": True,
+        "compactView": False
+    },
+    "security": {
+        "twoFactorEnabled": False
+    }
+}
+
+
+def _get_settings(user: User) -> dict:
+    """Load settings from the User model's settings_json column."""
+    stored = user.settings_json or {}
+    return {
+        "general": {
+            "organization": user.organization or "",
+            "email": user.email,
+            "phone": user.phone or "",
+            "address": stored.get("general", {}).get("address", ""),
+            "country": user.country or "",
+            "language": stored.get("general", {}).get("language", "en"),
+            "timezone": stored.get("general", {}).get("timezone", "Europe/Brussels")
+        },
+        "notifications": {
+            **_DEFAULT_SETTINGS["notifications"],
+            **stored.get("notifications", {})
+        },
+        "security": {
+            **_DEFAULT_SETTINGS["security"],
+            **stored.get("security", {})
+        },
+        "preferences": {
+            **_DEFAULT_SETTINGS["preferences"],
+            **stored.get("preferences", {})
+        }
+    }
+
+
+def _update_settings_section(user: User, section: str, data: dict, db: Session):
+    """Update a specific section in the settings_json column."""
+    stored = user.settings_json or {}
+    stored[section] = data
+    user.settings_json = stored
+    db.commit()
+
 
 @router.get("/", response_model=AllSettings)
 async def get_settings(
@@ -56,41 +114,7 @@ async def get_settings(
     db: Session = Depends(get_db)
 ) -> AllSettings:
     """Get all user settings"""
-    
-    # Get or create default settings for user
-    if current_user.id not in user_settings:
-        user_settings[current_user.id] = {
-            "general": {
-                "organization": current_user.organization or "",
-                "email": current_user.email,
-                "phone": "",
-                "address": "",
-                "country": "",
-                "language": "en",
-                "timezone": "Europe/Brussels"
-            },
-            "notifications": {
-                "emailNotifications": True,
-                "proposalUpdates": True,
-                "deadlineReminders": True,
-                "partnerRequests": False,
-                "newsletter": True,
-                "reminderDays": 7
-            },
-            "security": {
-                "twoFactorEnabled": False
-            },
-            "preferences": {
-                "theme": "light",
-                "defaultCurrency": "EUR",
-                "autoSave": True,
-                "autoSaveInterval": 5,
-                "showTips": True,
-                "compactView": False
-            }
-        }
-    
-    return AllSettings(**user_settings[current_user.id])
+    return AllSettings(**_get_settings(current_user))
 
 @router.put("/general")
 async def update_general_settings(
@@ -99,20 +123,25 @@ async def update_general_settings(
     db: Session = Depends(get_db)
 ) -> Dict[str, str]:
     """Update general settings"""
-    
-    if current_user.id not in user_settings:
-        user_settings[current_user.id] = {}
-    
-    user_settings[current_user.id]["general"] = settings.dict(exclude_unset=True)
-    
-    # Update user model if email or organization changed
+
+    # Update direct User columns
     if settings.email and settings.email != current_user.email:
         current_user.email = settings.email
     if settings.organization:
         current_user.organization = settings.organization
-    
-    db.commit()
-    
+    if settings.phone is not None:
+        current_user.phone = settings.phone
+    if settings.country is not None:
+        current_user.country = settings.country
+
+    # Store remaining general settings in JSON
+    general_data = {
+        "address": settings.address or "",
+        "language": settings.language or "en",
+        "timezone": settings.timezone or "Europe/Brussels"
+    }
+    _update_settings_section(current_user, "general", general_data, db)
+
     return {"message": "General settings updated successfully"}
 
 @router.put("/notifications")
@@ -122,12 +151,7 @@ async def update_notification_settings(
     db: Session = Depends(get_db)
 ) -> Dict[str, str]:
     """Update notification settings"""
-    
-    if current_user.id not in user_settings:
-        user_settings[current_user.id] = {}
-    
-    user_settings[current_user.id]["notifications"] = settings.dict(exclude_unset=True)
-    
+    _update_settings_section(current_user, "notifications", settings.dict(exclude_unset=True), db)
     return {"message": "Notification settings updated successfully"}
 
 @router.put("/security")
@@ -137,29 +161,26 @@ async def update_security_settings(
     db: Session = Depends(get_db)
 ) -> Dict[str, str]:
     """Update security settings including password"""
-    
-    # Validate password change
+
+    # Handle password change
     if settings.newPassword:
         if not settings.currentPassword:
             raise HTTPException(status_code=400, detail="Current password is required")
-        
+
         if settings.newPassword != settings.confirmPassword:
             raise HTTPException(status_code=400, detail="New passwords do not match")
-        
-        # In production, would verify current password and hash new password
-        # For now, just update the mock storage
-    
-    if current_user.id not in user_settings:
-        user_settings[current_user.id] = {}
-    
-    # Don't store passwords in settings
-    security_data = settings.dict(exclude_unset=True)
-    security_data.pop("currentPassword", None)
-    security_data.pop("newPassword", None)
-    security_data.pop("confirmPassword", None)
-    
-    user_settings[current_user.id]["security"] = security_data
-    
+
+        # Verify current password
+        if not verify_password(settings.currentPassword, current_user.hashed_password):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+        # Hash and save new password
+        current_user.hashed_password = get_password_hash(settings.newPassword)
+
+    # Store non-password security settings
+    security_data = {"twoFactorEnabled": settings.twoFactorEnabled or False}
+    _update_settings_section(current_user, "security", security_data, db)
+
     return {"message": "Security settings updated successfully"}
 
 @router.put("/preferences")
@@ -169,12 +190,7 @@ async def update_preferences_settings(
     db: Session = Depends(get_db)
 ) -> Dict[str, str]:
     """Update user preferences"""
-    
-    if current_user.id not in user_settings:
-        user_settings[current_user.id] = {}
-    
-    user_settings[current_user.id]["preferences"] = settings.dict(exclude_unset=True)
-    
+    _update_settings_section(current_user, "preferences", settings.dict(exclude_unset=True), db)
     return {"message": "Preferences updated successfully"}
 
 @router.post("/reset")
@@ -183,8 +199,6 @@ async def reset_settings(
     db: Session = Depends(get_db)
 ) -> Dict[str, str]:
     """Reset all settings to defaults"""
-    
-    if current_user.id in user_settings:
-        del user_settings[current_user.id]
-    
+    current_user.settings_json = {}
+    db.commit()
     return {"message": "Settings reset to defaults"}

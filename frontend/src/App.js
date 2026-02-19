@@ -13,7 +13,6 @@ import ProposalAnswers from './components/ProposalAnswers';
 import ProposalEdit from './components/ProposalEdit';
 import ProjectInputForm from './components/ProjectInputForm.jsx';
 import AnswerReview from './components/AnswerReview.jsx';
-import ProgressiveGenerationModal from './components/ProgressiveGenerationModal';
 import SimpleGenerationModal from './components/SimpleGenerationModal';
 import { Layout } from './components/layout/Layout';
 import ProposalsList from './components/ProposalsList.jsx';
@@ -42,8 +41,6 @@ function ProposalCreator() {
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showGenerationModal, setShowGenerationModal] = useState(false);
-  const [useProgressiveGeneration, setUseProgressiveGeneration] = useState(true);
-  const [useSimpleGeneration, setUseSimpleGeneration] = useState(true); // Use simple generation by default
   const [proposalId, setProposalId] = useState(null);
   const [saveStatus, setSaveStatus] = useState('idle'); // idle, saving, saved, error
   const [isCreatingProposal, setIsCreatingProposal] = useState(false); // Prevent duplicate creation
@@ -120,11 +117,13 @@ function ProposalCreator() {
         console.log('Proposal created:', newProposal);
         currentProposalId = newProposal.id;
         setProposalId(newProposal.id);
+        setCurrentProposalIdForGeneration(newProposal.id);
         setIsCreatingProposal(false);
 
-        toast.success('Proposal created successfully!');
-        // Navigate directly to the proposal detail page
-        navigate(`/proposals/${currentProposalId}`);
+        toast.success('Proposal created! Starting AI generation...');
+        // Open the generation modal instead of navigating away
+        setCurrentStep('generating');
+        setShowGenerationModal(true);
         return;
       } catch (error) {
         console.error('Failed to create proposal:', error);
@@ -134,9 +133,11 @@ function ProposalCreator() {
       }
     }
 
-    // If we already have a proposal, just redirect to it
+    // If we already have a proposal, open the generation modal
     if (currentProposalId) {
-      navigate(`/proposals/${currentProposalId}`);
+      setCurrentProposalIdForGeneration(currentProposalId);
+      setCurrentStep('generating');
+      setShowGenerationModal(true);
     }
   };
 
@@ -191,46 +192,16 @@ function ProposalCreator() {
     // Update state with generated answers
     setGeneratedAnswers(response);
     setShowGenerationModal(false);
-    setCurrentStep('review');
 
     // Use the proposal ID that was set during generation start
     let currentProposalId = currentProposalIdForGeneration || proposalId;
-    if (!currentProposalId && !isCreatingProposal) {
-      try {
-        setIsCreatingProposal(true);
-        console.log('Creating proposal after generation...');
-        const proposalData = {
-          title: projectData?.title || 'Untitled Proposal',
-          project_idea: projectData?.project_idea || '',
-          priorities: projectData?.selected_priorities || [],
-          target_groups: Array.isArray(projectData?.target_groups) ? projectData.target_groups : [projectData?.target_groups || ''],
-          partners: projectData?.partner_organizations || [],
-          duration_months: parseInt(projectData?.duration_months) || 24,
-          budget: String(projectData?.budget_eur || 250000),
-          answers: answers,
-          status: 'generated'
-        };
-
-        const newProposal = await api.createProposal(proposalData);
-        console.log('Proposal created after generation:', newProposal);
-        currentProposalId = newProposal.id;
-        setProposalId(newProposal.id);
-        setIsCreatingProposal(false);
-        toast.success('Application generated and saved successfully!');
-      } catch (error) {
-        console.error('Failed to create proposal:', error);
-        setIsCreatingProposal(false);
-        toast.error('Failed to save proposal. Please try again.');
-        return;
-      }
-    } else if (currentProposalId) {
+    if (currentProposalId) {
       // Update existing proposal with generated answers
       try {
         setSaveStatus('saving');
         console.log('Updating proposal with generated answers:', currentProposalId);
 
         const updateData = {
-          ...projectData,
           answers: answers,
           status: 'generated'
         };
@@ -239,11 +210,19 @@ function ProposalCreator() {
         console.log('Proposal updated with answers:', result);
         setSaveStatus('saved');
         toast.success('Application generated and saved successfully!');
+
+        // Navigate to the proposal detail page
+        navigate(`/proposals/${currentProposalId}`);
       } catch (error) {
         console.error('Error updating proposal with answers:', error);
         setSaveStatus('error');
         toast.error('Failed to save generated answers');
+        // Still navigate even if save fails - answers are in memory
+        navigate(`/proposals/${currentProposalId}`);
       }
+    } else {
+      // Fallback: no proposal ID available, go to review step
+      setCurrentStep('review');
     }
   };
 
@@ -371,8 +350,6 @@ function ProposalCreator() {
                   <ProjectInputForm
                     onSubmit={handleProjectSubmit}
                     initialData={projectData}
-                    onToggleProgressive={setUseProgressiveGeneration}
-                    useProgressive={useProgressiveGeneration}
                     proposalId={proposalId}
                     onAutoSave={handleAutoSave}
                   />
@@ -455,24 +432,14 @@ function ProposalCreator() {
           )}
         </AnimatePresence>
         
-        {/* Generation Modal - Use Simple Generation by default */}
-        {useSimpleGeneration ? (
-          <SimpleGenerationModal
-            projectData={projectData}
-            isOpen={showGenerationModal}
-            onClose={() => setShowGenerationModal(false)}
-            onComplete={handleProgressiveGenerationComplete}
-            onSectionComplete={handleSectionComplete}
-          />
-        ) : (
-          <ProgressiveGenerationModal
-            projectData={projectData}
-            isOpen={showGenerationModal}
-            onClose={() => setShowGenerationModal(false)}
-            onComplete={handleProgressiveGenerationComplete}
-            useProgressive={useProgressiveGeneration}
-          />
-        )}
+        {/* Generation Modal */}
+        <SimpleGenerationModal
+          projectData={projectData}
+          isOpen={showGenerationModal}
+          onClose={() => setShowGenerationModal(false)}
+          onComplete={handleProgressiveGenerationComplete}
+          onSectionComplete={handleSectionComplete}
+        />
       </main>
 
       {/* Conversational AI Assistant */}

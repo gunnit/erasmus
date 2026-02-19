@@ -13,15 +13,22 @@ from datetime import datetime
 
 from app.db.database import get_db
 from app.db.models import User, Proposal
-from app.services.conversational_ai_service import ConversationalAIService
 from app.api.dependencies import get_current_user
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Initialize service
-ai_service = ConversationalAIService()
+# Lazy-initialized service instance
+_ai_service = None
+
+def _get_ai_service():
+    """Lazily initialize the ConversationalAIService on first use."""
+    global _ai_service
+    if _ai_service is None:
+        from app.services.conversational_ai_service import ConversationalAIService
+        _ai_service = ConversationalAIService()
+    return _ai_service
 
 class ConversationMessage(BaseModel):
     """Model for conversation messages"""
@@ -64,6 +71,8 @@ async def chat_with_ai(
     providing advice, answering questions, and suggesting improvements.
     """
     try:
+        ai_service = _get_ai_service()
+
         # If a proposal_id is provided, load its context
         if request.proposal_id:
             proposal = db.query(Proposal).filter(
@@ -110,11 +119,9 @@ async def analyze_section(
 ):
     """
     Analyze a section and provide autonomous improvement suggestions
-
-    This endpoint analyzes the quality of answers in a specific section
-    and provides detailed feedback with actionable improvements.
     """
     try:
+        ai_service = _get_ai_service()
         response = await ai_service.analyze_and_suggest_improvements(
             section=request.section,
             answers=request.answers,
@@ -134,11 +141,9 @@ async def generate_alternative_answer(
 ):
     """
     Generate alternative answers for a question
-
-    This endpoint creates alternative versions of answers using different
-    writing styles and approaches to help users find the best fit.
     """
     try:
+        ai_service = _get_ai_service()
         response = await ai_service.generate_alternative_answers(
             question=request.question,
             current_answer=request.current_answer,
@@ -159,11 +164,9 @@ async def get_best_practices(
 ):
     """
     Get best practices for a specific topic
-
-    This endpoint provides best practices, examples, and guidance
-    for specific aspects of grant application writing.
     """
     try:
+        ai_service = _get_ai_service()
         response = await ai_service.get_best_practices(
             topic=request.topic,
             context=request.context
@@ -183,9 +186,6 @@ async def get_conversation_starters(
 ):
     """
     Get suggested conversation starters based on context
-
-    This endpoint provides relevant questions and topics to help users
-    start productive conversations with the AI assistant.
     """
     try:
         starters = []
@@ -207,7 +207,6 @@ async def get_conversation_starters(
                         "How do I demonstrate European added value?"
                     ]
                 else:
-                    # If there are answers, suggest improvements
                     starters = [
                         "Can you review my relevance section for improvements?",
                         "How can I strengthen my sustainability plan?",
@@ -216,7 +215,6 @@ async def get_conversation_starters(
                         "How can I better demonstrate innovation?"
                     ]
         else:
-            # Generic starters
             starters = [
                 "What are the most common mistakes in Erasmus+ applications?",
                 "How do I choose the right priorities for my project?",
@@ -243,13 +241,10 @@ async def stream_chat_response(
 ):
     """
     Stream chat responses for real-time interaction
-
-    This endpoint provides Server-Sent Events for streaming AI responses
-    character by character for a more interactive experience.
     """
     async def generate():
         try:
-            # This is a simplified version - you'd implement actual streaming
+            ai_service = _get_ai_service()
             response = await ai_service.process_conversation(
                 message=message,
                 conversation_history=[],
@@ -265,7 +260,7 @@ async def stream_chat_response(
             for i in range(0, len(full_response), chunk_size):
                 chunk = full_response[i:i+chunk_size]
                 yield f"data: {json.dumps({'chunk': chunk})}\n\n"
-                await asyncio.sleep(0.05)  # Small delay for effect
+                await asyncio.sleep(0.05)
 
             # Send completion signal
             yield f"data: {json.dumps({'done': True, 'suggestions': response.get('suggestions', [])})}\n\n"
@@ -290,9 +285,6 @@ async def get_quick_tips(
 ):
     """
     Get quick tips for a specific section
-
-    This endpoint provides immediate, actionable tips for improving
-    specific sections of the application.
     """
     try:
         tips_map = {

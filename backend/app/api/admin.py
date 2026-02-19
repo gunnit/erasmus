@@ -15,9 +15,14 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.post("/run-subscription-migration-emergency")
 async def run_subscription_migration_emergency(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Emergency migration endpoint - no auth required for initial setup"""
+    """Emergency migration endpoint - requires admin authentication"""
+    # Require admin privileges
+    if current_user.email not in ["cryptoboss9@gmail.com", "greg@example.com"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
     try:
         # Only run if columns don't exist
         columns_check = db.execute(text("""

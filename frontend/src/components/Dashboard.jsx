@@ -53,12 +53,6 @@ const Dashboard = () => {
         api.get('/payments/subscription-status').catch(() => ({ data: null }))
       ]);
 
-      console.log('Proposals response:', proposalsResponse);
-      console.log('Stats response:', statsResponse);
-      console.log('Budget metrics:', budgetResponse);
-      console.log('Priority metrics:', priorityResponse);
-      console.log('Performance metrics:', performanceResponse);
-
       // Handle proposals data
       const proposalsData = proposalsResponse?.proposals || [];
       setProposals(Array.isArray(proposalsData) ? proposalsData : []);
@@ -81,9 +75,6 @@ const Dashboard = () => {
       setPerformanceMetrics(performanceResponse);
       setSubscriptionStatus(subscriptionResponse?.data);
     } catch (error) {
-      console.error('Dashboard fetch error:', error);
-      console.error('Error details:', error.response?.data);
-
       const errorMessage = error.response?.data?.detail ||
                           error.response?.statusText ||
                           'Failed to load dashboard data';

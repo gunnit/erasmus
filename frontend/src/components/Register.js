@@ -59,9 +59,9 @@ const Register = () => {
     const result = await register(userData);
 
     if (result.success) {
-      navigate('/pricing', {
+      navigate('/dashboard', {
         state: {
-          message: 'Welcome! Please select a plan to start creating proposals.',
+          message: 'Welcome! Explore your dashboard and create your first proposal.',
           fromRegistration: true
         }
       });

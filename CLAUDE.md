@@ -456,93 +456,48 @@ The system maintains a reusable partner library with advanced features:
 
 ## OpenAI Integration
 
-### Current Models (as of 2025)
-The application uses OpenAI's Python SDK (`openai-python`) for AI generation.
+### Current Configuration
+- **Model**: `gpt-4o` (set in `backend/app/core/config.py:OPENAI_MODEL`)
+- **SDK**: `openai==1.12.0` (AsyncOpenAI and OpenAI clients)
+- **API Method**: `client.chat.completions.create()`
 
-**Available Models (2025):**
-- **GPT-5** (Latest Flagship) - `gpt-5`
-  - Most advanced model with SOTA performance across math, coding, and reasoning
-  - 45% less likely to hallucinate than GPT-4o
-  - Supports up to 1M tokens context
-  - Best for: Complex grant writing, comprehensive analysis
-  - Note: `temperature`, `top_p`, `logprobs` not supported
+**Parameters used across all services:**
+- `model`: From `settings.OPENAI_MODEL` (default `gpt-4o`)
+- `messages`: List of `{"role": "system"|"user", "content": "..."}`
+- `temperature`: Float 0-2 (typically 0.5-0.9 depending on question type)
+- `max_tokens`: Integer (typically 400-1200 depending on character limits)
 
-- **GPT-4.1 Series** - `gpt-4.1`, `gpt-4.1-mini`, `gpt-4.1-nano`
-  - Outperforms GPT-4o across coding and instruction following
-  - Up to 1M tokens context with improved comprehension
-  - Best for: Precise instruction following, web development
-
-- **o3/o4-mini** (Reasoning Models) - `o3`, `o4-mini`
-  - Optimized for reasoning tasks (coding, math, logic)
-  - Best for: Complex problem solving, structured analysis
-
-- **GPT-4o** (Still Available) - `gpt-4o`, `gpt-4o-mini`
-  - Previous flagship with multimodal capabilities
-  - Best for: Legacy compatibility, cost-effectiveness
-
-**Current Configuration:**
-- Set in `backend/app/core/config.py:OPENAI_MODEL`
-- **Default**: `gpt-5` (latest flagship for best quality)
-- Can switch to `gpt-4.1` or `gpt-4o` if needed
-
-**API Integration:**
-- SDK: `openai>=1.12.0` (AsyncOpenAI client)
-- Methods: `client.chat.completions.create()` for standard requests
-- Streaming: `client.chat.completions.stream()` for progressive generation
-- Parsing: `client.chat.completions.parse()` for Pydantic model parsing
-
-**GPT-5 Specific Parameters:**
-- `model`: "gpt-5"
-- `messages`: Conversation history with role/content
-- `max_output_tokens`: Response length (replaces `max_tokens`)
-- `reasoning_effort`: "minimal" | "low" | "medium" | "high" (optional)
-- `verbosity`: "low" | "medium" | "high" (optional)
-- `tools`: Custom tools for function calling
-- **NOT supported**: `temperature`, `top_p`, `logprobs`
-
-### Migration from GPT-4 to GPT-5
-
-**Breaking Changes:**
-1. **`temperature` removed** - GPT-5 does not support temperature control
-   - Previously: `temperature=0.7` for creativity control
-   - Now: Use `reasoning_effort` for similar control
-     - `reasoning_effort="minimal"` - Fast, direct responses
-     - `reasoning_effort="medium"` - Balanced reasoning (recommended)
-     - `reasoning_effort="high"` - Deep analysis and reasoning
-
-2. **`max_tokens` → `max_output_tokens`** - Parameter renamed
-   - Old: `max_tokens=1000`
-   - New: `max_output_tokens=1000`
-
-3. **`top_p` and `logprobs` removed** - No longer supported in GPT-5
-
-**Updated Code:**
-- `openai_service.py` - Updated all methods to use GPT-5 parameters
-- `partner_affinity_service.py` - Removed temperature, added reasoning_effort
-- All services now use `max_output_tokens` instead of `max_tokens`
-
-**Reasoning Effort Guidelines:**
-- Grant writing: `reasoning_effort="medium"` (balanced quality/speed)
-- Partner analysis: `reasoning_effort="medium"` (thorough analysis)
-- Simple descriptions: `reasoning_effort="minimal"` (fast generation)
-
-**Available Features:**
-- Chat completions with enhanced context awareness
-- Custom tool calling for structured outputs
-- Streaming responses for real-time feedback
-- Pydantic model parsing for type-safe responses
-- Advanced reasoning capabilities
+**Temperature settings by question type** (in `ai_autofill_service.py`):
+- Project summary / relevance / needs analysis / partnership: `0.7` (balanced)
+- Impact / dissemination / sustainability: `0.9` (creative/forward-thinking)
+- Project management / budget / timeline: `0.5` (precise/factual)
+- Innovation-related questions: `0.9` (creative thinking)
 
 ### OpenAI Service Implementation
-- `backend/app/services/openai_service.py` - Main service class
-- `generate_completion()` - Async method for chat completions
+- `backend/app/services/openai_service.py` - Main service class with async and sync clients
+- `generate_completion()` - Async method for chat completions (system_prompt, user_prompt, max_tokens, temperature)
+- `generate_chat_completion()` - Sync method accepting a messages list
+- `generate_answer()` - Generates answers for specific form questions
 - Error handling for quota limits and API failures
-- Automatic retry logic for transient failures
+- Automatic retry logic (max 2 retries) for transient failures
+- Client timeout: 90 seconds with 2 max retries
 - Uses `settings.OPENAI_MODEL` for model selection
+
+### AI Auto-Fill Service
+- `backend/app/services/ai_autofill_service.py` - Orchestrates full application generation
+- `_call_ai()` - Core method calling `chat.completions.create()` with temperature and max_tokens
+- Parallel question processing (2 concurrent) with rate limit handling
+- Per-question timeout of 45 seconds
+- Quality scoring and cross-section consistency validation
+
+### Partner Affinity Service
+- `backend/app/services/partner_affinity_service.py` - Uses synchronous OpenAI client
+- Standard parameters: `temperature=0.7`, `max_tokens=800`
+- Returns JSON-structured affinity scores (0-100)
 
 ## Important Notes
 
-- Using OpenAI GPT-5 (latest 2025 model, not Anthropic Claude)
+- Using OpenAI GPT-4o (configured in backend/app/core/config.py)
 - Deployed on Render.com with PostgreSQL database
 - All configuration is in `render.yaml`
 - Progressive generation uses SSE for real-time updates
@@ -551,3 +506,4 @@ The application uses OpenAI's Python SDK (`openai-python`) for AI generation.
 - Always work on Render front and backend when building - deploy and use Render MCP to check deployment logs
 - Do not use or test on localhost unless explicitly for development
 - You have to always deploy to render and check the logs if successful, we do not do anything locally
+- never push to render without my explicit request

@@ -21,7 +21,13 @@ const navItems = [
 
 export const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    try {
+      return localStorage.getItem('darkMode') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [userStats, setUserStats] = useState(null);
@@ -36,6 +42,11 @@ export const Layout = () => {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
+    }
+    try {
+      localStorage.setItem('darkMode', String(darkMode));
+    } catch {
+      // localStorage unavailable
     }
   }, [darkMode]);
 
@@ -146,7 +157,6 @@ export const Layout = () => {
                   className="relative p-2 rounded-xl text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                 >
                   <Bell className="h-6 w-6" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                 </button>
 
                 <AnimatePresence>
@@ -181,10 +191,10 @@ export const Layout = () => {
                               KA220-ADU Adult Education
                             </p>
                             <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                              {formatDeadlineDate('2025-10-01')}
+                              {formatDeadlineDate('2026-10-01')}
                             </p>
                             <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                              {formatBrusselsTime('2025-10-01T12:00:00')}
+                              {formatBrusselsTime('2026-10-01T12:00:00')}
                             </p>
                           </div>
                         </div>
@@ -220,7 +230,7 @@ export const Layout = () => {
                       <div className="mt-3 text-xs text-center text-gray-500 dark:text-gray-400">
                         <p>Other upcoming deadlines:</p>
                         <p className="font-medium mt-1">
-                          March 2026 - Round 1 (Next Year)
+                          March 2027 - Round 1
                         </p>
                       </div>
                     </motion.div>

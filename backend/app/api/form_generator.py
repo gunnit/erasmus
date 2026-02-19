@@ -19,7 +19,7 @@ from app.services.ai_autofill_service import AIAutoFillService
 from app.core.config import settings
 from app.api.dependencies import get_current_user
 from app.db.models import User
-from app.core.subscription_deps import require_valid_subscription, use_proposal_credit
+from app.core.subscription_deps import require_valid_subscription
 from app.db.database import get_db
 from sqlalchemy.orm import Session
 
@@ -163,8 +163,8 @@ async def generate_form_answers(
             )
             response.pdf_url = f"/api/form/pdf/{application_id}"
 
-        # Use one proposal credit after successful generation
-        await use_proposal_credit(current_user, db)
+        # Credit deduction is handled in proposals.py when the proposal is saved
+        # to avoid double-deduction and lost credits if save fails.
 
         return response
         

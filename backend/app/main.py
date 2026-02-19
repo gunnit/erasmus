@@ -60,7 +60,6 @@ app = FastAPI(
 allowed_origins = [
     "http://localhost:3000",
     "http://localhost:3001",
-    "http://172.26.168.2:3000",  # WSL IP address
     "http://127.0.0.1:3000",      # Additional localhost format
     "https://erasmus-frontend.onrender.com",  # Production frontend
     "https://erasmus-backend.onrender.com",   # Allow backend self-calls
@@ -79,8 +78,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
 
 # Add request logging middleware
@@ -91,22 +90,11 @@ async def log_requests(request: Request, call_next):
     method = request.method
     path = request.url.path
 
-    logger.info(f"=== Incoming Request ===")
-    logger.info(f"Method: {method}")
-    logger.info(f"Path: {path}")
-    logger.info(f"Origin: {origin}")
-    logger.info(f"Headers: {dict(request.headers)}")
-    logger.info(f"Allowed Origins: {allowed_origins}")
-
-    # Check if origin is in allowed list
-    if origin != "No Origin Header":
-        is_allowed = origin in allowed_origins
-        logger.info(f"Origin Allowed: {is_allowed}")
+    logger.info(f"Request: {method} {path} Origin: {origin}")
 
     response = await call_next(request)
 
-    logger.info(f"Response Status: {response.status_code}")
-    logger.info(f"======================")
+    logger.info(f"Response: {method} {path} -> {response.status_code}")
 
     return response
 

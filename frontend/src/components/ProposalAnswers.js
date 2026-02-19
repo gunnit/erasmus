@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { Loader2, Wand2, Save, FileText, ChevronRight, Info, Users, Target, Settings, ArrowLeft, Eye, Edit2 } from 'lucide-react';
+import { Loader2, Wand2, Save, FileText, ChevronRight, Info, Users, Target, Settings, ArrowLeft, Eye, Edit2, Sparkles, XCircle } from 'lucide-react';
 import MarkdownRenderer from './ui/MarkdownRenderer';
 
 const SECTIONS = [
@@ -26,6 +26,9 @@ const ProposalAnswers = () => {
   const [savingAnswer, setSavingAnswer] = useState(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [previewMode, setPreviewMode] = useState({});  // Track preview mode per question
+  const [generatingAll, setGeneratingAll] = useState(false);
+  const [generatingAllProgress, setGeneratingAllProgress] = useState({ current: 0, total: 0 });
+  const cancelGenerationRef = useRef(false);
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -64,26 +67,39 @@ const ProposalAnswers = () => {
 
   const loadAllSectionQuestions = async () => {
     try {
+      const results = await Promise.all(
+        SECTIONS.map(async (section) => {
+          try {
+            const sectionData = await api.getSectionQuestions(section.key);
+            return { key: section.key, data: sectionData };
+          } catch (error) {
+            console.error(`Failed to load questions for ${section.key}:`, error);
+            return { key: section.key, data: null };
+          }
+        })
+      );
       const questions = {};
-      for (const section of SECTIONS) {
-        const sectionData = await api.getSectionQuestions(section.key);
-        questions[section.key] = sectionData;
-      }
+      results.forEach(({ key, data }) => {
+        if (data) questions[key] = data;
+      });
       setSectionQuestions(questions);
     } catch (error) {
       console.error('Failed to load questions:', error);
     }
   };
 
-  const handleGenerateAnswer = async (sectionKey, questionId, questionField) => {
-    if (!proposal) return;
-
-    // Check subscription status first
+  const checkSubscription = () => {
     if (!subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0) {
       toast.error('No AI generation credits available. Please upgrade your plan.');
       navigate('/pricing');
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const handleGenerateAnswer = async (sectionKey, questionId, questionField) => {
+    if (!proposal) return;
+    if (!checkSubscription()) return;
 
     setGeneratingQuestion(`${sectionKey}_${questionId}`);
 
@@ -168,6 +184,99 @@ const ProposalAnswers = () => {
     const answer = editedAnswers[sectionKey]?.[questionField] || '';
     await saveAnswer(sectionKey, questionField, answer, editedAnswers);
     toast.success('Answer saved successfully');
+  };
+
+  const handleGenerateAllRemaining = async () => {
+    if (!proposal) return;
+    if (!checkSubscription()) return;
+
+    // Collect all unanswered questions across all sections
+    const unanswered = [];
+    for (const section of SECTIONS) {
+      const questions = sectionQuestions[section.key]?.questions || [];
+      for (const question of questions) {
+        const answer = editedAnswers[section.key]?.[question.field];
+        if (!answer) {
+          unanswered.push({ section: section.key, questionId: question.id, questionField: question.field });
+        }
+      }
+    }
+
+    if (unanswered.length === 0) {
+      toast.success('All questions already have answers!');
+      return;
+    }
+
+    setGeneratingAll(true);
+    setGeneratingAllProgress({ current: 0, total: unanswered.length });
+    cancelGenerationRef.current = false;
+
+    let currentAnswers = { ...editedAnswers };
+
+    for (let i = 0; i < unanswered.length; i++) {
+      if (cancelGenerationRef.current) {
+        toast('Generation cancelled', { icon: '!' });
+        break;
+      }
+
+      const { section, questionId, questionField } = unanswered[i];
+      setGeneratingAllProgress({ current: i + 1, total: unanswered.length });
+      setGeneratingQuestion(`${section}_${questionId}`);
+
+      try {
+        const projectContext = {
+          title: proposal.title,
+          project_idea: proposal.project_idea,
+          priorities: proposal.priorities || [],
+          target_groups: proposal.target_groups || [],
+          partners: proposal.partners || [],
+          duration_months: proposal.duration_months,
+          budget: proposal.budget,
+          answers: currentAnswers,
+          ...(proposal.metadata?.project_full_data || {})
+        };
+
+        const response = await api.generateSingleAnswer({
+          proposal_id: id,
+          section,
+          question_id: questionId,
+          question_field: questionField,
+          additional_context: '',
+          project_context: projectContext
+        });
+
+        currentAnswers = {
+          ...currentAnswers,
+          [section]: {
+            ...(currentAnswers[section] || {}),
+            [questionField]: response.answer
+          }
+        };
+
+        setEditedAnswers(currentAnswers);
+
+        // Auto-save after each answer
+        try {
+          await api.updateProposal(id, { answers: currentAnswers });
+          setProposal(prev => ({ ...prev, answers: currentAnswers }));
+        } catch (saveError) {
+          console.error('Failed to auto-save:', saveError);
+        }
+      } catch (error) {
+        console.error(`Failed to generate answer for ${section}/${questionField}:`, error);
+        // Continue with next question on error
+      }
+    }
+
+    setGeneratingAll(false);
+    setGeneratingQuestion(null);
+    if (!cancelGenerationRef.current) {
+      toast.success('All remaining answers generated!');
+    }
+  };
+
+  const handleCancelGenerateAll = () => {
+    cancelGenerationRef.current = true;
   };
 
   const renderQuestion = (section, question) => {
@@ -381,6 +490,30 @@ const ProposalAnswers = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              {generatingAll ? (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating {generatingAllProgress.current} of {generatingAllProgress.total}...
+                  </div>
+                  <button
+                    onClick={handleCancelGenerateAll}
+                    className="px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 flex items-center gap-1 text-sm font-medium transition-colors"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleGenerateAllRemaining}
+                  disabled={!subscriptionStatus?.has_subscription || subscriptionStatus?.proposals_remaining <= 0}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium shadow-md hover:shadow-lg transition-all"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Generate All Remaining
+                </button>
+              )}
               <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">
                 {proposal.status || 'Draft'}
               </span>

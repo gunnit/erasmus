@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     # Database - configured for Render PostgreSQL
     DATABASE_URL: Optional[str] = "sqlite:///./erasmus_forms.db"
 
-    # Security
-    SECRET_KEY: str = "development-secret-key-change-in-production"
+    # Security - SECRET_KEY must be set via environment variable
+    SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 

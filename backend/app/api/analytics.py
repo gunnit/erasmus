@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from datetime import datetime, timedelta
 from typing import Dict, Any, List
+from collections import defaultdict
 
 from app.db.database import get_db
-from app.db.models import User, Proposal
+from app.db.models import User, Proposal, Partner
 from app.api.dependencies import get_current_user
 
 router = APIRouter()
@@ -26,7 +27,12 @@ async def get_analytics_stats(
     pending_proposals = len([p for p in proposals if p.status == 'pending'])
     rejected_proposals = len([p for p in proposals if p.status == 'rejected'])
     
-    total_budget = sum(p.budget or 0 for p in proposals)
+    total_budget = 0
+    for p in proposals:
+        try:
+            total_budget += float(str(p.budget or "0").replace(",", "").replace("\u20ac", ""))
+        except (ValueError, AttributeError):
+            pass
     success_rate = (approved_proposals / total_proposals * 100) if total_proposals > 0 else 0
     avg_duration = sum(p.duration_months or 0 for p in proposals) / total_proposals if total_proposals > 0 else 0
     
@@ -77,26 +83,56 @@ async def get_analytics_trends(
         Proposal.created_at >= start_date
     ).all()
     
-    # Mock trend data - in production, would aggregate from real data
+    # Aggregate real proposal data by month
+    month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+    monthly_proposals = defaultdict(lambda: {"count": 0, "approved": 0})
+    monthly_budget = defaultdict(lambda: {"allocated": 0, "spent": 0})
+
+    for p in proposals:
+        month_key = month_names[p.created_at.month - 1]
+        monthly_proposals[month_key]["count"] += 1
+        if p.status == "approved":
+            monthly_proposals[month_key]["approved"] += 1
+
+        # Parse budget
+        try:
+            budget_val = float(str(p.budget or "0").replace(",", "").replace("\u20ac", ""))
+            monthly_budget[month_key]["allocated"] += budget_val
+            if p.status in ("approved", "submitted"):
+                monthly_budget[month_key]["spent"] += budget_val
+        except (ValueError, AttributeError):
+            pass
+
+    # Build ordered trend arrays covering the date range
+    proposal_trends = []
+    budget_trends = []
+
+    current = start_date
+    seen_months = set()
+    while current <= end_date:
+        m = month_names[current.month - 1]
+        if m not in seen_months:
+            seen_months.add(m)
+            proposal_trends.append({
+                "month": m,
+                "count": monthly_proposals[m]["count"],
+                "approved": monthly_proposals[m]["approved"]
+            })
+            budget_trends.append({
+                "month": m,
+                "allocated": int(monthly_budget[m]["allocated"]),
+                "spent": int(monthly_budget[m]["spent"])
+            })
+        current += timedelta(days=period_days)
+
+    # If no data, return empty arrays rather than fake data
     trends = {
-        "proposals": [
-            {"month": "Jan", "count": 2, "approved": 1},
-            {"month": "Feb", "count": 3, "approved": 2},
-            {"month": "Mar", "count": 4, "approved": 3},
-            {"month": "Apr", "count": 3, "approved": 3},
-            {"month": "May", "count": 5, "approved": 4},
-            {"month": "Jun", "count": 7, "approved": 5}
-        ],
-        "budget": [
-            {"month": "Jan", "allocated": 400000, "spent": 320000},
-            {"month": "Feb", "allocated": 600000, "spent": 480000},
-            {"month": "Mar", "allocated": 800000, "spent": 640000},
-            {"month": "Apr", "allocated": 700000, "spent": 560000},
-            {"month": "May", "allocated": 1000000, "spent": 800000},
-            {"month": "Jun", "allocated": 1300000, "spent": 1040000}
-        ]
+        "proposals": proposal_trends,
+        "budget": budget_trends
     }
-    
+
     return trends
 
 @router.get("/priorities")
@@ -188,15 +224,29 @@ async def get_partner_countries(
 ) -> List[Dict[str, Any]]:
     """Get distribution of partner countries"""
     
-    # Mock data - in production would extract from partner data
-    return [
-        {"country": "Germany", "partners": 23},
-        {"country": "France", "partners": 18},
-        {"country": "Spain", "partners": 15},
-        {"country": "Italy", "partners": 12},
-        {"country": "Poland", "partners": 10},
-        {"country": "Others", "partners": 11}
-    ]
+    # Query real partner country distribution from the partners table
+    partners = db.query(Partner).filter(Partner.user_id == current_user.id).all()
+
+    country_counts = defaultdict(int)
+    for partner in partners:
+        country = partner.country or "Unknown"
+        country_counts[country] += 1
+
+    # Sort by count descending, keep top 5 and group rest as "Others"
+    sorted_countries = sorted(country_counts.items(), key=lambda x: x[1], reverse=True)
+    result = []
+    others_count = 0
+
+    for i, (country, count) in enumerate(sorted_countries):
+        if i < 5:
+            result.append({"country": country, "partners": count})
+        else:
+            others_count += count
+
+    if others_count > 0:
+        result.append({"country": "Others", "partners": others_count})
+
+    return result
 
 @router.get("/recent-activity")
 async def get_recent_activity(

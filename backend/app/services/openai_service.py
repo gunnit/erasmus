@@ -150,7 +150,7 @@ class OpenAIService:
         temperature: float = 0.7
     ) -> str:
         """
-        Generate a completion using OpenAI API (GPT-4o)
+        Generate a completion using OpenAI API
 
         Args:
             system_prompt: The system role prompt
@@ -207,14 +207,14 @@ class OpenAIService:
 
             raise
 
-    def generate_chat_completion(
+    async def generate_chat_completion(
         self,
         messages: List[Dict[str, str]],
         max_tokens: int = 1000,
         temperature: float = 0.7
     ) -> str:
         """
-        Generate a chat completion using OpenAI API (synchronous GPT-4o version)
+        Generate a chat completion using OpenAI API (async version)
 
         Args:
             messages: List of message dictionaries with 'role' and 'content'
@@ -225,14 +225,9 @@ class OpenAIService:
             The generated text
         """
         try:
-            import openai
-
-            # Use synchronous client for this method
-            client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-
             logger.info(f"Generating chat completion with OpenAI {self.model}")
 
-            response = client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
                 max_tokens=max_tokens,

@@ -49,7 +49,6 @@ const api = {
       });
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       throw error;
     }
   },
@@ -59,7 +58,6 @@ const api = {
       const response = await axiosInstance.get('/form/simple/sections');
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       throw error;
     }
   },
@@ -73,7 +71,6 @@ const api = {
       });
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       toast.error(error.response?.data?.detail || 'Failed to start generation');
       throw error;
     }
@@ -84,7 +81,6 @@ const api = {
       const response = await axiosInstance.get(`/form/progressive/generation-status/${sessionId}`);
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       throw error;
     }
   },
@@ -100,7 +96,6 @@ const api = {
       });
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       throw error;
     }
   },
@@ -110,15 +105,15 @@ const api = {
       const response = await axiosInstance.post(`/form/progressive/cancel-generation/${sessionId}`);
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       throw error;
     }
   },
 
   streamProgress: (sessionId, onMessage, onError) => {
+    // Note: EventSource API does not support custom headers.
+    // The token is passed as a query parameter as a known limitation.
+    // The backend endpoint validates this token via get_current_user_from_token_or_query.
     const token = localStorage.getItem('access_token');
-    console.log('SSE Token:', token ? 'Present' : 'Missing');
-    console.log('SSE URL:', `${API_BASE_URL}/form/progressive/stream-progress/${sessionId}`);
 
     const eventSource = new EventSource(
       `${API_BASE_URL}/form/progressive/stream-progress/${sessionId}?token=${token}`,
@@ -127,27 +122,16 @@ const api = {
       }
     );
 
-    eventSource.onopen = () => {
-      console.log('SSE connection opened successfully');
-    };
-
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('SSE Message received:', data);
         onMessage(data);
       } catch (error) {
-        console.error('SSE Parse Error:', error);
+        onError(error);
       }
     };
 
     eventSource.onerror = (error) => {
-      console.error('SSE Error:', error);
-      console.error('SSE ReadyState:', eventSource.readyState);
-      // ReadyState: 0 = connecting, 1 = open, 2 = closed
-      if (eventSource.readyState === EventSource.CLOSED) {
-        console.log('SSE connection closed by server');
-      }
       onError(error);
       eventSource.close();
     };
@@ -165,11 +149,10 @@ const api = {
       }, {
         timeout: 120000 // Explicit 2-minute timeout for generation
       });
-      
+
       toast.success('Application generated successfully!');
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       if (error.code === 'ECONNABORTED') {
         toast.error('Request timed out. The form generation is taking longer than expected. Please try again.');
       } else {
@@ -185,7 +168,6 @@ const api = {
       const response = await axiosInstance.get('/form/priorities');
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       throw error;
     }
   },
@@ -199,7 +181,6 @@ const api = {
       });
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       throw error;
     }
   },
@@ -210,7 +191,6 @@ const api = {
       const response = await axiosInstance.get('/form/questions');
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       throw error;
     }
   },
@@ -221,7 +201,6 @@ const api = {
       const response = await axiosInstance.post('/form/validate', answers);
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       throw error;
     }
   },
@@ -245,7 +224,6 @@ const api = {
 
       toast.success('PDF downloaded successfully!');
     } catch (error) {
-      console.error('API Error:', error);
       toast.error('Failed to export PDF');
       throw error;
     }
@@ -259,7 +237,6 @@ const api = {
       });
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       toast.error(error.response?.data?.detail || 'Failed to generate answer');
       throw error;
     }
@@ -271,7 +248,6 @@ const api = {
       const response = await axiosInstance.get(`/form/single/questions/${section}`);
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       throw error;
     }
   },
@@ -282,7 +258,6 @@ const api = {
       const response = await axiosInstance.get('/health/ready');
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       throw error;
     }
   },
@@ -293,7 +268,6 @@ const api = {
       const response = await axiosInstance.post(`/quality-score/calculate/${proposalId}`);
       return response.data;
     } catch (error) {
-      console.error('Quality Score Error:', error);
       toast.error('Failed to calculate quality score');
       throw error;
     }
@@ -307,7 +281,6 @@ const api = {
       });
       return response.data;
     } catch (error) {
-      console.error('Quality Score Preview Error:', error);
       throw error;
     }
   },
@@ -319,7 +292,6 @@ const api = {
       });
       return response.data;
     } catch (error) {
-      console.error('Get Quality Score Error:', error);
       throw error;
     }
   },
@@ -330,7 +302,6 @@ const api = {
       const response = await axiosInstance.post('/auth/login', { username, password });
       return response.data;
     } catch (error) {
-      console.error('Login Error:', error);
       throw error;
     }
   },
@@ -340,7 +311,6 @@ const api = {
       const response = await axiosInstance.post('/auth/register', userData);
       return response.data;
     } catch (error) {
-      console.error('Registration Error:', error);
       throw error;
     }
   },
@@ -351,7 +321,6 @@ const api = {
       const response = await axiosInstance.get('/dashboard/stats');
       return response.data;
     } catch (error) {
-      console.error('Dashboard Error:', error);
       throw error;
     }
   },
@@ -361,7 +330,6 @@ const api = {
       const response = await axiosInstance.get(`/dashboard/budget-metrics?months=${months}`);
       return response.data;
     } catch (error) {
-      console.error('Budget Metrics Error:', error);
       throw error;
     }
   },
@@ -371,7 +339,6 @@ const api = {
       const response = await axiosInstance.get('/dashboard/priority-metrics');
       return response.data;
     } catch (error) {
-      console.error('Priority Metrics Error:', error);
       throw error;
     }
   },
@@ -381,7 +348,6 @@ const api = {
       const response = await axiosInstance.get(`/dashboard/performance-metrics?months=${months}`);
       return response.data;
     } catch (error) {
-      console.error('Performance Metrics Error:', error);
       throw error;
     }
   },
@@ -393,9 +359,6 @@ const api = {
       toast.success('Proposal saved successfully!');
       return response.data;
     } catch (error) {
-      console.error('Proposal Error:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
       const errorMessage = error.response?.data?.detail || 'Failed to save proposal';
       toast.error(errorMessage);
       throw error;
@@ -409,22 +372,6 @@ const api = {
       });
       return response.data;
     } catch (error) {
-      console.error('Proposals Error:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      // Don't silently fail - let the component handle the error
-      throw error;
-    }
-  },
-  
-  getUserProposals: async (skip = 0, limit = 10) => {
-    try {
-      const response = await axiosInstance.get('/proposals/', {
-        params: { skip, limit }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Proposals Error:', error);
       throw error;
     }
   },
@@ -434,7 +381,6 @@ const api = {
       const response = await axiosInstance.get(`/proposals/${proposalId}`);
       return response.data;
     } catch (error) {
-      console.error('Proposal Error:', error);
       throw error;
     }
   },
@@ -445,7 +391,6 @@ const api = {
       toast.success('Proposal updated successfully!');
       return response.data;
     } catch (error) {
-      console.error('Proposal Error:', error);
       toast.error('Failed to update proposal');
       throw error;
     }
@@ -457,7 +402,6 @@ const api = {
       toast.success('Proposal deleted successfully!');
       return response.data;
     } catch (error) {
-      console.error('Proposal Error:', error);
       toast.error('Failed to delete proposal');
       throw error;
     }
@@ -469,7 +413,6 @@ const api = {
       toast.success('Proposal submitted successfully!');
       return response.data;
     } catch (error) {
-      console.error('Proposal Error:', error);
       toast.error('Failed to submit proposal');
       throw error;
     }
@@ -482,7 +425,6 @@ const api = {
       });
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       toast.error('Failed to generate PDF');
       throw error;
     }
@@ -494,7 +436,6 @@ const api = {
       const response = await axiosInstance.get('/payments/pricing-plans');
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       toast.error('Failed to fetch pricing plans');
       throw error;
     }
@@ -505,8 +446,6 @@ const api = {
       const response = await axiosInstance.get('/payments/subscription-status');
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
-      // Don't show error toast for subscription status as it might be expected
       throw error;
     }
   },
@@ -520,7 +459,6 @@ const api = {
       });
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       toast.error('Failed to create payment order');
       throw error;
     }
@@ -533,7 +471,6 @@ const api = {
       });
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       toast.error('Failed to process payment');
       throw error;
     }
@@ -545,7 +482,6 @@ const api = {
       const response = await axios.get(`${API_BASE_URL}/analytics/public-stats`);
       return response.data;
     } catch (error) {
-      console.error('Public Stats Error:', error);
       // Return fallback data if API fails
       return {
         hours_saved: 0,
@@ -562,7 +498,6 @@ const api = {
       const response = await axiosInstance.post('/payments/check-subscription');
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       if (error.response?.status === 403) {
         toast.error(error.response.data.detail || 'Subscription required');
       }
@@ -575,7 +510,6 @@ const api = {
       const response = await axiosInstance.get('/payments/payment-history');
       return response.data;
     } catch (error) {
-      console.error('API Error:', error);
       toast.error('Failed to fetch payment history');
       throw error;
     }

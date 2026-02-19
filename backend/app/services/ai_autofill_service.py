@@ -113,7 +113,8 @@ class AIAutoFillService:
         
         try:
             return json.loads(response)
-        except:
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            logger.warning(f"Failed to parse priority analysis response: {e}")
             return {
                 "main_priority": priorities[0] if priorities else "",
                 "alignment_points": [],
@@ -133,7 +134,8 @@ class AIAutoFillService:
         
         try:
             return json.loads(response)
-        except:
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            logger.warning(f"Failed to parse partnership analysis response: {e}")
             return {
                 "complementarity": [],
                 "expertise_map": {},
@@ -153,7 +155,8 @@ class AIAutoFillService:
         
         try:
             return json.loads(response)
-        except:
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            logger.warning(f"Failed to parse innovation analysis response: {e}")
             return ["Digital transformation", "Inclusive methodologies", "Cross-sector collaboration"]
     
     async def _build_section_context(self, section_key: str) -> Dict:
@@ -274,7 +277,8 @@ class AIAutoFillService:
                         self._assess_answer_quality(answer, question),
                         timeout=5.0
                     )
-                except:
+                except (asyncio.TimeoutError, Exception) as e:
+                    logger.debug(f"Quality assessment fallback for {field}: {e}")
                     quality_score = 0.7  # Default quality score if assessment fails
 
                 return {
@@ -320,7 +324,7 @@ class AIAutoFillService:
         # Get optimized parameters for this question type
         params = self._get_question_parameters(question, section_key)
 
-        # Generate answer with optimized parameters (GPT-5)
+        # Generate answer with optimized parameters
         try:
             response = await self._call_ai(
                 prompt,
@@ -352,7 +356,7 @@ class AIAutoFillService:
         field = question['field'].lower()
         character_limit = question.get('character_limit', 3000)
 
-        # Base parameters (GPT-4o: using temperature for creativity control)
+        # Base parameters (using temperature for creativity control)
         params = {
             'temperature': 0.7,  # Balanced creativity
             'max_tokens': min(character_limit // 4, 1200)
@@ -405,7 +409,7 @@ class AIAutoFillService:
     
     async def _call_ai(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
         """
-        Call OpenAI GPT-4o API with proper error handling
+        Call OpenAI API with proper error handling
 
         Args:
             prompt: The user prompt to send
