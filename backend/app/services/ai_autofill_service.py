@@ -109,8 +109,8 @@ class AIAutoFillService:
         
         prompt = self.prompts.get_priority_analysis_prompt(priorities, project_idea)
 
-        response = await self._call_ai(prompt, temperature=0.5, max_tokens=1000)
-        
+        response = await self._call_ai(prompt, temperature=0.5, max_tokens=1500)
+
         try:
             return json.loads(response)
         except (json.JSONDecodeError, TypeError, ValueError) as e:
@@ -120,18 +120,18 @@ class AIAutoFillService:
                 "alignment_points": [],
                 "key_themes": []
             }
-    
+
     async def _analyze_partnerships(self, project_context: Dict) -> Dict:
         """
         Analyze partner organizations and their roles
         """
         lead_org = project_context.get('lead_org', {})
         partners = project_context.get('partners', [])
-        
+
         prompt = self.prompts.get_partnership_analysis_prompt(lead_org, partners)
 
-        response = await self._call_ai(prompt, temperature=0.5, max_tokens=1000)
-        
+        response = await self._call_ai(prompt, temperature=0.5, max_tokens=1500)
+
         try:
             return json.loads(response)
         except (json.JSONDecodeError, TypeError, ValueError) as e:
@@ -141,17 +141,17 @@ class AIAutoFillService:
                 "expertise_map": {},
                 "collaboration_strengths": []
             }
-    
+
     async def _identify_innovation_points(self, project_context: Dict) -> List[str]:
         """
         Identify innovative aspects of the project
         """
         project_idea = project_context.get('project_idea', '')
         field = project_context.get('field', 'Adult Education')
-        
+
         prompt = self.prompts.get_innovation_analysis_prompt(project_idea, field)
 
-        response = await self._call_ai(prompt, temperature=0.7, max_tokens=1000)
+        response = await self._call_ai(prompt, temperature=0.7, max_tokens=1500)
         
         try:
             return json.loads(response)
@@ -357,42 +357,43 @@ class AIAutoFillService:
         character_limit = question.get('character_limit', 3000)
 
         # Base parameters (using temperature for creativity control)
+        # GPT-5.2 is efficient with tokens - use character_limit // 3 for better coverage
         params = {
             'temperature': 0.7,  # Balanced creativity
-            'max_tokens': min(character_limit // 4, 1200)
+            'max_tokens': min(character_limit // 3, 2048)
         }
 
         # Question-specific optimizations
         if section_key == 'project_summary':
             params['temperature'] = 0.7
-            params['max_tokens'] = min(character_limit // 4, 1000)
+            params['max_tokens'] = min(character_limit // 3, 1500)
 
         elif section_key == 'relevance':
             params['temperature'] = 0.7
-            params['max_tokens'] = min(character_limit // 4, 1200)
+            params['max_tokens'] = min(character_limit // 3, 2048)
 
         elif section_key == 'needs_analysis':
             params['temperature'] = 0.7
-            params['max_tokens'] = min(character_limit // 4, 1100)
+            params['max_tokens'] = min(character_limit // 3, 1800)
 
         elif section_key == 'partnership':
             params['temperature'] = 0.7
-            params['max_tokens'] = min(character_limit // 4, 1000)
+            params['max_tokens'] = min(character_limit // 3, 1500)
 
         elif section_key == 'impact':
             params['temperature'] = 0.9  # Analytical depth
-            params['max_tokens'] = min(character_limit // 4, 1200)
+            params['max_tokens'] = min(character_limit // 3, 2048)
 
         elif section_key == 'project_management':
             params['temperature'] = 0.5  # Precise and factual
-            params['max_tokens'] = min(character_limit // 4, 1100)
+            params['max_tokens'] = min(character_limit // 3, 1800)
 
         # Field-specific overrides
         if 'innovation' in field or 'creative' in field:
             params['temperature'] = 0.9  # Creative thinking
         elif 'budget' in field or 'timeline' in field or 'milestone' in field:
             params['temperature'] = 0.5  # Precise for numbers
-            params['max_tokens'] = min(params['max_tokens'], 800)
+            params['max_tokens'] = min(params['max_tokens'], 1200)
         elif 'risk' in field or 'quality' in field:
             params['temperature'] = 0.7  # Balanced
         elif 'dissemination' in field or 'sustainability' in field:
@@ -400,9 +401,9 @@ class AIAutoFillService:
 
         # For shorter questions, use fewer tokens
         if character_limit < 1000:
-            params['max_tokens'] = min(params['max_tokens'], 400)
+            params['max_tokens'] = min(params['max_tokens'], 600)
         elif character_limit < 2000:
-            params['max_tokens'] = min(params['max_tokens'], 700)
+            params['max_tokens'] = min(params['max_tokens'], 1200)
 
         logger.debug(f"Parameters for {field} in {section_key}: temperature={params['temperature']}, tokens={params['max_tokens']}")
         return params

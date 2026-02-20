@@ -51,7 +51,7 @@ class PartnerAffinityService:
                     {"role": "developer", "content": "You are an expert in analyzing partner compatibility for Erasmus+ projects. Provide detailed analysis of how well a partner fits with a project."},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=800,
+                max_tokens=1500,
                 temperature=0.7,
                 reasoning_effort="none"
             )
@@ -192,7 +192,7 @@ Format as a JSON list of improvements with priority (high/medium/low).
                     {"role": "developer", "content": "You are an Erasmus+ partnership expert."},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=400,
+                max_tokens=1024,
                 temperature=0.7,
                 reasoning_effort="none"
             )

@@ -80,9 +80,10 @@ class ConversationalAIService:
                 model=self.model,
                 messages=messages,
                 temperature=0.7,
-                max_tokens=1500,
+                max_tokens=4096,
                 presence_penalty=0.3,
-                frequency_penalty=0.3
+                frequency_penalty=0.3,
+                reasoning_effort="none"
             )
 
             ai_response = response.choices[0].message.content
@@ -165,7 +166,8 @@ Potential with improvements: Y/100
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.6,
-                max_tokens=2000
+                max_tokens=4096,
+                reasoning_effort="none"
             )
 
             analysis = response.choices[0].message.content
@@ -242,7 +244,8 @@ Provide the alternative answer:"""
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.8,
-                max_tokens=1000
+                max_tokens=2048,
+                reasoning_effort="none"
             )
 
             alternative = response.choices[0].message.content
@@ -329,10 +332,14 @@ Format as JSON array:
 
             response = await self.client.chat.completions.create(
                 model=self.model,
-                messages=[{"role": "user", "content": prompt}],
+                messages=[
+                    {"role": "developer", "content": "You are a helpful assistant that generates actionable suggestions for Erasmus+ grant applicants. Always respond with valid JSON."},
+                    {"role": "user", "content": prompt}
+                ],
                 temperature=0.6,
-                max_tokens=500,
-                response_format={"type": "json_object"}
+                max_tokens=1024,
+                response_format={"type": "json_object"},
+                reasoning_effort="none"
             )
 
             result = json.loads(response.choices[0].message.content)
@@ -401,7 +408,8 @@ Format as structured guidance that's immediately actionable."""
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.6,
-                max_tokens=1500
+                max_tokens=4096,
+                reasoning_effort="none"
             )
 
             return {

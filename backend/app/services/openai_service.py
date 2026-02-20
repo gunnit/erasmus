@@ -133,7 +133,7 @@ class OpenAIService:
                         "content": prompt
                     }
                 ],
-                max_tokens=1200,
+                max_tokens=2048,
                 reasoning_effort="none"
             )
 
@@ -297,7 +297,7 @@ class OpenAIService:
                         "content": prompt
                     }
                 ],
-                max_tokens=800,  # Concise answers for grant forms
+                max_tokens=1500,  # Expanded for detailed grant answers
                 temperature=0.7,
                 reasoning_effort="none"
             )

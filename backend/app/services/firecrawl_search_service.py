@@ -1,9 +1,14 @@
 from typing import Dict, List, Optional
 import logging
 import re
-from firecrawl import Firecrawl
-from firecrawl.v2.types import Document, SearchData
 from app.core.config import settings
+
+try:
+    from firecrawl import Firecrawl
+    FIRECRAWL_AVAILABLE = True
+except ImportError:
+    FIRECRAWL_AVAILABLE = False
+    Firecrawl = None
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +17,11 @@ class FirecrawlSearchService:
     """Service for searching real organizations using Firecrawl API"""
 
     def __init__(self):
-        if not settings.FIRECRAWL_API_KEY:
+        if not FIRECRAWL_AVAILABLE:
+            logger.warning("Firecrawl package not installed - partner search via web disabled")
+            self.enabled = False
+            self.app = None
+        elif not settings.FIRECRAWL_API_KEY:
             logger.warning("FIRECRAWL_API_KEY is not set in environment variables")
             logger.warning("Partner search functionality will be disabled")
             self.enabled = False

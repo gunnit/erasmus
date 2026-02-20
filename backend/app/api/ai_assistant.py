@@ -85,7 +85,7 @@ async def chat_with_assistant(
         try:
             response = await openai_service.generate_chat_completion(
                 messages=messages,
-                max_tokens=1000,
+                max_tokens=4096,
                 temperature=0.7
             )
             print(f"OpenAI response received: {len(response)} characters")

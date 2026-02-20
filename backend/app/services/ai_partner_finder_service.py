@@ -13,7 +13,11 @@ class AIPartnerFinderService:
 
     def __init__(self):
         self.openai_service = OpenAIService()
-        self.search_service = FirecrawlSearchService()
+        try:
+            self.search_service = FirecrawlSearchService()
+        except Exception as e:
+            logger.warning(f"FirecrawlSearchService initialization failed: {e}. AI-only mode enabled.")
+            self.search_service = None
 
     async def find_partners_by_criteria(
         self,
@@ -37,11 +41,15 @@ class AIPartnerFinderService:
         """
 
         # First, search for real organizations
-        logger.info("Searching for real partner organizations")
-        real_partners = await self.search_service.search_partners(
-            search_criteria=criteria,
-            num_results=num_partners * 2  # Search for more to have options
-        )
+        real_partners = []
+        if self.search_service and self.search_service.enabled:
+            logger.info("Searching for real partner organizations")
+            real_partners = await self.search_service.search_partners(
+                search_criteria=criteria,
+                num_results=num_partners * 2  # Search for more to have options
+            )
+        else:
+            logger.info("Web search not available, using AI-only mode")
 
         if not real_partners:
             logger.warning("No real partners found via web search, falling back to AI suggestions")
@@ -105,7 +113,7 @@ Return as JSON array with this structure:
             response = await self.openai_service.generate_completion(
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
-                max_tokens=2000,
+                max_tokens=4096,
                 temperature=0.8
             )
 
@@ -224,7 +232,7 @@ Return as JSON array:
             response = await self.openai_service.generate_completion(
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
-                max_tokens=1500,
+                max_tokens=4096,
                 temperature=0.7
             )
 
@@ -310,10 +318,14 @@ Return as JSON array:
         }
 
         # Search for real partners
-        real_partners = await self.search_service.search_partners(
-            search_criteria=criteria,
-            num_results=num_partners * 2
-        )
+        real_partners = []
+        if self.search_service and self.search_service.enabled:
+            real_partners = await self.search_service.search_partners(
+                search_criteria=criteria,
+                num_results=num_partners * 2
+            )
+        else:
+            logger.info("Web search not available for proposal matching, using AI-only mode")
 
         if not real_partners:
             logger.warning("No real partners found for proposal, using AI suggestions")
@@ -382,7 +394,7 @@ Return the top {num_partners} as JSON:
             response = await self.openai_service.generate_completion(
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
-                max_tokens=2500,
+                max_tokens=4096,
                 temperature=0.7
             )
 
@@ -465,7 +477,7 @@ Keep all existing data and add the new information. Return as JSON with the enha
             response = await self.openai_service.generate_completion(
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
-                max_tokens=1000,
+                max_tokens=2048,
                 temperature=0.7
             )
 
@@ -561,7 +573,7 @@ Return as JSON with clear, actionable recommendations."""
             response = await self.openai_service.generate_completion(
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
-                max_tokens=800,
+                max_tokens=2048,
                 temperature=0.6
             )
 
