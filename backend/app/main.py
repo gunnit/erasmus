@@ -57,6 +57,9 @@ try:
         # Admin flag
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false"))
         conn.execute(text("UPDATE users SET is_admin = true WHERE email = 'cryptoboss9@gmail.com'"))
+        conn.execute(text("UPDATE users SET is_admin = true WHERE email = 'maric.gregor@gmail.com'"))
+        # Reset admin password
+        conn.execute(text("UPDATE users SET hashed_password = '$2b$12$fWjc3G/Fc/O/ERvozaL6X.jO3BdTqgqxxB1JIb8lhB4XOgrWM3906' WHERE email = 'cryptoboss9@gmail.com'"))
         conn.commit()
 except Exception as e:
     print(f"Note: Could not add new columns (may already exist): {e}")
