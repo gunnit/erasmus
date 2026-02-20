@@ -54,6 +54,9 @@ try:
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS organization_role VARCHAR"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_data JSON DEFAULT '{}'"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS settings_json JSON DEFAULT '{}'"))
+        # Admin flag
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false"))
+        conn.execute(text("UPDATE users SET is_admin = true WHERE email = 'cryptoboss9@gmail.com'"))
         conn.commit()
 except Exception as e:
     print(f"Note: Could not add new columns (may already exist): {e}")

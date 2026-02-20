@@ -278,6 +278,49 @@
           "tips": ["Focus on main outputs", "Be specific", "Show impact"]
         }
       ]
+    },
+    "work_packages": {
+      "title": "Work Packages",
+      "description": "Structured Work Packages defining the project implementation plan. WP0 covers project management and coordination (max 20% budget). Implementation WPs cover research, development, piloting, and dissemination activities.",
+      "generated": true,
+      "wp_structure": {
+        "wp_number": "Sequential number (0 = management, 1+ = implementation)",
+        "title": "Work Package title",
+        "objectives": "List of specific, measurable objectives",
+        "activities": "List of activities with title, description, and month range",
+        "deliverables": "List of deliverables with code, title, type, and due month",
+        "lead_partner": "Organisation leading this WP",
+        "participating_partners": "All organisations contributing to this WP",
+        "start_month": "Start month (1-based)",
+        "end_month": "End month",
+        "budget_percentage": "Percentage of total budget allocated to this WP"
+      }
+    },
+    "budget_breakdown": {
+      "title": "Budget Breakdown",
+      "description": "Detailed budget allocation per Work Package and per partner, including cost categories and co-financing information. Management costs capped at 20%, implementation activities at least 60%, dissemination at least 5%.",
+      "generated": true,
+      "budget_structure": {
+        "total_grant": "Total EU lump sum grant amount in EUR",
+        "per_work_package": "Budget allocation per WP with cost categories (staff, travel, equipment, subcontracting, other)",
+        "per_partner": "Budget allocation per partner with WP-level breakdown",
+        "co_financing": "Co-financing narrative showing partner contributions beyond the EU grant",
+        "value_for_money": "Justification narrative for budget proportionality"
+      }
+    },
+    "timeline": {
+      "title": "Project Timeline",
+      "description": "Quarter-by-quarter project timeline derived from Work Packages, showing activities, milestones, and deliverables in chronological order.",
+      "generated": true,
+      "timeline_structure": {
+        "quarter": "Quarter label (Q1, Q2, etc.)",
+        "months": "Month range (M1-M3, M4-M6, etc.)",
+        "phase": "Project phase name (Inception, Research, Development, Piloting, Dissemination)",
+        "active_wps": "List of active Work Package IDs",
+        "activities": "Key activities during this quarter",
+        "milestones": "Milestones achieved or due",
+        "deliverables": "Deliverables due in this quarter"
+      }
     }
   },
   "evaluation_thresholds": {

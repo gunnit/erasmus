@@ -4,14 +4,14 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Menu, X, Home, FileText, Settings as SettingsIcon, LogOut,
   Moon, Sun, Bell, User, ChevronDown, PlusCircle,
-  Layers, Sparkles, TrendingUp, BookOpen, Trophy, Target, Users
+  Layers, TrendingUp, BookOpen, Trophy, Target, Users, ShieldCheck
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { formatDeadlineDate, formatBrusselsTime } from '../../utils/dateUtils';
 
-const navItems = [
+const baseNavItems = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Proposals', href: '/proposals', icon: FileText },
   { name: 'Analytics', href: '/analytics', icon: TrendingUp },
@@ -37,6 +37,9 @@ export const Layout = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
+  const navItems = user?.is_admin
+    ? [...baseNavItems, { name: 'Admin Panel', href: '/admin', icon: ShieldCheck }]
+    : baseNavItems;
 
   useEffect(() => {
     if (darkMode) {
@@ -125,13 +128,11 @@ export const Layout = () => {
                   whileHover={{ scale: 1.05 }}
                 >
                   <div className="relative">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-                      <Sparkles className="w-6 h-6 text-white" />
-                    </div>
+                    <img src="/logo.svg" alt="GYG" className="w-10 h-10 rounded-xl" />
                     <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl blur opacity-30 animate-pulse-slow" />
                   </div>
                   <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-                    Erasmus+ AI
+                    Get Your Grant
                   </span>
                 </motion.div>
               </Link>

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, ArrowRight, Sparkles, Shield, User, Lock } from 'lucide-react';
+import { LogIn, ArrowRight, Shield, User, Lock, CheckCircle, FileText, Clock, Target } from 'lucide-react';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -10,16 +10,9 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [scrollY, setScrollY] = useState(0);
 
   const { login } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -45,51 +38,122 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Animated gradient background with floating orbs */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div
-          className="absolute top-20 -left-20 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl animate-pulse"
-          style={{ transform: `translateY(${scrollY * 0.1}px)` }}
-        />
-        <div
-          className="absolute top-60 right-10 w-80 h-80 bg-purple-400/20 rounded-full blur-3xl animate-pulse"
-          style={{ transform: `translateY(${scrollY * 0.15}px)` }}
-        />
-        <div
-          className="absolute bottom-40 left-1/3 w-72 h-72 bg-indigo-400/20 rounded-full blur-3xl animate-pulse"
-          style={{ transform: `translateY(${scrollY * 0.08}px)` }}
-        />
+    <div className="min-h-screen flex">
+      {/* Left Panel - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-blue-700 via-indigo-700 to-blue-900">
+        {/* Decorative elements */}
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-0 w-full h-full opacity-10">
+            <div className="absolute top-10 left-10 w-64 h-64 border border-white/30 rounded-full" />
+            <div className="absolute top-20 left-20 w-64 h-64 border border-white/20 rounded-full" />
+            <div className="absolute bottom-20 right-10 w-80 h-80 border border-white/20 rounded-full" />
+            <div className="absolute bottom-32 right-20 w-80 h-80 border border-white/10 rounded-full" />
+          </div>
+          <div className="absolute top-1/4 -right-20 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 -left-20 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl" />
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 flex flex-col justify-between p-12 w-full">
+          {/* Logo */}
+          <div>
+            <Link to="/" className="inline-flex items-center space-x-3">
+              <div className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20">
+                <span className="text-white font-bold text-lg">G</span>
+              </div>
+              <span className="text-xl font-bold text-white">Get Your Grant</span>
+            </Link>
+          </div>
+
+          {/* Main message */}
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-4xl font-bold text-white leading-tight mb-4">
+                Your Erasmus+ application is waiting.
+              </h1>
+              <p className="text-blue-200 text-lg leading-relaxed">
+                Pick up where you left off. Your AI-generated proposals, partner library, and progress are all saved securely.
+              </p>
+            </div>
+
+            {/* Feature highlights */}
+            <div className="space-y-4">
+              {[
+                { icon: FileText, text: 'All 27 form questions answered by AI' },
+                { icon: Target, text: 'Optimized for Erasmus+ evaluation criteria' },
+                { icon: Clock, text: 'Complete applications in under 30 minutes' }
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <item.icon className="w-4 h-4 text-blue-300" />
+                  </div>
+                  <span className="text-white/90 text-sm">{item.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Testimonial */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+            <p className="text-white/90 text-sm italic leading-relaxed mb-4">
+              "We submitted our KA220-ADU application and received a score of 87/100. The AI-generated answers were coherent across all sections and aligned perfectly with EU priorities."
+            </p>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-indigo-400 rounded-full flex items-center justify-center">
+                <span className="text-white font-semibold text-sm">MS</span>
+              </div>
+              <div>
+                <p className="text-white font-medium text-sm">Maria Schmidt</p>
+                <p className="text-blue-300 text-xs">Volkshochschule Berlin, Germany</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Glass morphism login container */}
-      <div className="relative z-10 w-full max-w-md px-4">
-        <div className="bg-white/80 backdrop-blur-xl p-8 md:p-10 rounded-3xl shadow-2xl border border-white/50 transform transition-all duration-500 hover:shadow-3xl">
-          {/* Logo and header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl shadow-lg mb-4 transform transition-transform duration-300 hover:scale-110">
-              <span className="text-white font-bold text-2xl">GYG</span>
-            </div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-              Welcome Back
+      {/* Right Panel - Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 px-4 py-12">
+        <div className="w-full max-w-md">
+          {/* Mobile logo */}
+          <div className="lg:hidden text-center mb-8">
+            <Link to="/" className="inline-flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
+                <span className="text-white font-bold text-lg">G</span>
+              </div>
+              <span className="text-xl font-bold text-gray-900">Get Your Grant</span>
+            </Link>
+          </div>
+
+          {/* Form header */}
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Sign in to your account
             </h2>
-            <p className="text-gray-600">Sign in to continue to your dashboard</p>
+            <p className="text-gray-600">
+              Don't have an account?{' '}
+              <Link to="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+                Create one free
+              </Link>
+            </p>
           </div>
 
-          {/* Badge */}
-          <div className="flex justify-center mb-6">
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/50 text-blue-700 text-xs font-medium">
-              <Shield className="w-3 h-3 mr-1" />
-              Secure Login
-              <Sparkles className="w-3 h-3 ml-1" />
+          {/* Trust badge */}
+          <div className="flex items-center space-x-4 mb-6 pb-6 border-b border-gray-200">
+            <div className="flex items-center text-xs text-gray-500">
+              <Shield className="w-3.5 h-3.5 mr-1 text-green-600" />
+              SSL Encrypted
+            </div>
+            <div className="flex items-center text-xs text-gray-500">
+              <CheckCircle className="w-3.5 h-3.5 mr-1 text-green-600" />
+              GDPR Compliant
             </div>
           </div>
 
-          {/* Error message with animation */}
+          {/* Error message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 animate-pulse">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 text-sm">
               <div className="flex items-center">
-                <span className="text-red-500 mr-2">⚠</span>
+                <span className="text-red-500 mr-2 flex-shrink-0">!</span>
                 {error}
               </div>
             </div>
@@ -97,12 +161,12 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="username" className="block text-gray-700 text-sm font-semibold mb-2">
+              <label htmlFor="username" className="block text-gray-700 text-sm font-medium mb-1.5">
                 Username
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <User className="h-4 w-4 text-gray-400" />
                 </div>
                 <input
                   type="text"
@@ -111,7 +175,7 @@ const Login = () => {
                   autoComplete="username"
                   value={formData.username}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-3 py-3 bg-white/50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-blue-300"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
                   placeholder="Enter your username"
                   required
                 />
@@ -119,12 +183,21 @@ const Login = () => {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-gray-700 text-sm font-semibold mb-2">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="password" className="block text-gray-700 text-sm font-medium">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => window.location.href = 'mailto:support@getyourgrant.eu?subject=Password Reset Request'}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Forgot password?
+                </button>
+              </div>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <Lock className="h-4 w-4 text-gray-400" />
                 </div>
                 <input
                   type="password"
@@ -133,74 +206,55 @@ const Login = () => {
                   autoComplete="current-password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-3 py-3 bg-white/50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-blue-300"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
                   placeholder="Enter your password"
                   required
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-end">
-              <button
-                type="button"
-                onClick={() => window.location.href = 'mailto:support@getyourgrant.eu?subject=Password Reset Request'}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Forgot password?
-              </button>
-            </div>
-
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-sm hover:shadow transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              <span className="relative z-10 flex items-center justify-center">
-                {loading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Signing in...
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="w-5 h-5 mr-2" />
-                    Sign In
-                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                  </>
-                )}
-              </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              {loading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Sign In
+                </>
+              )}
             </button>
           </form>
 
-          <div className="mt-8 text-center">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white/80 text-gray-500">New to GYG?</span>
-              </div>
+          {/* Divider */}
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
             </div>
-
-            <p className="mt-6">
-              <Link
-                to="/register"
-                className="group inline-flex items-center text-blue-600 hover:text-blue-700 font-semibold transition-colors"
-              >
-                Create an account
-                <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </p>
+            <div className="relative flex justify-center text-xs">
+              <span className="px-3 bg-gray-50 text-gray-500">New to Get Your Grant?</span>
+            </div>
           </div>
-        </div>
 
-        {/* Bottom helper text */}
-        <div className="text-center mt-6">
-          <p className="text-sm text-gray-600">
+          <Link
+            to="/register"
+            className="w-full py-3 px-4 bg-white border border-gray-300 hover:border-gray-400 text-gray-700 rounded-xl font-medium transition-all text-sm flex items-center justify-center hover:bg-gray-50"
+          >
+            Create an account
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Link>
+
+          {/* Help */}
+          <p className="text-center mt-8 text-xs text-gray-500">
             Need help? Contact{' '}
             <a href="mailto:support@getyourgrant.eu" className="text-blue-600 hover:text-blue-700 font-medium">
               support@getyourgrant.eu

@@ -4,16 +4,88 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/logo.svg" />
+
+    <!-- Primary Meta Tags -->
+    <title>Get Your Grant | AI-Powered Erasmus+ KA220-ADU Application Assistant</title>
     <meta
       name="description"
-      content="AI-powered Erasmus+ KA220-ADU grant application form completion system. Complete your application in 30 minutes instead of 60 hours."
+      content="Complete your Erasmus+ KA220-ADU grant application in 30 minutes instead of 40-60 hours. AI generates evaluation-optimized answers for all 27 questions. EU-compliant, GDPR-safe, PDF export ready."
     />
+    <meta name="keywords" content="Erasmus+, KA220-ADU, grant application, EU funding, AI grant writing, Cooperation Partnerships, adult education, European Commission" />
+    <meta name="author" content="GYG S.R.L." />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://getyourgrant.eu/" />
+    <meta property="og:title" content="Get Your Grant | Complete Erasmus+ Applications in 30 Minutes" />
+    <meta property="og:description" content="AI-powered assistant that generates evaluation-optimized answers for all 27 KA220-ADU questions. Transform weeks of writing into a single session." />
+    <meta property="og:image" content="%PUBLIC_URL%/logo512.png" />
+    <meta property="og:site_name" content="Get Your Grant" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://getyourgrant.eu/" />
+    <meta name="twitter:title" content="Get Your Grant | AI-Powered Erasmus+ Applications" />
+    <meta name="twitter:description" content="Complete your Erasmus+ KA220-ADU application in 30 minutes. AI generates answers for all 27 questions, optimized for evaluation criteria." />
+    <meta name="twitter:image" content="%PUBLIC_URL%/logo512.png" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://getyourgrant.eu/" />
+
+    <!-- Apple Touch Icon -->
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <title>Erasmus+ Form Completion System</title>
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Get Your Grant",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "description": "AI-powered Erasmus+ KA220-ADU grant application assistant that generates evaluation-optimized answers for all 27 questions in 30 minutes.",
+      "url": "https://getyourgrant.eu",
+      "offers": [
+        {
+          "@type": "Offer",
+          "name": "Starter Plan",
+          "price": "49",
+          "priceCurrency": "EUR",
+          "description": "3 complete Erasmus+ applications in 30 days"
+        },
+        {
+          "@type": "Offer",
+          "name": "Professional Plan",
+          "price": "149",
+          "priceCurrency": "EUR",
+          "description": "15 complete Erasmus+ applications in 90 days"
+        }
+      ],
+      "publisher": {
+        "@type": "Organization",
+        "name": "GYG S.R.L.",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Via Maffei, n. 71",
+          "addressLocality": "Ledro",
+          "addressRegion": "TN",
+          "postalCode": "38067",
+          "addressCountry": "IT"
+        },
+        "vatID": "02767760222",
+        "telephone": "+39 0464 508583",
+        "email": "info@getyourgrant.eu"
+      }
+    }
+    </script>
+
     <script>
-      // Handle redirect from 404.html
+      // Handle redirect from 404.html (SPA routing on Render)
       (function(){
         const redirect = sessionStorage.redirect;
         delete sessionStorage.redirect;

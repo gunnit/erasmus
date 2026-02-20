@@ -515,6 +515,41 @@ const api = {
     }
   },
 
+  // Admin endpoints
+  getAdminStats: async () => {
+    const response = await axiosInstance.get('/admin/stats');
+    return response.data;
+  },
+
+  getAdminUsers: async (skip = 0, limit = 20, search = '') => {
+    const params = { skip, limit };
+    if (search) params.search = search;
+    const response = await axiosInstance.get('/admin/users', { params });
+    return response.data;
+  },
+
+  getAdminUser: async (userId) => {
+    const response = await axiosInstance.get(`/admin/users/${userId}`);
+    return response.data;
+  },
+
+  grantCredits: async (userId, amount, note = '') => {
+    const response = await axiosInstance.post(`/admin/users/${userId}/grant-credits`, { amount, note });
+    return response.data;
+  },
+
+  getAdminProposals: async (skip = 0, limit = 20, search = '') => {
+    const params = { skip, limit };
+    if (search) params.search = search;
+    const response = await axiosInstance.get('/admin/proposals', { params });
+    return response.data;
+  },
+
+  getAdminPayments: async (skip = 0, limit = 20) => {
+    const response = await axiosInstance.get('/admin/payments', { params: { skip, limit } });
+    return response.data;
+  },
+
   get: axiosInstance.get,
   post: axiosInstance.post,
   put: axiosInstance.put,

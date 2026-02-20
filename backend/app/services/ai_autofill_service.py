@@ -97,7 +97,64 @@ class AIAutoFillService:
         
         # Perform quality checks and consistency validation
         validated_answers = await self._validate_and_enhance(all_answers, form_questions)
-        
+
+        # Generate Work Packages based on the complete answers
+        logger.info("Generating Work Packages based on completed answers...")
+        work_packages = None
+        try:
+            work_packages = await self._generate_work_packages(
+                project_context=project_context,
+                all_answers=validated_answers
+            )
+            if work_packages:
+                validated_answers["work_packages"] = work_packages
+                logger.info(f"Generated {len(work_packages)} Work Packages successfully")
+            else:
+                logger.warning("Work Package generation returned empty result")
+        except Exception as e:
+            logger.error(f"Work Package generation failed: {str(e)}")
+            # Don't fail the entire generation if WPs fail
+
+        # Generate Budget Breakdown (requires Work Packages)
+        if work_packages:
+            logger.info("Generating Budget Breakdown...")
+            try:
+                budget_breakdown = await self._generate_budget_breakdown(
+                    project_context=project_context,
+                    work_packages=work_packages
+                )
+                if budget_breakdown:
+                    validated_answers["budget_breakdown"] = budget_breakdown
+                    logger.info("Budget Breakdown generated successfully")
+                else:
+                    logger.warning("Budget Breakdown generation returned empty result")
+            except Exception as e:
+                logger.error(f"Budget Breakdown generation failed: {str(e)}")
+        else:
+            logger.warning("Skipping Budget Breakdown - no Work Packages available")
+
+        # Generate Project Timeline (requires Work Packages)
+        if work_packages:
+            logger.info("Generating Project Timeline...")
+            try:
+                timeline = await self._generate_project_timeline(
+                    project_context=project_context,
+                    work_packages=work_packages
+                )
+                if timeline:
+                    validated_answers["timeline"] = timeline
+                    logger.info(f"Timeline generated with {len(timeline)} quarters")
+                else:
+                    logger.warning("Timeline generation returned empty result")
+            except Exception as e:
+                logger.error(f"Timeline generation failed: {str(e)}")
+
+        # Count verification placeholders that need user attention
+        verification_needed = self._count_verification_needed(validated_answers)
+        if verification_needed:
+            logger.info(f"Generation complete with {len(verification_needed)} [VERIFY:] placeholder(s) requiring user review")
+            self.context_memory['verification_needed'] = verification_needed
+
         return validated_answers
     
     async def _analyze_priorities(self, project_context: Dict) -> Dict:
@@ -614,6 +671,14 @@ class AIAutoFillService:
             matched = sum(1 for kw in target_keywords if kw in answer_lower)
             quality_score += 0.15 * min(1.0, matched / 2)
 
+        # 8. [VERIFY:] tags - note them but don't penalize
+        verify_tags = re.findall(r'\[VERIFY:\s*[^\]]+\]', answer)
+        if verify_tags:
+            logger.info(
+                f"Answer for {question.get('field', 'unknown')} contains {len(verify_tags)} "
+                f"[VERIFY:] tag(s) requiring user review"
+            )
+
         final_score = min(quality_score, 1.0)
         logger.debug(
             f"Quality assessment for {question.get('field', 'unknown')}: {final_score:.2f} "
@@ -621,6 +686,249 @@ class AIAutoFillService:
         )
         return final_score
     
+    async def _generate_work_packages(
+        self,
+        project_context: Dict,
+        all_answers: Dict,
+        num_implementation_wps: int = 3
+    ) -> List[Dict]:
+        """
+        Generate Work Packages derived from the completed application answers.
+        WP0 = Project Management (max 20% budget), WP1-WPN = implementation WPs.
+        Returns a list of WP dicts or an empty list on failure.
+        """
+        import re
+
+        prompt = self.prompts.get_work_package_prompt(
+            project_context=project_context,
+            all_answers=all_answers,
+            num_implementation_wps=num_implementation_wps
+        )
+
+        # Use lower temperature for structured output
+        response = await self._call_ai(prompt, temperature=0.5, max_tokens=3000)
+
+        # Parse JSON response - handle markdown code fences
+        cleaned = response.strip()
+        if cleaned.startswith("```"):
+            # Remove markdown code block wrapper
+            cleaned = re.sub(r'^```(?:json)?\s*', '', cleaned)
+            cleaned = re.sub(r'\s*```$', '', cleaned)
+
+        try:
+            work_packages = json.loads(cleaned)
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            logger.error(f"Failed to parse Work Packages JSON: {e}")
+            logger.debug(f"Raw WP response: {response[:500]}")
+            return []
+
+        if not isinstance(work_packages, list):
+            logger.error(f"Work Packages response is not a list: {type(work_packages)}")
+            return []
+
+        # Validate and normalize each WP
+        validated_wps = []
+        for wp in work_packages:
+            if not isinstance(wp, dict):
+                continue
+            # Ensure required fields exist with defaults
+            validated_wp = {
+                "wp_number": wp.get("wp_number", len(validated_wps)),
+                "title": wp.get("title", f"Work Package {wp.get('wp_number', len(validated_wps))}"),
+                "objectives": wp.get("objectives", []),
+                "activities": wp.get("activities", []),
+                "deliverables": wp.get("deliverables", []),
+                "lead_partner": wp.get("lead_partner", ""),
+                "participating_partners": wp.get("participating_partners", []),
+                "start_month": wp.get("start_month", 1),
+                "end_month": wp.get("end_month", 24),
+                "budget_percentage": wp.get("budget_percentage", 0),
+            }
+
+            # Cap WP0 budget at 20%
+            if validated_wp["wp_number"] == 0 and validated_wp["budget_percentage"] > 20:
+                validated_wp["budget_percentage"] = 20
+
+            validated_wps.append(validated_wp)
+
+        # Ensure budget percentages sum to ~100%
+        total_budget_pct = sum(wp["budget_percentage"] for wp in validated_wps)
+        if validated_wps and total_budget_pct > 0 and abs(total_budget_pct - 100) > 5:
+            # Normalize to 100%
+            factor = 100.0 / total_budget_pct
+            for wp in validated_wps:
+                wp["budget_percentage"] = round(wp["budget_percentage"] * factor, 1)
+            # Ensure WP0 stays <= 20% after normalization
+            for wp in validated_wps:
+                if wp["wp_number"] == 0 and wp["budget_percentage"] > 20:
+                    excess = wp["budget_percentage"] - 20
+                    wp["budget_percentage"] = 20
+                    # Distribute excess to implementation WPs
+                    impl_wps = [w for w in validated_wps if w["wp_number"] != 0]
+                    if impl_wps:
+                        per_wp = excess / len(impl_wps)
+                        for w in impl_wps:
+                            w["budget_percentage"] = round(w["budget_percentage"] + per_wp, 1)
+
+        logger.info(f"Validated {len(validated_wps)} Work Packages")
+        return validated_wps
+
+    async def _generate_budget_breakdown(
+        self,
+        project_context: Dict,
+        work_packages: List[Dict]
+    ) -> Optional[Dict]:
+        """
+        Generate a detailed budget breakdown per WP and per partner,
+        with cost categories and co-financing narrative.
+        Returns a budget dict or None on failure.
+        """
+        import re
+
+        prompt = self.prompts.get_budget_breakdown_prompt(
+            project_context=project_context,
+            work_packages=work_packages
+        )
+
+        response = await self._call_ai(prompt, temperature=0.3, max_tokens=2500)
+
+        # Parse JSON response - handle markdown code fences
+        cleaned = response.strip()
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r'^```(?:json)?\s*', '', cleaned)
+            cleaned = re.sub(r'\s*```$', '', cleaned)
+
+        try:
+            budget = json.loads(cleaned)
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            logger.error(f"Failed to parse budget breakdown JSON: {e}")
+            logger.debug(f"Raw budget response: {response[:500]}")
+            return None
+
+        if not isinstance(budget, dict):
+            logger.error(f"Budget breakdown is not a dict: {type(budget)}")
+            return None
+
+        total_budget = project_context.get('budget', 250000)
+        if isinstance(total_budget, str):
+            total_budget = int(total_budget.replace(',', '').replace(' ', ''))
+
+        # Validate and normalize amounts
+        budget["total_grant"] = total_budget
+        budget["currency"] = "EUR"
+
+        # Validate per_work_package totals sum to total_grant
+        per_wp = budget.get("per_work_package", [])
+        if per_wp:
+            wp_total = sum(wp.get("total_amount", 0) for wp in per_wp)
+            if wp_total > 0 and abs(wp_total - total_budget) > 100:
+                # Normalize WP amounts to match total budget
+                factor = total_budget / wp_total
+                for wp in per_wp:
+                    wp["total_amount"] = round(wp.get("total_amount", 0) * factor)
+                    # Normalize cost categories
+                    cats = wp.get("cost_categories", {})
+                    if cats:
+                        cat_total = sum(cats.values())
+                        if cat_total > 0:
+                            cat_factor = wp["total_amount"] / cat_total
+                            for cat_key in cats:
+                                cats[cat_key] = round(cats[cat_key] * cat_factor)
+                    wp["percentage"] = round((wp["total_amount"] / total_budget) * 100, 1)
+
+            # Enforce WP0 max 20%
+            for wp in per_wp:
+                if wp.get("wp_number") == 0:
+                    max_mgmt = int(total_budget * 0.20)
+                    if wp.get("total_amount", 0) > max_mgmt:
+                        wp["total_amount"] = max_mgmt
+                        wp["percentage"] = 20.0
+
+        # Validate per_partner totals
+        per_partner = budget.get("per_partner", [])
+        if per_partner:
+            partner_total = sum(p.get("total_amount", 0) for p in per_partner)
+            if partner_total > 0 and abs(partner_total - total_budget) > 100:
+                factor = total_budget / partner_total
+                for p in per_partner:
+                    p["total_amount"] = round(p.get("total_amount", 0) * factor)
+                    p["percentage"] = round((p["total_amount"] / total_budget) * 100, 1)
+                    # Normalize WP allocations
+                    wp_alloc = p.get("wp_allocations", {})
+                    if wp_alloc:
+                        alloc_total = sum(wp_alloc.values())
+                        if alloc_total > 0:
+                            alloc_factor = p["total_amount"] / alloc_total
+                            for k in wp_alloc:
+                                wp_alloc[k] = round(wp_alloc[k] * alloc_factor)
+
+        # Ensure co-financing section exists
+        if "co_financing" not in budget:
+            estimated_costs = int(total_budget * 1.2)
+            budget["co_financing"] = {
+                "total_estimated_costs": estimated_costs,
+                "eu_grant": total_budget,
+                "partner_co_financing": estimated_costs - total_budget,
+                "co_financing_percentage": round(((estimated_costs - total_budget) / estimated_costs) * 100, 1),
+                "narrative": "Partner organisations will contribute in-kind resources including staff time, office space, and institutional infrastructure to cover costs exceeding the EU lump sum grant."
+            }
+
+        logger.info(f"Budget breakdown validated: €{total_budget:,} across {len(per_wp)} WPs and {len(per_partner)} partners")
+        return budget
+
+    async def _generate_project_timeline(
+        self,
+        project_context: Dict,
+        work_packages: List[Dict]
+    ) -> Optional[List[Dict]]:
+        """
+        Generate a quarterly project timeline derived from Work Packages.
+        Returns a list of quarter dicts or None on failure.
+        """
+        import re
+
+        prompt = self.prompts.get_timeline_prompt(
+            project_context=project_context,
+            work_packages=work_packages
+        )
+
+        response = await self._call_ai(prompt, temperature=0.3, max_tokens=2000)
+
+        # Parse JSON response
+        cleaned = response.strip()
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r'^```(?:json)?\s*', '', cleaned)
+            cleaned = re.sub(r'\s*```$', '', cleaned)
+
+        try:
+            timeline = json.loads(cleaned)
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            logger.error(f"Failed to parse timeline JSON: {e}")
+            logger.debug(f"Raw timeline response: {response[:500]}")
+            return None
+
+        if not isinstance(timeline, list):
+            logger.error(f"Timeline response is not a list: {type(timeline)}")
+            return None
+
+        # Validate each quarter entry
+        validated = []
+        for entry in timeline:
+            if not isinstance(entry, dict):
+                continue
+            validated.append({
+                "quarter": entry.get("quarter", f"Q{len(validated) + 1}"),
+                "months": entry.get("months", ""),
+                "phase": entry.get("phase", ""),
+                "active_wps": entry.get("active_wps", []),
+                "activities": entry.get("activities", []),
+                "milestones": entry.get("milestones", []),
+                "deliverables": entry.get("deliverables", []),
+            })
+
+        logger.info(f"Generated timeline with {len(validated)} quarters")
+        return validated
+
     async def _validate_and_enhance(
         self,
         answers: Dict,
@@ -640,6 +948,9 @@ class AIAutoFillService:
         
         # Ensure all required fields are filled
         for section_key, section_data in form_questions['sections'].items():
+            # Skip generated-only sections (e.g., work_packages) - not question-based
+            if section_data.get('generated'):
+                continue
             if section_key not in answers:
                 logger.error(f"Missing section: {section_key}")
                 continue
@@ -676,7 +987,12 @@ class AIAutoFillService:
         # Collect all answer texts indexed by section.field
         all_texts = {}
         for section_key, section_answers in answers.items():
+            # Skip non-dict sections (e.g., work_packages is a list)
+            if not isinstance(section_answers, dict):
+                continue
             for field, data in section_answers.items():
+                if not isinstance(data, dict):
+                    continue
                 answer = data.get('answer', '')
                 if answer and not answer.startswith('[Error'):
                     all_texts[f"{section_key}.{field}"] = answer
@@ -803,6 +1119,67 @@ class AIAutoFillService:
                                        f"{', '.join(missing_themes[:3])}. Consider reinforcing thematic coherence."
                         })
 
+        # --- 5. Target group number consistency ---
+        # Extract target group quantities from answers
+        target_numbers = {}
+        target_patterns = [
+            r'(\d[\d,]*)\s*(?:adult\s+learners?|participants?|beneficiar)',
+            r'(\d[\d,]*)\s*(?:directly|direct\s+participants?)',
+            r'(\d[\d,]*)\s*(?:indirectly|indirect)',
+        ]
+        for key, text in all_texts.items():
+            text_lower = text.lower()
+            for pattern in target_patterns:
+                matches = re.findall(pattern, text_lower)
+                if matches:
+                    if key not in target_numbers:
+                        target_numbers[key] = []
+                    target_numbers[key].extend(matches)
+
+        if len(target_numbers) >= 2:
+            # Check for significant discrepancies in participant numbers
+            all_nums = set()
+            for nums in target_numbers.values():
+                for n in nums:
+                    try:
+                        val = int(n.replace(',', ''))
+                        if val > 10:  # Skip small numbers
+                            all_nums.add(val)
+                    except ValueError:
+                        pass
+            # Flag if the same category number varies significantly
+            if len(all_nums) > 3:
+                sorted_nums = sorted(all_nums)
+                if sorted_nums[-1] > sorted_nums[0] * 5:
+                    inconsistencies.append({
+                        'type': 'target_numbers',
+                        'sections': list(target_numbers.keys()),
+                        'details': f"Target group numbers vary significantly across sections: "
+                                   f"{', '.join(str(n) for n in sorted_nums[:5])}. "
+                                   f"Ensure participant numbers are consistent."
+                    })
+
+        # --- 6. All partners mentioned in partnership section ---
+        if expected_partners:
+            partnership_texts = []
+            for key, text in all_texts.items():
+                if key.startswith('partnership.'):
+                    partnership_texts.append(text)
+            if partnership_texts:
+                combined_partnership = ' '.join(partnership_texts).lower()
+                missing_in_partnership = [
+                    p for p in expected_partners
+                    if p.lower() not in combined_partnership
+                ]
+                if missing_in_partnership:
+                    inconsistencies.append({
+                        'type': 'missing_partners_in_partnership',
+                        'sections': ['partnership'],
+                        'details': f"Partners not mentioned anywhere in partnership section: "
+                                   f"{', '.join(missing_in_partnership)}. "
+                                   f"All partners should be referenced in the partnership section."
+                    })
+
         return inconsistencies
 
     def _extract_budget_info(self, section_answers: Dict) -> Optional[str]:
@@ -847,6 +1224,33 @@ class AIAutoFillService:
 
         return answers
     
+    def _count_verification_needed(self, answers: Dict) -> List[Dict]:
+        """
+        Count [VERIFY:] tags across all generated answers and return them
+        as a list of {field, placeholder_text} dicts for user review.
+        """
+        import re
+        verification_items = []
+
+        for section_key, section_answers in answers.items():
+            # Skip non-dict sections (e.g., work_packages is a list)
+            if not isinstance(section_answers, dict):
+                continue
+            for field, data in section_answers.items():
+                if not isinstance(data, dict):
+                    continue
+                answer = data.get('answer', '')
+                if not answer:
+                    continue
+                tags = re.findall(r'\[VERIFY:\s*([^\]]+)\]', answer)
+                for tag_text in tags:
+                    verification_items.append({
+                        'field': f"{section_key}.{field}",
+                        'placeholder_text': tag_text.strip()
+                    })
+
+        return verification_items
+
     def _get_eu_priorities_detail(self) -> Dict:
         """
         Get detailed EU priorities information

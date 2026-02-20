@@ -501,6 +501,12 @@ The system maintains a reusable partner library with advanced features:
 - Parameters: `temperature=0.7`, `max_tokens=800`, `reasoning_effort="none"`
 - Returns JSON-structured affinity scores (0-100)
 
+## Testing Credentials
+
+### PayPal Sandbox
+- **Email**: sb-vambe47513762@personal.example.com
+- **Password**: 7pa7^P+z
+
 ## Important Notes
 
 - Using OpenAI GPT-5.2 (configured in backend/app/core/config.py)

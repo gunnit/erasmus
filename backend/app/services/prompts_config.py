@@ -37,7 +37,8 @@ You always:
 - Demonstrate innovation and European added value
 - Show clear cause-effect relationships
 - Ensure consistency across all answers
-- Maximize evaluation scores through strategic content"""
+- Maximize evaluation scores through strategic content
+- When citing statistics, data, or research findings that are not provided in the project context, ALWAYS mark them with [VERIFY: description of data needed] so the user knows to replace them with real data. For example: '[VERIFY: Eurostat adult participation in learning rate for 2024]' or '[VERIFY: OECD digital skills gap data for partner countries]'. Never present unverified statistics as established facts."""
     
     def get_priority_analysis_prompt(self, priorities: List[str], project_idea: str) -> str:
         """
@@ -172,7 +173,20 @@ PARTNER ORGANIZATIONS:
 SELECTED PRIORITIES:
 {json.dumps(project_context.get('selected_priorities', []), indent=2)}
 """
-        
+
+        # Detect newcomer partners and add context
+        newcomer_partners = []
+        for partner in project_context.get('partners', []):
+            if isinstance(partner, dict) and partner.get('is_newcomer'):
+                newcomer_partners.append(partner.get('name', 'Unknown'))
+        if newcomer_partners:
+            context += f"\nNEWCOMER PARTNERS (first-time Erasmus+ applicants): {', '.join(newcomer_partners)}"
+            context += "\nIMPORTANT: For newcomer partners, describe capacity-building support, mentoring by experienced partners, and knowledge transfer mechanisms.\n"
+
+        # Detect open licence preference
+        if project_context.get('open_licence'):
+            context += "\nOPEN LICENCE COMMITMENT: This project commits to publishing all outputs under Creative Commons CC BY-SA 4.0 and as Open Educational Resources (OER). Emphasize this in relevant answers.\n"
+
         # Add section-specific context
         if section_context.get('priorities_analysis'):
             context += f"\n\nPRIORITY ANALYSIS:\n{json.dumps(section_context['priorities_analysis'], indent=2)}"
@@ -295,11 +309,13 @@ For each priority: (1) state the priority name, (2) explain HOW the project addr
 (3) describe MEASURABLE outcomes linked to this priority, (4) reference relevant EU policy documents or frameworks.
 Evaluators score this on depth of understanding, not just mentioning priority names.""",
 
-            "motivation": """Structure around three pillars: (1) URGENCY - why this project is needed NOW with current statistics
-and evidence from EU reports, Eurostat, or OECD data; (2) GAP - what existing solutions fail to address and why
+            "motivation": """Structure around three pillars: (1) URGENCY - why this project is needed NOW, referencing
+relevant EU policy context and trends in the field; (2) GAP - what existing solutions fail to address and why
 this project fills that gap; (3) EU FUNDING JUSTIFICATION - why this cannot be achieved without EU support,
 why national funding is insufficient, and what the cost of inaction would be.
-Include at least 2-3 concrete statistics. Reference the European Education Area 2025 targets where relevant.""",
+Where statistics would strengthen the argument, insert [VERIFY: description of data needed] placeholders
+(e.g., [VERIFY: Eurostat adult participation in learning rate]) so the user can add real, verified data.
+Reference the European Education Area targets where relevant.""",
 
             "objectives_results": """Structure as: OBJECTIVES (using SMART format) followed by CONCRETE RESULTS.
 For each objective: state it clearly, link it to a specific priority, define measurable targets (numbers, percentages, timeframes).
@@ -334,10 +350,12 @@ is essential to achieving results, not just administratively convenient.""",
 
             # --- Needs Analysis Section ---
             "needs_addressed": """Use data and research to demonstrate needs. Include:
-(1) EVIDENCE BASE - cite statistics from Eurostat, OECD, national reports showing the problem's scale;
+(1) EVIDENCE BASE - reference the types of evidence that support the problem's scale, using
+[VERIFY: description of data needed] placeholders for specific statistics (e.g., [VERIFY: Eurostat data on adult
+digital skills gap in partner countries]) so the user can insert verified data;
 (2) GAP ANALYSIS - identify specific gaps between current situation and desired state;
 (3) TARGET GROUP NEEDS - what specific needs have been identified through consultation;
-(4) STAKEHOLDER INPUT - results of surveys, interviews, focus groups with target groups.
+(4) STAKEHOLDER INPUT - describe the consultation approach with target groups.
 Show a clear chain: evidence → identified need → proposed solution.""",
 
             "target_groups": """Clearly define PRIMARY and SECONDARY target groups with demographics.
@@ -352,7 +370,9 @@ Include concrete numbers: e.g., '200 adult learners directly, 1,500 indirectly t
 (2) CONSULTATION PROCESS - who was consulted, how, and key findings;
 (3) PARTNER INPUT - how each partner contributed their local/national perspective;
 (4) VALIDATION - how identified needs were validated with stakeholders.
-Include specific examples: 'A survey of 150 adult educators across 4 countries revealed that 73% lack digital skills training.'""",
+Where specific survey results or consultation data would strengthen the answer, use
+[VERIFY: description of data needed] placeholders (e.g., [VERIFY: results of partner needs assessment survey])
+so the user can insert their actual consultation findings.""",
 
             "addressing_needs": """Create a clear NEEDS-TO-SOLUTIONS mapping. For each identified need:
 (1) state the need clearly, (2) describe the specific project activity that addresses it,
@@ -368,7 +388,10 @@ Structure: (1) FORMATION STORY - how and why partners were identified and select
 (2) COMPLEMENTARITY MATRIX - for each partner, their unique expertise and role;
 (3) ADDED VALUE - what this specific combination achieves that no single partner could;
 (4) PREVIOUS COLLABORATION - any prior cooperation experience between partners.
-Name each partner organisation explicitly and describe their specific contribution.""",
+Name each partner organisation explicitly and describe their specific contribution.
+If any partner is new to Erasmus+ (newcomer), explicitly describe capacity-building measures,
+mentoring arrangements by experienced partners, and knowledge transfer mechanisms to ensure
+the newcomer can fully contribute. Evaluators value consortia that bring in newcomers with clear support structures.""",
 
             "task_allocation": """Create clear work package structure. Show balanced distribution. Link tasks to partner expertise.
 For each work package or major task: (1) name it, (2) assign lead partner and supporting partners,
@@ -421,7 +444,10 @@ Evaluators want to see concrete, organisation-specific changes, not generic stat
 (3) EUROPEAN IMPACT - contribution to the European Education Area, EU policy priorities;
 (4) SECTORAL IMPACT - how the field of adult education will be advanced;
 (5) POLICY INFLUENCE - specific plans for policy briefs, stakeholder engagement with policymakers;
-(6) SYSTEMIC CHANGE - how the project contributes to broader systemic improvements.
+(6) SYSTEMIC CHANGE - how the project contributes to broader systemic improvements;
+(7) OPEN ACCESS & OER - explicitly describe Creative Commons licensing (CC BY-SA 4.0 recommended)
+for all project outputs, plans for publishing on OER repositories, and how materials will remain
+freely available after the project. Name specific platforms (e.g., EPALE, OER Commons, national repositories).
 Include a dissemination and exploitation strategy: WHO will be reached, HOW, and with WHAT expected effect.
 Reference the EPALE platform and other EU dissemination channels explicitly.""",
 
@@ -489,6 +515,27 @@ Include specific commitments: 'At least 50% of transnational meetings conducted 
 (4) EMPOWERMENT - how participants become active agents of change in their communities;
 (5) POLICY ENGAGEMENT - how the project facilitates dialogue between citizens and policymakers.
 Link to EU citizenship education frameworks and the European Democracy Action Plan where relevant.""",
+
+            # --- Additional Generated Content ---
+            "eu_values_declaration": """Generate a concise EU Values Declaration covering how the project promotes:
+(1) HUMAN DIGNITY - respect for the inherent worth of every person, including marginalised groups;
+(2) FREEDOM - academic freedom, freedom of expression, freedom of movement for learners/educators;
+(3) DEMOCRACY - democratic governance in project management, participatory decision-making;
+(4) EQUALITY - gender equality, non-discrimination, equal access to learning opportunities;
+(5) RULE OF LAW - transparent governance, accountability, ethical conduct in research and practice;
+(6) HUMAN RIGHTS - right to education, cultural rights, rights of persons with disabilities.
+For each value, provide a concrete example of how the project embodies it through specific activities.
+Keep the declaration professional and grounded in the specific project activities.""",
+
+            "open_licence_commitment": """Generate an Open Licence and OER commitment statement that includes:
+(1) LICENSING FRAMEWORK - all educational materials will be published under Creative Commons CC BY-SA 4.0;
+(2) OER REPOSITORIES - name specific platforms where materials will be published (EPALE, OER Commons,
+national education portals, institutional repositories);
+(3) FORMATS - materials will be provided in editable, open formats (SCORM, H5P, DOCX, not only PDF);
+(4) ACCESSIBILITY - all digital resources will meet WCAG 2.1 AA accessibility standards;
+(5) SUSTAINABILITY - commitment to maintaining resources for at least 3 years post-project on
+partner institutional websites and EU platforms.
+This is a mandatory requirement for KA220 projects and is evaluated positively by assessors.""",
         }
     
     def _get_section_instructions(self, section_key: str) -> str:
@@ -641,6 +688,277 @@ Link to EU citizenship education frameworks and the European Democracy Action Pl
         }
         return criteria.get(section, "Focus on comprehensive, specific, and measurable answers.")
     
+    def get_work_package_prompt(
+        self,
+        project_context: Dict,
+        all_answers: Dict,
+        num_implementation_wps: int = 3
+    ) -> str:
+        """
+        Generate prompt for creating Work Packages based on all generated answers.
+        WP0 is always Project Management. Implementation WPs are derived from the
+        objectives, activities, and task allocation described in the answers.
+        """
+        # Extract key answer excerpts for context
+        answer_excerpts = {}
+        key_fields = [
+            ("relevance", "objectives_results"),
+            ("relevance", "innovation"),
+            ("partnership", "task_allocation"),
+            ("partnership", "partnership_formation"),
+            ("impact", "assessment"),
+            ("impact", "sustainability"),
+            ("project_management", "monitoring"),
+            ("project_management", "budget_time"),
+        ]
+        for section, field in key_fields:
+            if section in all_answers and field in all_answers[section]:
+                answer_data = all_answers[section][field]
+                text = answer_data.get('answer', '') if isinstance(answer_data, dict) else str(answer_data)
+                if text and not text.startswith('[Error'):
+                    answer_excerpts[f"{section}.{field}"] = text[:500]
+
+        partners_json = json.dumps(project_context.get('partners', []), indent=2)
+        lead_org_json = json.dumps(project_context.get('lead_org', {}), indent=2)
+
+        return f"""Based on the project details and generated answers below, create a structured set of Work Packages (WPs) for this Erasmus+ KA220-ADU project.
+
+PROJECT INFORMATION:
+- Title: {project_context.get('title', 'N/A')}
+- Duration: {project_context.get('duration', '24 months')}
+- Budget: €{project_context.get('budget', '250,000')}
+- Target Groups: {project_context.get('target_groups', 'Adult learners')}
+
+LEAD ORGANISATION:
+{lead_org_json}
+
+PARTNER ORGANISATIONS:
+{partners_json}
+
+KEY ANSWERS ALREADY GENERATED:
+{json.dumps(answer_excerpts, indent=2)}
+
+INSTRUCTIONS:
+Generate exactly {num_implementation_wps + 1} Work Packages as a JSON array.
+
+WP0 MUST be "Project Management and Coordination" and should:
+- Be led by the lead organisation
+- Cover coordination, quality assurance, financial management, reporting
+- Span the entire project duration (month 1 to final month)
+- Budget allocation should NOT exceed 20% of total project budget
+
+WP1 through WP{num_implementation_wps} should be implementation Work Packages that:
+- Cover ALL activities and objectives mentioned in the generated answers
+- Each have a clear thematic focus (e.g., research/needs analysis, development/piloting, dissemination/exploitation)
+- Have specific, measurable objectives (2-3 per WP)
+- List 3-5 concrete activities per WP
+- Define 2-4 tangible deliverables/results per WP
+- Assign a lead partner based on their expertise (from the partnership analysis)
+- List all participating partners for each WP
+- Have realistic start and end months that show logical sequencing
+- Reference specific partner names from the project
+
+For each Work Package, provide this exact JSON structure:
+{{
+    "wp_number": 0,
+    "title": "Work Package title",
+    "objectives": ["Specific objective 1", "Specific objective 2"],
+    "activities": [
+        {{
+            "title": "Activity title",
+            "description": "Brief description of the activity",
+            "months": "M1-M6"
+        }}
+    ],
+    "deliverables": [
+        {{
+            "code": "D0.1",
+            "title": "Deliverable title",
+            "type": "Report|Toolkit|Platform|Training Material|Event|Other",
+            "due_month": 6
+        }}
+    ],
+    "lead_partner": "Organisation name",
+    "participating_partners": ["Partner 1", "Partner 2"],
+    "start_month": 1,
+    "end_month": 24,
+    "budget_percentage": 20
+}}
+
+Return ONLY a valid JSON array of Work Package objects. No additional text."""
+
+    def get_budget_breakdown_prompt(
+        self,
+        project_context: Dict,
+        work_packages: List[Dict]
+    ) -> str:
+        """
+        Generate prompt for creating a detailed budget breakdown per WP and per partner,
+        including cost categories and co-financing narrative.
+        """
+        total_budget = project_context.get('budget', 250000)
+        duration = project_context.get('duration', '24 months')
+        partners_json = json.dumps(project_context.get('partners', []), indent=2)
+        lead_org_json = json.dumps(project_context.get('lead_org', {}), indent=2)
+
+        # Summarize WPs for context
+        wp_summaries = []
+        for wp in work_packages:
+            wp_summaries.append({
+                "wp_number": wp.get("wp_number"),
+                "title": wp.get("title"),
+                "budget_percentage": wp.get("budget_percentage", 0),
+                "lead_partner": wp.get("lead_partner"),
+                "start_month": wp.get("start_month"),
+                "end_month": wp.get("end_month"),
+            })
+
+        return f"""Create a detailed budget breakdown for this Erasmus+ KA220-ADU project.
+
+PROJECT INFORMATION:
+- Total Lump Sum Grant: €{total_budget:,}
+- Duration: {duration}
+
+LEAD ORGANISATION:
+{lead_org_json}
+
+PARTNER ORGANISATIONS:
+{partners_json}
+
+WORK PACKAGES:
+{json.dumps(wp_summaries, indent=2)}
+
+INSTRUCTIONS:
+Generate a comprehensive budget breakdown as a JSON object with the following structure.
+
+RULES:
+1. Management WP (WP0) MUST NOT exceed 20% of total budget
+2. Implementation activities MUST be at least 60% of total budget
+3. Dissemination/exploitation MUST be at least 5% of total budget
+4. All amounts must sum to exactly €{total_budget:,}
+5. Budget per partner should reflect their role and contribution level
+6. Include co-financing narrative showing total estimated project costs exceed the lump sum by 15-25%
+7. Cost categories: Staff Costs, Travel & Subsistence, Equipment, Subcontracting, Other Direct Costs
+
+Return this exact JSON structure:
+{{
+    "total_grant": {total_budget},
+    "currency": "EUR",
+    "per_work_package": [
+        {{
+            "wp_number": 0,
+            "wp_title": "Project Management and Coordination",
+            "total_amount": 50000,
+            "percentage": 20.0,
+            "cost_categories": {{
+                "staff_costs": 35000,
+                "travel_subsistence": 10000,
+                "equipment": 0,
+                "subcontracting": 0,
+                "other_direct_costs": 5000
+            }}
+        }}
+    ],
+    "per_partner": [
+        {{
+            "partner_name": "Organisation Name",
+            "country": "Country",
+            "role": "Lead/Partner",
+            "total_amount": 80000,
+            "percentage": 32.0,
+            "wp_allocations": {{
+                "WP0": 15000,
+                "WP1": 25000,
+                "WP2": 20000,
+                "WP3": 20000
+            }}
+        }}
+    ],
+    "co_financing": {{
+        "total_estimated_costs": {int(total_budget * 1.2)},
+        "eu_grant": {total_budget},
+        "partner_co_financing": {int(total_budget * 0.2)},
+        "co_financing_percentage": 16.7,
+        "narrative": "Brief explanation of how co-financing will be covered by partner organisations through in-kind contributions, staff time, and institutional resources."
+    }},
+    "value_for_money": "Brief narrative explaining why the budget is proportionate to the project activities and expected results, referencing the Erasmus+ lump sum funding model."
+}}
+
+Return ONLY valid JSON. No additional text."""
+
+    def get_timeline_prompt(
+        self,
+        project_context: Dict,
+        work_packages: List[Dict]
+    ) -> str:
+        """
+        Generate prompt for creating a month-by-month project timeline
+        derived from Work Packages.
+        """
+        duration = project_context.get('duration', '24 months')
+        # Extract duration in months
+        import re
+        dur_match = re.search(r'(\d+)', str(duration))
+        total_months = int(dur_match.group(1)) if dur_match else 24
+
+        wp_summaries = []
+        for wp in work_packages:
+            activities = []
+            for act in wp.get("activities", []):
+                activities.append({"title": act.get("title", ""), "months": act.get("months", "")})
+            deliverables = []
+            for d in wp.get("deliverables", []):
+                deliverables.append({"code": d.get("code", ""), "title": d.get("title", ""), "due_month": d.get("due_month", 0)})
+            wp_summaries.append({
+                "wp_number": wp.get("wp_number"),
+                "title": wp.get("title"),
+                "activities": activities,
+                "deliverables": deliverables,
+                "start_month": wp.get("start_month"),
+                "end_month": wp.get("end_month"),
+            })
+
+        return f"""Create a month-by-month project timeline for this {total_months}-month Erasmus+ KA220-ADU project.
+
+WORK PACKAGES:
+{json.dumps(wp_summaries, indent=2)}
+
+INSTRUCTIONS:
+Generate a timeline as a JSON array. Group activities by quarter for clarity.
+Each entry represents a quarter (3-month period).
+
+For each quarter, list:
+- Which WPs are active
+- Key activities happening in that period
+- Milestones and deliverables due
+- Key events (meetings, trainings, reviews)
+
+Return this JSON structure:
+[
+    {{
+        "quarter": "Q1",
+        "months": "M1-M3",
+        "phase": "Inception",
+        "active_wps": ["WP0", "WP1"],
+        "activities": [
+            "Kick-off meeting and project launch",
+            "Needs assessment survey design and deployment"
+        ],
+        "milestones": [
+            "Project management plan approved (M1)",
+            "Partnership agreement signed (M1)"
+        ],
+        "deliverables": ["D0.1 - Project Management Plan (M3)"]
+    }}
+]
+
+Include all {total_months // 3} quarters. Phases should be: Inception (Q1), Research (Q2-Q3),
+Development (Q4-Q6), Piloting (Q5-Q7), Dissemination (Q6-Q8, overlapping with implementation).
+Ensure all deliverables from the Work Packages appear in the correct quarter.
+Add a final project closure milestone.
+
+Return ONLY a valid JSON array. No additional text."""
+
     def get_enhancement_prompt(self, answer: str, question: Dict, quality_score: float) -> str:
         """
         Prompt for enhancing low-quality answers

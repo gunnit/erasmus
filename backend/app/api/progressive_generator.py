@@ -608,6 +608,79 @@ async def generate_all_sections_progressively(session_id: str):
 
             if completed_count == total_count:
                 logger.info(f"Generation completed successfully for session {session_id}")
+
+                # Generate Work Packages from completed answers
+                try:
+                    logger.info(f"Generating Work Packages for session {session_id}")
+                    session.current_section = "work_packages"
+                    session.progress_percentage = 95
+                    db.commit()
+
+                    work_packages = await asyncio.wait_for(
+                        ai_service._generate_work_packages(
+                            project_context=session.project_context,
+                            all_answers=session.answers
+                        ),
+                        timeout=60.0
+                    )
+                    if work_packages:
+                        session.answers["work_packages"] = work_packages
+                        flag_modified(session, 'answers')
+                        logger.info(f"Generated {len(work_packages)} Work Packages for session {session_id}")
+                    else:
+                        logger.warning(f"Work Package generation returned empty for session {session_id}")
+                except Exception as wp_err:
+                    logger.error(f"Work Package generation failed for session {session_id}: {str(wp_err)}")
+                    work_packages = None
+                    # Don't fail the entire generation if WPs fail
+
+                # Generate Budget Breakdown (requires Work Packages)
+                if work_packages:
+                    try:
+                        logger.info(f"Generating Budget Breakdown for session {session_id}")
+                        session.current_section = "budget_breakdown"
+                        session.progress_percentage = 98
+                        db.commit()
+
+                        budget_breakdown = await asyncio.wait_for(
+                            ai_service._generate_budget_breakdown(
+                                project_context=session.project_context,
+                                work_packages=work_packages
+                            ),
+                            timeout=60.0
+                        )
+                        if budget_breakdown:
+                            session.answers["budget_breakdown"] = budget_breakdown
+                            flag_modified(session, 'answers')
+                            logger.info(f"Budget Breakdown generated for session {session_id}")
+                        else:
+                            logger.warning(f"Budget Breakdown returned empty for session {session_id}")
+                    except Exception as budget_err:
+                        logger.error(f"Budget Breakdown failed for session {session_id}: {str(budget_err)}")
+
+                    # Generate Timeline
+                    try:
+                        logger.info(f"Generating Timeline for session {session_id}")
+                        session.current_section = "timeline"
+                        session.progress_percentage = 99
+                        db.commit()
+
+                        timeline = await asyncio.wait_for(
+                            ai_service._generate_project_timeline(
+                                project_context=session.project_context,
+                                work_packages=work_packages
+                            ),
+                            timeout=60.0
+                        )
+                        if timeline:
+                            session.answers["timeline"] = timeline
+                            flag_modified(session, 'answers')
+                            logger.info(f"Timeline generated for session {session_id}")
+                        else:
+                            logger.warning(f"Timeline returned empty for session {session_id}")
+                    except Exception as tl_err:
+                        logger.error(f"Timeline generation failed for session {session_id}: {str(tl_err)}")
+
                 session.status = GenerationStatus.COMPLETED
                 session.completed_at = datetime.utcnow()
                 session.progress_percentage = 100

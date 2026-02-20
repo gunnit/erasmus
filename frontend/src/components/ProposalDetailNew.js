@@ -32,7 +32,9 @@ import {
   Globe2,
   TrendingUp,
   FileCheck,
-  Sparkles
+  Sparkles,
+  Shield,
+  BookOpen
 } from 'lucide-react';
 import WorkplanViewer from './WorkplanViewer';
 import QualityScoreCard from './QualityScoreCard';
@@ -765,6 +767,69 @@ const ProposalDetailNew = () => {
                 </div>
               </div>
             </div>
+
+            {/* EU Values & Open Educational Resources */}
+            {(() => {
+              const projectData = proposal.metadata?.project_full_data || {};
+              const hasOpenLicence = proposal.open_licence || projectData.open_licence;
+              const platforms = proposal.platform_usage || projectData.platform_usage || [];
+              const hasPlatforms = platforms.length > 0;
+
+              if (!hasOpenLicence && !hasPlatforms) return null;
+
+              return (
+                <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                  <div className="bg-gradient-to-r from-amber-50 to-yellow-50 px-6 py-4 border-b border-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <Shield className="h-5 w-5 text-amber-600" />
+                      EU Values & Open Educational Resources
+                    </h2>
+                  </div>
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {hasOpenLicence && (
+                        <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                          <div className="flex-shrink-0 w-10 h-10 bg-green-500 text-white rounded-lg flex items-center justify-center">
+                            <BookOpen className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900">Open Licence Commitment</h3>
+                            <p className="text-sm text-gray-600 mt-1">
+                              All educational materials will be published under Creative Commons (CC BY-SA 4.0)
+                              and made available as Open Educational Resources.
+                            </p>
+                            <span className="inline-flex items-center gap-1 mt-2 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                              <CheckCircle className="h-3 w-3" />
+                              OER Committed
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      {hasPlatforms && (
+                        <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                          <div className="flex-shrink-0 w-10 h-10 bg-blue-500 text-white rounded-lg flex items-center justify-center">
+                            <Globe2 className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900">EU Platform Dissemination</h3>
+                            <p className="text-sm text-gray-600 mt-1 mb-2">
+                              Results will be shared on the following EU platforms:
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {platforms.map((platform, idx) => (
+                                <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                                  {platform}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Next Steps with enhanced design */}
             <div className="mt-6 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl p-8 text-white relative overflow-hidden">

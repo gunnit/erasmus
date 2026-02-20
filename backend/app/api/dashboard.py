@@ -77,7 +77,8 @@ async def get_dashboard_stats(
             "username": current_user.username,
             "email": current_user.email,
             "full_name": current_user.full_name,
-            "organization": current_user.organization
+            "organization": current_user.organization,
+            "is_admin": getattr(current_user, 'is_admin', False)
         },
         "stats": {
             "totalProposals": total_proposals,

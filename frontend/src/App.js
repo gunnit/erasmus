@@ -4,6 +4,7 @@ import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard.jsx';
@@ -24,6 +25,7 @@ import PricingPlans from './components/PricingPlans.jsx';
 import PaymentCheckout from './components/PaymentCheckout.jsx';
 import PaymentSuccess from './components/PaymentSuccess.jsx';
 import { Partners } from './components/Partners.jsx';
+import AdminPanel from './components/AdminPanel.jsx';
 import ConversationalAI from './components/ConversationalAI.jsx';
 import TermsOfService from './components/TermsOfService.jsx';
 import PrivacyPolicy from './components/PrivacyPolicy.jsx';
@@ -596,6 +598,14 @@ function AppWithAuth() {
                     </Link>
                   </div>
                 </div>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminPanel />
+                </AdminRoute>
               }
             />
             <Route

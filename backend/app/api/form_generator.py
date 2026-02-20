@@ -66,6 +66,9 @@ class GenerateFormResponse(BaseModel):
     application_id: str
     generated_at: datetime
     sections: Dict[str, List[FormAnswer]]
+    work_packages: Optional[List[Dict]] = None
+    budget_breakdown: Optional[Dict] = None
+    timeline: Optional[List[Dict]] = None
     estimated_score: Optional[int] = None
     pdf_url: Optional[str] = None
     total_generation_time: float
@@ -115,10 +118,30 @@ async def generate_form_answers(
         
         # Format response with comprehensive answer data
         formatted_sections = {}
+        work_packages_data = None
+        budget_breakdown_data = None
+        timeline_data = None
         total_questions_answered = 0
+        # Keys that are structured data, not question-answer sections
+        structured_keys = {"work_packages", "budget_breakdown", "timeline"}
         for section_key, section_answers in answers.items():
+            # Extract structured data separately
+            if section_key == "work_packages":
+                work_packages_data = section_answers if isinstance(section_answers, list) else None
+                continue
+            if section_key == "budget_breakdown":
+                budget_breakdown_data = section_answers if isinstance(section_answers, dict) else None
+                continue
+            if section_key == "timeline":
+                timeline_data = section_answers if isinstance(section_answers, list) else None
+                continue
+            # Skip non-dict sections
+            if not isinstance(section_answers, dict):
+                continue
             formatted_answers = []
             for field, answer_data in section_answers.items():
+                if not isinstance(answer_data, dict) or 'answer' not in answer_data:
+                    continue
                 formatted_answers.append(
                     FormAnswer(
                         question_id=answer_data['question_id'],
@@ -130,25 +153,34 @@ async def generate_form_answers(
                 )
                 total_questions_answered += 1
             formatted_sections[section_key] = formatted_answers
-        
+
         # Log completion status
         import logging
         logger = logging.getLogger(__name__)
         logger.info(f"Auto-filled {total_questions_answered} questions across {len(formatted_sections)} sections")
-        
+        if work_packages_data:
+            logger.info(f"Generated {len(work_packages_data)} Work Packages")
+        if budget_breakdown_data:
+            logger.info("Budget Breakdown included in response")
+        if timeline_data:
+            logger.info(f"Timeline included with {len(timeline_data)} quarters")
+
         # Calculate estimated score (simplified)
         estimated_score = calculate_estimated_score(answers)
-        
+
         # Generate application ID
         application_id = f"APP-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        
+
         # Calculate generation time
         generation_time = (datetime.now() - start_time).total_seconds()
-        
+
         response = GenerateFormResponse(
             application_id=application_id,
             generated_at=datetime.now(),
             sections=formatted_sections,
+            work_packages=work_packages_data,
+            budget_breakdown=budget_breakdown_data,
+            timeline=timeline_data,
             estimated_score=estimated_score,
             total_generation_time=generation_time
         )
@@ -295,8 +327,9 @@ def calculate_estimated_score(answers: Dict) -> int:
         for section in FORM_QUESTIONS['sections'].values()
     )
     answered_questions = sum(
-        len(section_answers) 
-        for section_answers in answers.values()
+        len(section_answers)
+        for key, section_answers in answers.items()
+        if isinstance(section_answers, dict)
     )
     
     completeness_bonus = int((answered_questions / total_questions) * 20)

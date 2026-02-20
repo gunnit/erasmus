@@ -39,13 +39,37 @@ const ProposalAnswers = () => {
     fetchSubscriptionStatus();
   }, [id]);
 
+  const normalizeAnswers = (answers) => {
+    // The API may return answers as nested objects like:
+    // { section: { field: { answer: "text", question_id: "PS-1", character_count: 434 } } }
+    // We need to extract just the answer strings for the textarea display
+    const normalized = {};
+    for (const [sectionKey, sectionData] of Object.entries(answers)) {
+      if (typeof sectionData === 'object' && sectionData !== null) {
+        normalized[sectionKey] = {};
+        for (const [field, value] of Object.entries(sectionData)) {
+          if (typeof value === 'object' && value !== null && value.answer !== undefined) {
+            // Extract the answer string from the nested object
+            normalized[sectionKey][field] = value.answer;
+          } else {
+            // Already a string or other primitive
+            normalized[sectionKey][field] = value;
+          }
+        }
+      } else {
+        normalized[sectionKey] = sectionData;
+      }
+    }
+    return normalized;
+  };
+
   const fetchProposal = async () => {
     try {
       const data = await api.getProposal(id);
       setProposal(data);
       // Initialize edited answers with existing answers
       if (data.answers) {
-        setEditedAnswers(data.answers);
+        setEditedAnswers(normalizeAnswers(data.answers));
       }
     } catch (error) {
       toast.error('Failed to load proposal');

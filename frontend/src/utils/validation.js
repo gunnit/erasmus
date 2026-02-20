@@ -50,6 +50,21 @@ export const validateProposalForm = (formData) => {
     errors.target_groups = 'Please specify target groups for your project';
   }
 
+  // Optional field validation (non-blocking, informational only)
+  // Lead org website format check
+  if (formData.lead_organization?.website && formData.lead_organization.website.trim() &&
+      !/^https?:\/\/.+/.test(formData.lead_organization.website.trim())) {
+    errors.lead_organization_website = 'Website should start with http:// or https://';
+  }
+
+  // Beneficiary counts should be positive if provided
+  if (formData.primary_target_count && Number(formData.primary_target_count) < 0) {
+    errors.primary_target_count = 'Number of beneficiaries must be positive';
+  }
+  if (formData.secondary_target_count && Number(formData.secondary_target_count) < 0) {
+    errors.secondary_target_count = 'Number of beneficiaries must be positive';
+  }
+
   // Duration validation
   if (!formData.duration_months || formData.duration_months < 6 || formData.duration_months > 36) {
     errors.duration_months = 'Project duration must be between 6 and 36 months';

@@ -6,7 +6,8 @@ import {
   Plus, Trash2, ChevronRight, Info, Sparkles,
   CheckCircle, AlertCircle, Briefcase, MapPin, Save, Cloud, CloudOff,
   Loader2, Wand2, Leaf, Vote, TrendingUp, BookOpen,
-  GraduationCap, Shield, Heart, Search, Check, Library, X, Filter
+  GraduationCap, Shield, Heart, Search, Check, Library, X, Filter,
+  Hash, FileText, ExternalLink, ClipboardList, BarChart3, Package
 } from 'lucide-react';
 import api from '../services/api';
 import { Button } from './ui/Button';
@@ -56,18 +57,37 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
       type: 'NGO',
       country: '',
       city: '',
-      experience: ''
+      experience: '',
+      pic_oid: '',
+      previous_eu_projects: '',
+      annual_budget: '',
+      staff_count: '',
+      website: ''
     },
     expected_partners: 2,
     partner_types_description: '',
     partner_organizations: [],  // Kept for backward compatibility, populated later if needed
     selected_priorities: [],
-    target_groups: ''
+    target_groups: '',
+    // Enhanced target groups
+    primary_target_group: '',
+    primary_target_count: '',
+    secondary_target_group: '',
+    secondary_target_count: '',
+    // Evidence & Data section
+    existing_research: '',
+    previous_project_results: '',
+    target_group_data: '',
+    planned_deliverables: '',
+    // Priority additions
+    platform_usage: [],
+    open_licence: false
   });
 
   const sections = [
     { id: 'basic', title: 'Project Overview', icon: Sparkles },
     { id: 'organizations', title: 'Partnership', icon: Building2 },
+    { id: 'evidence', title: 'Evidence & Data', icon: ClipboardList },
     { id: 'priorities', title: 'EU Priorities', icon: Target },
     { id: 'details', title: 'Final Details', icon: CheckCircle }
   ];
@@ -204,7 +224,11 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
       type: partner.type.replace('_', ''),
       country: partner.country || '',
       role: partner.description || '',
-      library_id: partner.id  // Track the library partner ID
+      library_id: partner.id,  // Track the library partner ID
+      previous_eu_projects: '',
+      is_newcomer: false,
+      specific_role: '',
+      website: partner.website || ''
     };
     const newData = {
       ...formData,
@@ -222,7 +246,7 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
         ...prev,
         partner_organizations: [
           ...prev.partner_organizations,
-          { name: '', type: 'NGO', country: '', role: '' }
+          { name: '', type: 'NGO', country: '', role: '', previous_eu_projects: '', is_newcomer: false, specific_role: '', website: '' }
         ]
       }));
       toast.success('Partner added');
@@ -301,13 +325,15 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
           return false;
         }
         return true;
-      case 2: // Priorities
+      case 2: // Evidence & Data - all optional, always passes
+        return true;
+      case 3: // Priorities
         if (validation.errors.selected_priorities) {
           toast.error(validation.errors.selected_priorities);
           return false;
         }
         return true;
-      case 3: // Final details
+      case 4: // Final details
         if (validation.errors.target_groups) {
           toast.error(validation.errors.target_groups);
           return false;
@@ -419,7 +445,11 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
       type: partner.type.replace('_', ''),
       country: partner.country || '',
       role: partner.description || '',
-      library_id: partner.id
+      library_id: partner.id,
+      previous_eu_projects: '',
+      is_newcomer: false,
+      specific_role: '',
+      website: partner.website || ''
     }));
 
     const currentCount = formData.partner_organizations.length;
@@ -649,6 +679,56 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                   rows={3}
                   placeholder="Describe your organization's relevant experience..."
                 />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="PIC/OID Number (if known)"
+                    value={formData.lead_organization.pic_oid || ''}
+                    onChange={(e) => handleLeadOrgChange('pic_oid', e.target.value)}
+                    placeholder="e.g., 999999999"
+                    icon={Hash}
+                    helper="Your organization's Participant Identification Code"
+                  />
+
+                  <Input
+                    label="Organization Website"
+                    value={formData.lead_organization.website || ''}
+                    onChange={(e) => handleLeadOrgChange('website', e.target.value)}
+                    placeholder="https://www.example.org"
+                    icon={ExternalLink}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Annual Budget (approximate)"
+                    type="number"
+                    value={formData.lead_organization.annual_budget || ''}
+                    onChange={(e) => handleLeadOrgChange('annual_budget', e.target.value)}
+                    placeholder="e.g., 500000"
+                    icon={Euro}
+                    helper="Helps demonstrate organizational capacity"
+                  />
+
+                  <Input
+                    label="Number of Staff"
+                    type="number"
+                    value={formData.lead_organization.staff_count || ''}
+                    onChange={(e) => handleLeadOrgChange('staff_count', e.target.value)}
+                    placeholder="e.g., 25"
+                    icon={Users}
+                    helper="Full-time equivalent staff count"
+                  />
+                </div>
+
+                <Textarea
+                  label="Previous EU/Erasmus+ Projects"
+                  value={formData.lead_organization.previous_eu_projects || ''}
+                  onChange={(e) => handleLeadOrgChange('previous_eu_projects', e.target.value)}
+                  rows={3}
+                  placeholder="List previous projects: name, year, reference number (e.g., 2023-1-IT02-KA220-ADU-000123456)"
+                  helper="Demonstrates track record - include project name, year, and reference number if available"
+                />
               </CardContent>
             </Card>
 
@@ -759,7 +839,67 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
           </motion.div>
         );
 
-      case 2:
+      case 2: // Evidence & Data
+        return (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+              <div className="flex items-start space-x-2">
+                <Info className="w-5 h-5 text-amber-600 mt-0.5" />
+                <div>
+                  <p className="text-sm text-amber-900 font-medium">
+                    Strengthen your application with evidence
+                  </p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    All fields are optional, but providing real data and sources significantly improves AI-generated content quality and evaluation scores.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <Textarea
+              label="Existing Research / Data Supporting the Need"
+              value={formData.existing_research || ''}
+              onChange={(e) => handleInputChange('existing_research', e.target.value)}
+              rows={4}
+              placeholder="e.g., According to Eurostat (2024), 42% of adults in the EU lack basic digital skills. The OECD PIAAC survey shows..."
+              helper="Cite real reports, statistics, or studies that justify your project's need. This prevents the AI from fabricating data."
+            />
+
+            <Textarea
+              label="Results from Your Previous Relevant Projects"
+              value={formData.previous_project_results || ''}
+              onChange={(e) => handleInputChange('previous_project_results', e.target.value)}
+              rows={4}
+              placeholder="e.g., In our 2023 project 'DigiAdult' (2021-1-IT02-KA220-ADU-000035412), we trained 200 adult learners and achieved a 78% completion rate..."
+              helper="Include measurable outcomes from past projects. Evaluators value demonstrated track record."
+            />
+
+            <Textarea
+              label="Specific Data About Your Target Groups"
+              value={formData.target_group_data || ''}
+              onChange={(e) => handleInputChange('target_group_data', e.target.value)}
+              rows={4}
+              placeholder="e.g., 500 low-skilled adults aged 25-64 in the Puglia region; 60% female; 30% migrants; unemployment rate in target area is 18.2% (ISTAT 2024)"
+              helper="Provide numbers, demographics, geographic scope, and data sources for your target groups."
+            />
+
+            <Textarea
+              label="Planned Concrete Outputs / Deliverables"
+              value={formData.planned_deliverables || ''}
+              onChange={(e) => handleInputChange('planned_deliverables', e.target.value)}
+              rows={4}
+              placeholder="e.g., 1) Online learning platform with 12 modules, 2) Toolkit for educators (PDF + interactive), 3) Policy recommendation report, 4) Training curriculum for 3 target languages"
+              helper="List the tangible outputs your project will produce (toolkits, curricula, platforms, reports, etc.)."
+            />
+          </motion.div>
+        );
+
+      case 3: // EU Priorities
         return (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -794,7 +934,7 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                   {PRIORITIES.horizontal.map((priority) => {
                     const Icon = priority.icon;
                     const isSelected = formData.selected_priorities.includes(priority.code);
-                    
+
                     return (
                       <motion.button
                         key={priority.code}
@@ -839,7 +979,7 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                   {PRIORITIES.adultEducation.map((priority) => {
                     const Icon = priority.icon;
                     const isSelected = formData.selected_priorities.includes(priority.code);
-                    
+
                     return (
                       <motion.button
                         key={priority.code}
@@ -896,10 +1036,78 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                 </div>
               </div>
             </div>
+
+            {/* EU Platform Usage */}
+            <Card gradient hover={false}>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center">
+                  <Globe className="w-5 h-5 mr-2" />
+                  EU Platform Dissemination
+                </CardTitle>
+                <CardDescription>Select platforms you plan to use for dissemination (improves scoring)</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  {[
+                    { value: 'EPALE', label: 'EPALE', description: 'Electronic Platform for Adult Learning in Europe' },
+                    { value: 'eTwinning', label: 'eTwinning', description: 'Community for schools and educators in Europe' },
+                    { value: 'European Youth Portal', label: 'European Youth Portal', description: 'EU platform for young people' }
+                  ].map((platform) => (
+                    <label
+                      key={platform.value}
+                      className={cn(
+                        "flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
+                        (formData.platform_usage || []).includes(platform.value)
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={(formData.platform_usage || []).includes(platform.value)}
+                        onChange={(e) => {
+                          const current = formData.platform_usage || [];
+                          if (e.target.checked) {
+                            handleInputChange('platform_usage', [...current, platform.value]);
+                          } else {
+                            handleInputChange('platform_usage', current.filter(p => p !== platform.value));
+                          }
+                        }}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 mt-0.5"
+                      />
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">{platform.label}</p>
+                        <p className="text-xs text-gray-500">{platform.description}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+
+                <label
+                  className={cn(
+                    "flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all",
+                    formData.open_licence
+                      ? "border-green-500 bg-green-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={formData.open_licence || false}
+                    onChange={(e) => handleInputChange('open_licence', e.target.checked)}
+                    className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 mt-0.5"
+                  />
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm">Commit to Open Licence (Creative Commons)</p>
+                    <p className="text-xs text-gray-500">Publishing results under open licence is valued by evaluators and supports wider dissemination</p>
+                  </div>
+                </label>
+              </CardContent>
+            </Card>
           </motion.div>
         );
 
-      case 3:
+      case 4: // Final Details
         return (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -907,15 +1115,67 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
             exit={{ opacity: 0, x: -20 }}
             className="space-y-6"
           >
-            <Textarea
-              label="Target Groups"
-              value={formData.target_groups}
-              onChange={(e) => handleInputChange('target_groups', e.target.value)}
-              placeholder="Describe your primary and secondary target groups..."
-              rows={6}
-              required
-              helper="Include demographics, needs, and expected number of beneficiaries"
-            />
+            {/* Structured Target Groups */}
+            <Card gradient hover={false}>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center">
+                  <Users className="w-5 h-5 mr-2" />
+                  Target Groups
+                </CardTitle>
+                <CardDescription>Define your primary and secondary beneficiaries</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Textarea
+                  label="Target Groups Description"
+                  value={formData.target_groups}
+                  onChange={(e) => handleInputChange('target_groups', e.target.value)}
+                  placeholder="Describe your primary and secondary target groups in detail..."
+                  rows={4}
+                  required
+                  helper="Include demographics, needs, geographic scope, and how you will reach them"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Primary Target Group"
+                    value={formData.primary_target_group || ''}
+                    onChange={(e) => handleInputChange('primary_target_group', e.target.value)}
+                    placeholder="e.g., Low-skilled adults aged 25-64"
+                    icon={Target}
+                    helper="Main direct beneficiaries of the project"
+                  />
+                  <Input
+                    label="Estimated Direct Beneficiaries"
+                    type="number"
+                    value={formData.primary_target_count || ''}
+                    onChange={(e) => handleInputChange('primary_target_count', e.target.value)}
+                    placeholder="e.g., 500"
+                    icon={BarChart3}
+                    helper="Number of people directly reached"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Secondary Target Group"
+                    value={formData.secondary_target_group || ''}
+                    onChange={(e) => handleInputChange('secondary_target_group', e.target.value)}
+                    placeholder="e.g., Educators, trainers, policy makers"
+                    icon={Target}
+                    helper="Indirect beneficiaries or multipliers"
+                  />
+                  <Input
+                    label="Estimated Indirect Beneficiaries"
+                    type="number"
+                    value={formData.secondary_target_count || ''}
+                    onChange={(e) => handleInputChange('secondary_target_count', e.target.value)}
+                    placeholder="e.g., 2000"
+                    icon={BarChart3}
+                    helper="Number of people indirectly reached"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Summary Card */}
             <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
@@ -942,7 +1202,7 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                     <p className="font-medium">{(formData.expected_partners || 2) + 1} organizations (estimated)</p>
                   </div>
                 </div>
-                
+
                 <div>
                   <p className="text-sm text-gray-600 mb-2">Selected Priorities</p>
                   <div className="flex flex-wrap gap-2">
@@ -960,6 +1220,29 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                     })}
                   </div>
                 </div>
+
+                {formData.planned_deliverables && (
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">Planned Deliverables</p>
+                    <p className="text-sm text-gray-800">{formData.planned_deliverables.substring(0, 150)}{formData.planned_deliverables.length > 150 ? '...' : ''}</p>
+                  </div>
+                )}
+
+                {(formData.platform_usage || []).length > 0 && (
+                  <div>
+                    <p className="text-sm text-gray-600 mb-2">EU Platforms</p>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.platform_usage.map(platform => (
+                        <span
+                          key={platform}
+                          className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium"
+                        >
+                          {platform}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

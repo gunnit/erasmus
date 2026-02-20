@@ -59,6 +59,9 @@ class User(Base):
     # Settings (notifications, preferences, etc.)
     settings_json = Column(JSON, nullable=True, default=lambda: {})
 
+    # Admin flag
+    is_admin = Column(Boolean, default=False)
+
     # Subscription fields
     subscription_plan = Column(Enum(SubscriptionPlan), nullable=True)
     proposals_remaining = Column(Integer, default=0)

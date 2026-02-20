@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import {
   Briefcase, Calendar, Users, Target, CheckCircle, Edit3, Save, X,
   ChevronDown, ChevronRight, Loader2, Wand2, Download, Plus, Trash2,
-  Clock, User, FileText, AlertCircle, Info
+  Clock, User, FileText, AlertCircle, Info, Euro, BarChart3
 } from 'lucide-react';
 import api from '../services/api';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/Card';
@@ -264,6 +264,300 @@ const WorkplanViewer = ({ proposalId, proposalData, onWorkplanGenerated }) => {
     );
   };
 
+  const renderGanttTimeline = () => {
+    const ganttData = workplan?.timeline?.gantt_data;
+    const wps = workplan?.work_packages;
+    if (!wps || wps.length === 0) {
+      return (
+        <Card className="text-center p-8">
+          <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+          <p className="text-gray-500">No timeline data available</p>
+        </Card>
+      );
+    }
+
+    const totalMonths = workplan?.metadata?.total_duration_months || 24;
+    const months = Array.from({ length: totalMonths }, (_, i) => i + 1);
+    const getWPColor = (wpId) => {
+      const colors = ['bg-blue-400', 'bg-purple-400', 'bg-green-400', 'bg-orange-400', 'bg-indigo-400'];
+      const index = parseInt(wpId.replace('WP', '')) - 1;
+      return colors[index % colors.length];
+    };
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Project Timeline (Gantt View)
+          </CardTitle>
+          <CardDescription>
+            Work package schedule across {totalMonths} months
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <div className="min-w-[800px]">
+              {/* Month headers */}
+              <div className="flex border-b border-gray-200 mb-2">
+                <div className="w-48 flex-shrink-0 text-xs font-medium text-gray-500 py-1">Work Package</div>
+                <div className="flex-1 flex">
+                  {months.map(m => (
+                    <div key={m} className="flex-1 text-center text-xs text-gray-400 py-1 border-l border-gray-100">
+                      {m}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* WP bars */}
+              {wps.map(wp => (
+                <div key={wp.id} className="flex items-center mb-2">
+                  <div className="w-48 flex-shrink-0 pr-2">
+                    <span className="text-sm font-medium text-gray-900">{wp.id}: {wp.title}</span>
+                  </div>
+                  <div className="flex-1 flex relative h-8">
+                    {months.map(m => (
+                      <div key={m} className="flex-1 border-l border-gray-50" />
+                    ))}
+                    <div
+                      className={cn("absolute top-1 bottom-1 rounded-md opacity-80", getWPColor(wp.id))}
+                      style={{
+                        left: `${((wp.start_month - 1) / totalMonths) * 100}%`,
+                        width: `${((wp.end_month - wp.start_month + 1) / totalMonths) * 100}%`
+                      }}
+                    >
+                      <span className="text-xs text-white font-medium px-2 leading-6 truncate block">
+                        M{wp.start_month}-M{wp.end_month}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {/* Milestones */}
+              {workplan?.timeline?.milestones && workplan.timeline.milestones.length > 0 && (
+                <div className="flex items-center mt-4 pt-3 border-t border-gray-200">
+                  <div className="w-48 flex-shrink-0 pr-2">
+                    <span className="text-sm font-medium text-gray-600">Milestones</span>
+                  </div>
+                  <div className="flex-1 flex relative h-8">
+                    {months.map(m => (
+                      <div key={m} className="flex-1 border-l border-gray-50" />
+                    ))}
+                    {workplan.timeline.milestones.map((ms, idx) => (
+                      <div
+                        key={ms.id || idx}
+                        className="absolute top-0 bottom-0 flex flex-col items-center"
+                        style={{ left: `${((ms.month - 0.5) / totalMonths) * 100}%` }}
+                        title={`${ms.title} (Month ${ms.month})`}
+                      >
+                        <div className="w-3 h-3 bg-red-500 rounded-full border-2 border-white shadow" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const renderBudgetBreakdown = () => {
+    // Budget data can be in proposal's answers.budget_breakdown (from ai_autofill_service)
+    // or passed as proposalData.budget_breakdown
+    const budget = proposalData?.budget_breakdown || proposalData?.answers?.budget_breakdown;
+
+    if (!budget) {
+      return (
+        <Card className="text-center p-8">
+          <Euro className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+          <p className="text-gray-500">No budget breakdown available</p>
+          <p className="text-sm text-gray-400 mt-1">Budget breakdown is generated alongside answers</p>
+        </Card>
+      );
+    }
+
+    const perWP = budget.per_work_package || [];
+    const perPartner = budget.per_partner || [];
+    const coFinancing = budget.co_financing || {};
+    const totalGrant = budget.total_grant || 0;
+
+    return (
+      <div className="space-y-6">
+        {/* Budget Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="p-4 text-center">
+              <Euro className="h-8 w-8 text-green-500 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-gray-900">{totalGrant.toLocaleString()}</p>
+              <p className="text-sm text-gray-500">EU Grant</p>
+            </CardContent>
+          </Card>
+          {coFinancing.partner_co_financing && (
+            <Card>
+              <CardContent className="p-4 text-center">
+                <Users className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">{coFinancing.partner_co_financing.toLocaleString()}</p>
+                <p className="text-sm text-gray-500">Co-financing</p>
+              </CardContent>
+            </Card>
+          )}
+          {coFinancing.total_estimated_costs && (
+            <Card>
+              <CardContent className="p-4 text-center">
+                <BarChart3 className="h-8 w-8 text-purple-500 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">{coFinancing.total_estimated_costs.toLocaleString()}</p>
+                <p className="text-sm text-gray-500">Total Estimated Costs</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Per Work Package */}
+        {perWP.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Briefcase className="h-5 w-5" />
+                Budget per Work Package
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Work Package</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">%</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Allocation</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {perWP.map((wp, idx) => {
+                      const pct = wp.percentage || (totalGrant > 0 ? ((wp.total_amount || 0) / totalGrant * 100) : 0);
+                      return (
+                        <tr key={idx}>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                            WP{wp.wp_number != null ? wp.wp_number : idx}: {wp.title || wp.name || ''}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-900 font-medium">
+                            {(wp.total_amount || 0).toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-500">
+                            {pct.toFixed(1)}%
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-blue-500 h-2 rounded-full"
+                                style={{ width: `${Math.min(pct, 100)}%` }}
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot className="bg-gray-50">
+                    <tr>
+                      <td className="px-4 py-3 text-sm font-bold text-gray-900">Total</td>
+                      <td className="px-4 py-3 text-sm text-right font-bold text-gray-900">
+                        {totalGrant.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right font-bold text-gray-500">100%</td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              {/* Management cap warning */}
+              {perWP.some(wp => wp.wp_number === 0 && wp.percentage > 20) && (
+                <div className="mt-3 flex items-center gap-2 text-amber-700 bg-amber-50 p-3 rounded-lg">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  <span className="text-sm">Management (WP0) budget exceeds the 20% cap recommended by Erasmus+ guidelines</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Per Partner */}
+        {perPartner.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Budget per Partner
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Partner</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">%</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Allocation</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {perPartner.map((partner, idx) => {
+                      const pct = partner.percentage || (totalGrant > 0 ? ((partner.total_amount || 0) / totalGrant * 100) : 0);
+                      return (
+                        <tr key={idx}>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                            {partner.name || partner.partner_name || `Partner ${idx + 1}`}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-900 font-medium">
+                            {(partner.total_amount || 0).toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-500">
+                            {pct.toFixed(1)}%
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-green-500 h-2 rounded-full"
+                                style={{ width: `${Math.min(pct, 100)}%` }}
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Co-financing */}
+        {coFinancing.narrative && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Info className="h-5 w-5" />
+                Co-financing & Value for Money
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-700 leading-relaxed">{coFinancing.narrative}</p>
+              {coFinancing.co_financing_percentage && (
+                <p className="text-sm text-gray-500 mt-2">
+                  Co-financing rate: {coFinancing.co_financing_percentage}%
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  };
+
   const renderPartnerAllocation = () => {
     if (!workplan?.partner_allocation) return null;
 
@@ -478,7 +772,7 @@ const WorkplanViewer = ({ proposalId, proposalData, onWorkplanGenerated }) => {
       {/* Tabs */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
-          {['overview', 'allocation', 'milestones'].map((tab) => (
+          {['overview', 'timeline', 'budget', 'allocation', 'milestones'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -490,6 +784,8 @@ const WorkplanViewer = ({ proposalId, proposalData, onWorkplanGenerated }) => {
               )}
             >
               {tab === 'overview' && 'Work Packages'}
+              {tab === 'timeline' && 'Timeline'}
+              {tab === 'budget' && 'Budget'}
               {tab === 'allocation' && 'Partner Allocation'}
               {tab === 'milestones' && 'Milestones'}
             </button>
@@ -504,6 +800,8 @@ const WorkplanViewer = ({ proposalId, proposalData, onWorkplanGenerated }) => {
             {workplan?.work_packages?.map(wp => renderWorkPackage(wp))}
           </div>
         )}
+        {activeTab === 'timeline' && renderGanttTimeline()}
+        {activeTab === 'budget' && renderBudgetBreakdown()}
         {activeTab === 'allocation' && renderPartnerAllocation()}
         {activeTab === 'milestones' && renderMilestones()}
       </div>
