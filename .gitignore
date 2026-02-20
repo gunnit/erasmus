@@ -150,3 +150,9 @@ openai_cache/
 test_output/
 test_results/
 output/
+
+# Screenshots and audit artifacts
+audit-*.png
+qa-*.png
+test-*.png
+*.screenshot.png
