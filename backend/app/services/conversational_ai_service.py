@@ -80,7 +80,7 @@ class ConversationalAIService:
                 model=self.model,
                 messages=messages,
                 temperature=0.7,
-                max_tokens=4096,
+                max_completion_tokens=4096,
                 presence_penalty=0.3,
                 frequency_penalty=0.3,
                 reasoning_effort="none"
@@ -166,7 +166,7 @@ Potential with improvements: Y/100
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.6,
-                max_tokens=4096,
+                max_completion_tokens=4096,
                 reasoning_effort="none"
             )
 
@@ -244,7 +244,7 @@ Provide the alternative answer:"""
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.8,
-                max_tokens=2048,
+                max_completion_tokens=2048,
                 reasoning_effort="none"
             )
 
@@ -337,7 +337,7 @@ Format as JSON array:
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.6,
-                max_tokens=1024,
+                max_completion_tokens=1024,
                 response_format={"type": "json_object"},
                 reasoning_effort="none"
             )
@@ -408,7 +408,7 @@ Format as structured guidance that's immediately actionable."""
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.6,
-                max_tokens=4096,
+                max_completion_tokens=4096,
                 reasoning_effort="none"
             )
 

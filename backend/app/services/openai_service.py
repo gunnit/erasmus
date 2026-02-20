@@ -133,7 +133,7 @@ class OpenAIService:
                         "content": prompt
                     }
                 ],
-                max_tokens=2048,
+                max_completion_tokens=2048,
                 reasoning_effort="none"
             )
 
@@ -171,7 +171,7 @@ class OpenAIService:
                     {"role": "developer", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                max_tokens=max_tokens,
+                max_completion_tokens=max_tokens,
                 temperature=temperature,
                 reasoning_effort="none"
             )
@@ -232,7 +232,7 @@ class OpenAIService:
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
-                max_tokens=max_tokens,
+                max_completion_tokens=max_tokens,
                 temperature=temperature,
                 reasoning_effort="none"
             )
@@ -297,7 +297,7 @@ class OpenAIService:
                         "content": prompt
                     }
                 ],
-                max_tokens=1500,  # Expanded for detailed grant answers
+                max_completion_tokens=1500,  # Expanded for detailed grant answers
                 temperature=0.7,
                 reasoning_effort="none"
             )

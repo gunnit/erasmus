@@ -128,7 +128,7 @@ Maximum {question_details.get('character_limit', 2000)} characters."""
         answer = await openai_service.generate_completion(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
-            max_tokens=800,  # Reduced for more concise answers
+            max_tokens=1500,  # Expanded for detailed grant answers
             temperature=0.7
         )
 

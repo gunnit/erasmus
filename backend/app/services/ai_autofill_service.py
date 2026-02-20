@@ -436,7 +436,7 @@ class AIAutoFillService:
                             "content": prompt
                         }
                     ],
-                    max_tokens=max_tokens,
+                    max_completion_tokens=max_tokens,
                     temperature=temperature,
                     reasoning_effort="none"
                 )
