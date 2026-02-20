@@ -64,6 +64,20 @@ try:
 except Exception as e:
     print(f"Note: Could not add new columns (may already exist): {e}")
 
+# --- Temporary: dump all users (REMOVE AFTER USE) ---
+def _dump_users():
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(text(
+                "SELECT id, username, email, full_name, organization, is_admin, proposals_remaining, subscription_plan, created_at FROM users ORDER BY id"
+            )).fetchall()
+            for r in rows:
+                print(f"USER|{r[0]}|{r[1]}|{r[2]}|{r[3]}|{r[4]}|{r[5]}|{r[6]}|{r[7]}|{r[8]}")
+    except Exception as e:
+        print(f"Dump users error: {e}")
+_dump_users()
+# --- End temporary ---
+
 # Create FastAPI app
 app = FastAPI(
     title="Erasmus+ Form Completion API",
