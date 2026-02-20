@@ -694,8 +694,15 @@ const ProjectInputForm = ({ onSubmit, initialData, onToggleProgressive, useProgr
                     label="Organization Website"
                     value={formData.lead_organization.website || ''}
                     onChange={(e) => handleLeadOrgChange('website', e.target.value)}
-                    placeholder="https://www.example.org"
+                    onBlur={(e) => {
+                      const val = e.target.value.trim();
+                      if (val && !/^https?:\/\//i.test(val)) {
+                        handleLeadOrgChange('website', 'https://' + val);
+                      }
+                    }}
+                    placeholder="www.example.org"
                     icon={ExternalLink}
+                    helper="Protocol (https://) is added automatically"
                   />
                 </div>
 

@@ -363,12 +363,18 @@ const Profile = () => {
               </div>
               <Input
                 label="Website"
-                type="url"
+                type="text"
                 icon={Globe}
                 value={profile.organization.website}
                 onChange={(e) => handleInputChange('organization', 'website', e.target.value)}
+                onBlur={(e) => {
+                  const val = e.target.value.trim();
+                  if (val && !/^https?:\/\//i.test(val)) {
+                    handleInputChange('organization', 'website', 'https://' + val);
+                  }
+                }}
                 disabled={!isEditing}
-                placeholder="https://example.org"
+                placeholder="www.example.org"
               />
               <Textarea
                 label="Organization Description"

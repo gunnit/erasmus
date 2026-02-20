@@ -50,12 +50,8 @@ export const validateProposalForm = (formData) => {
     errors.target_groups = 'Please specify target groups for your project';
   }
 
-  // Optional field validation (non-blocking, informational only)
-  // Lead org website format check
-  if (formData.lead_organization?.website && formData.lead_organization.website.trim() &&
-      !/^https?:\/\/.+/.test(formData.lead_organization.website.trim())) {
-    errors.lead_organization_website = 'Website should start with http:// or https://';
-  }
+  // Website format is auto-corrected on blur (https:// prepended automatically)
+  // No blocking validation needed for website field
 
   // Beneficiary counts should be positive if provided
   if (formData.primary_target_count && Number(formData.primary_target_count) < 0) {

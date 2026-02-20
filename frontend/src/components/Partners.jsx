@@ -615,11 +615,17 @@ const PartnerModal = ({ partner, onClose, onSave, onCrawl }) => {
             </label>
             <div className="flex gap-2">
               <input
-                type="url"
+                type="text"
                 value={formData.website}
                 onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                onBlur={(e) => {
+                  const val = e.target.value.trim();
+                  if (val && !/^https?:\/\//i.test(val)) {
+                    setFormData({ ...formData, website: 'https://' + val });
+                  }
+                }}
                 className="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="https://example.org"
+                placeholder="www.example.org"
               />
               {formData.website && partner && (
                 <button
